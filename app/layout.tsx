@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -12,8 +13,23 @@ type RootLayoutProps = Readonly<{
 
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang="pt-BR">
-      <body>{children}</body>
+    <html lang="pt-BR" suppressHydrationWarning>
+      <body>
+        <Script id="theme-init" strategy="beforeInteractive">
+          {`
+            try {
+              var storedTheme = window.localStorage.getItem("metrologia-theme");
+              var theme = storedTheme === "dark" ? "dark" : "light";
+              document.documentElement.dataset.theme = theme;
+              document.documentElement.style.colorScheme = theme;
+            } catch (error) {
+              document.documentElement.dataset.theme = "light";
+              document.documentElement.style.colorScheme = "light";
+            }
+          `}
+        </Script>
+        {children}
+      </body>
     </html>
   );
 }

@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type UIEvent } from "react";
 
 type InventoryRow = {
   tag: string;
   category: string;
   manufacturer: string;
+  centerCostCode?: string;
+  centerCostDescription?: string;
   calibration: string;
   calibrationDateValue?: string;
   tone: "neutral" | "warning" | "danger";
@@ -15,27 +17,35 @@ type InstrumentFormState = {
   tag: string;
   category: string;
   manufacturer: string;
+  centerCostCode: string;
+  centerCostDescription: string;
   calibrationDate: Date | null;
   fileName: string;
 };
 
 type InstrumentValidationErrors = Partial<
-  Record<"tag" | "category" | "manufacturer" | "calibrationDate", string>
+  Record<"tag" | "category" | "manufacturer" | "centerCostCode" | "calibrationDate", string>
 >;
 
 type CalibrationFilter = "all" | "neutral" | "warning" | "danger";
 type SortKey = "tag" | "category" | "manufacturer" | "calibration";
 type SortDirection = "asc" | "desc";
 
-const INITIAL_VISIBLE_ROWS = 2;
-const LOAD_MORE_ROWS = 2;
+const INITIAL_VISIBLE_ROWS = 20;
+const LOAD_MORE_ROWS = 20;
+const LOAD_MORE_DELAY_MS = 260;
+const LOAD_MORE_THRESHOLD_PX = 160;
+const LOAD_MORE_PLACEHOLDER_ROWS = 4;
+const ROW_ENTER_STAGGER_MS = 36;
+const MAX_ROW_ENTER_STAGGER_STEPS = 3;
+const EMPTY_FILE_LABEL = "Nenhum arquivo selecionado";
 
 const rows: InventoryRow[] = [
   {
     tag: "PL-001",
     category: "Manômetro Digital",
     manufacturer: "WIKA Group",
-    calibration: "12 Mar 2025 (Em 4 meses)",
+    calibration: "12 Mar 2025 (Vence em 4 meses)",
     calibrationDateValue: "2025-03-12",
     tone: "neutral"
   },
@@ -51,7 +61,7 @@ const rows: InventoryRow[] = [
     tag: "TM-088",
     category: "Termômetro Infravermelho",
     manufacturer: "Fluke Corp",
-    calibration: "02 Jan 2025 (Em 2 meses)",
+    calibration: "02 Jan 2025 (Vence em 2 meses)",
     calibrationDateValue: "2025-01-02",
     tone: "neutral"
   },
@@ -77,6 +87,32 @@ const monthFormatter = new Intl.DateTimeFormat("pt-BR", {
 });
 
 const shortMonthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+const mockManufacturers = [
+  "WIKA Group",
+  "Mitutoyo",
+  "Fluke Corp",
+  "Instrutherm",
+  "Novus",
+  "Siemens",
+  "WEG",
+  "Emerson",
+  "Phoenix Contact",
+  "Yokogawa"
+];
+
+const mockCenterCosts = [
+  { code: "3210300", description: "PRENSAS DE BORRACHA (1.09)" },
+  { code: "3210100", description: "EXTRUSAO E LAMINACAO (1.05)" },
+  { code: "1120103", description: "RECEPCAO" },
+  { code: "1120104", description: "RESTAURANTE" },
+  { code: "1120106", description: "LIMPEZA E HIGIENE" },
+  { code: "1110102", description: "DIRETORIA INDUSTRIAL" },
+  { code: "1120000", description: "TALENTOS HUMANOS" },
+  { code: "2210100", description: "LABORATORIO DE QUALIDADE" }
+];
+
+const mockTagPrefixes = ["PL", "PQ", "TM", "MG"];
+const calibrationOffsetsInDays = [-180, -120, -75, -20, -5, 3, 12, 24, 48, 75, 110, 160];
 
 const calibrationDateByTag: Record<string, string> = {
   "PL-001": "2025-03-12",
@@ -89,8 +125,10 @@ const emptyFormState: InstrumentFormState = {
   tag: "",
   category: "",
   manufacturer: "",
+  centerCostCode: "",
+  centerCostDescription: "",
   calibrationDate: null,
-  fileName: "No file chosen"
+  fileName: EMPTY_FILE_LABEL
 };
 
 function parseIsoDate(value: string) {
@@ -103,6 +141,19 @@ function serializeDate(date: Date) {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function createMockCalibrationDate(index: number) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const offset =
+    calibrationOffsetsInDays[index % calibrationOffsetsInDays.length] +
+    Math.floor(index / calibrationOffsetsInDays.length) * 2;
+
+  const calibrationDate = new Date(today);
+  calibrationDate.setDate(today.getDate() + offset);
+  return calibrationDate;
 }
 
 function getRelativeCalibration(date: Date) {
@@ -128,7 +179,7 @@ function getRelativeCalibration(date: Date) {
   const diffInMonths = Math.ceil(diffInDays / 30);
   return {
     tone: "neutral" as const,
-    description: `Em ${diffInMonths} ${diffInMonths === 1 ? "mes" : "meses"}`
+    description: `Vence em ${diffInMonths} ${diffInMonths === 1 ? "mes" : "meses"}`
   };
 }
 
@@ -143,6 +194,8 @@ function buildInventoryRow(formState: InstrumentFormState): InventoryRow {
     tag: formState.tag.trim(),
     category: formState.category,
     manufacturer: formState.manufacturer.trim(),
+    centerCostCode: formState.centerCostCode.trim(),
+    centerCostDescription: formState.centerCostDescription.trim(),
     calibration: `${day} ${month} ${year} (${relativeCalibration.description})`,
     calibrationDateValue: serializeDate(calibrationDate),
     tone: relativeCalibration.tone
@@ -150,14 +203,17 @@ function buildInventoryRow(formState: InstrumentFormState): InventoryRow {
 }
 
 function createEditFormState(row: InventoryRow): InstrumentFormState {
-  const calibrationDateValue = row.calibrationDateValue ?? calibrationDateByTag[row.tag];
+  const calibrationDateValue =
+    row.calibrationDateValue ?? mockCalibrationDateByTag[row.tag] ?? calibrationDateByTag[row.tag];
 
   return {
     tag: row.tag,
     category: row.category,
     manufacturer: row.manufacturer,
+    centerCostCode: row.centerCostCode ?? "",
+    centerCostDescription: row.centerCostDescription ?? "",
     calibrationDate: calibrationDateValue ? parseIsoDate(calibrationDateValue) : null,
-    fileName: "No file chosen"
+    fileName: EMPTY_FILE_LABEL
   };
 }
 
@@ -198,12 +254,45 @@ function getCalibrationDisplayParts(value: string) {
 }
 
 function getCalibrationTimestamp(row: InventoryRow) {
-  const calibrationDateValue = row.calibrationDateValue ?? calibrationDateByTag[row.tag];
+  const calibrationDateValue =
+    row.calibrationDateValue ?? mockCalibrationDateByTag[row.tag] ?? calibrationDateByTag[row.tag];
   return calibrationDateValue ? parseIsoDate(calibrationDateValue).getTime() : 0;
 }
 
+const mockInventoryRows: InventoryRow[] = Array.from({ length: 100 }, (_, index) => {
+  const calibrationDate = createMockCalibrationDate(index);
+  const relativeCalibration = getRelativeCalibration(calibrationDate);
+  const centerCost = mockCenterCosts[index % mockCenterCosts.length];
+  const tag = `${mockTagPrefixes[index % mockTagPrefixes.length]}-${String(index + 1).padStart(3, "0")}`;
+  const day = String(calibrationDate.getDate()).padStart(2, "0");
+  const month = shortMonthNames[calibrationDate.getMonth()];
+  const year = calibrationDate.getFullYear();
+
+  return {
+    tag,
+    category: categoryOptions[index % categoryOptions.length],
+    manufacturer: mockManufacturers[index % mockManufacturers.length],
+    centerCostCode: centerCost.code,
+    centerCostDescription: centerCost.description,
+    calibration: `${day} ${month} ${year} (${relativeCalibration.description})`,
+    calibrationDateValue: serializeDate(calibrationDate),
+    tone: relativeCalibration.tone
+  };
+});
+
+const mockCalibrationDateByTag: Record<string, string> = mockInventoryRows.reduce<Record<string, string>>(
+  (result, row) => {
+    if (row.calibrationDateValue) {
+      result[row.tag] = row.calibrationDateValue;
+    }
+
+    return result;
+  },
+  {}
+);
+
 export function InstrumentsContent() {
-  const [inventoryRows, setInventoryRows] = useState(rows);
+  const [inventoryRows, setInventoryRows] = useState(mockInventoryRows);
   const [searchTerm, setSearchTerm] = useState("");
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState("");
@@ -212,6 +301,7 @@ export function InstrumentsContent() {
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [visibleRowsCount, setVisibleRowsCount] = useState(INITIAL_VISIBLE_ROWS);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
@@ -221,13 +311,46 @@ export function InstrumentsContent() {
   const [validationErrors, setValidationErrors] = useState<InstrumentValidationErrors>({});
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [isCenterCostLookupLoading, setIsCenterCostLookupLoading] = useState(false);
   const [visibleMonth, setVisibleMonth] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
   const categoryMenuRef = useRef<HTMLDivElement | null>(null);
   const calendarRef = useRef<HTMLDivElement | null>(null);
-  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const tableScrollRef = useRef<HTMLDivElement | null>(null);
+  const loadMoreTimeoutRef = useRef<number | null>(null);
+
+  function clearLoadMoreTimeout() {
+    if (loadMoreTimeoutRef.current === null) {
+      return;
+    }
+
+    window.clearTimeout(loadMoreTimeoutRef.current);
+    loadMoreTimeoutRef.current = null;
+  }
+
+  function scheduleLoadMore() {
+    if (isLoadingMore || loadMoreTimeoutRef.current !== null || visibleRowsCount >= sortedRows.length) {
+      return;
+    }
+
+    setIsLoadingMore(true);
+    loadMoreTimeoutRef.current = window.setTimeout(() => {
+      setVisibleRowsCount((current) => Math.min(current + LOAD_MORE_ROWS, sortedRows.length));
+      setIsLoadingMore(false);
+      loadMoreTimeoutRef.current = null;
+    }, LOAD_MORE_DELAY_MS);
+  }
+
+  function handleTableScroll(event: UIEvent<HTMLDivElement>) {
+    const container = event.currentTarget;
+    const remainingScroll = container.scrollHeight - container.scrollTop - container.clientHeight;
+
+    if (remainingScroll <= LOAD_MORE_THRESHOLD_PX) {
+      scheduleLoadMore();
+    }
+  }
 
   function openCreateModal() {
     const now = new Date();
@@ -236,6 +359,7 @@ export function InstrumentsContent() {
     setFormState({ ...emptyFormState });
     setValidationErrors({});
     setIsCalendarOpen(false);
+    setIsCenterCostLookupLoading(false);
     setVisibleMonth(new Date(now.getFullYear(), now.getMonth(), 1));
     setIsModalOpen(true);
   }
@@ -248,6 +372,7 @@ export function InstrumentsContent() {
     setFormState(nextFormState);
     setValidationErrors({});
     setIsCalendarOpen(false);
+    setIsCenterCostLookupLoading(false);
     setVisibleMonth(new Date(fallbackDate.getFullYear(), fallbackDate.getMonth(), 1));
     setIsModalOpen(true);
   }
@@ -259,6 +384,7 @@ export function InstrumentsContent() {
     setDeleteConfirmationText("");
     setEditingTag(null);
     setValidationErrors({});
+    setIsCenterCostLookupLoading(false);
     setIsModalOpen(false);
   }
 
@@ -287,6 +413,12 @@ export function InstrumentsContent() {
 
     if (!formState.manufacturer.trim()) {
       nextErrors.manufacturer = "Fabricante obrigatorio.";
+    }
+
+    if (formState.centerCostCode.trim() && isCenterCostLookupLoading) {
+      nextErrors.centerCostCode = "Aguarde a consulta do centro de custo.";
+    } else if (formState.centerCostCode.trim() && !formState.centerCostDescription.trim()) {
+      nextErrors.centerCostCode = "Informe um centro de custo valido.";
     }
 
     if (!formState.calibrationDate) {
@@ -407,6 +539,95 @@ export function InstrumentsContent() {
     };
   }, [isCategoryMenuOpen]);
 
+  useEffect(() => {
+    if (!isModalOpen) return;
+
+    const nextCenterCostCode = formState.centerCostCode.trim();
+
+    if (!nextCenterCostCode) {
+      setIsCenterCostLookupLoading(false);
+      setFormState((current) => {
+        if (!current.centerCostDescription) {
+          return current;
+        }
+
+        return {
+          ...current,
+          centerCostDescription: ""
+        };
+      });
+      setValidationErrors((current) => ({ ...current, centerCostCode: undefined }));
+      return;
+    }
+
+    const abortController = new AbortController();
+    let isCurrentLookup = true;
+    setIsCenterCostLookupLoading(true);
+
+    const lookupTimeout = window.setTimeout(async () => {
+      try {
+        const response = await fetch(
+          `/api/centro-custo?code=${encodeURIComponent(nextCenterCostCode)}`,
+          {
+            method: "GET",
+            signal: abortController.signal,
+            cache: "no-store"
+          }
+        );
+
+        if (!isCurrentLookup) {
+          return;
+        }
+
+        const payload = (await response.json()) as {
+          code?: string;
+          description?: string;
+          error?: string;
+        };
+
+        if (!response.ok) {
+          setFormState((current) => ({
+            ...current,
+            centerCostDescription: ""
+          }));
+          setValidationErrors((current) => ({
+            ...current,
+            centerCostCode: payload.error ?? "Nao foi possivel consultar o centro de custo."
+          }));
+          setIsCenterCostLookupLoading(false);
+          return;
+        }
+
+        setFormState((current) => ({
+          ...current,
+          centerCostDescription: payload.description?.trim() ?? ""
+        }));
+        setValidationErrors((current) => ({ ...current, centerCostCode: undefined }));
+        setIsCenterCostLookupLoading(false);
+      } catch (error) {
+        if (!isCurrentLookup || abortController.signal.aborted) {
+          return;
+        }
+
+        setFormState((current) => ({
+          ...current,
+          centerCostDescription: ""
+        }));
+        setValidationErrors((current) => ({
+          ...current,
+          centerCostCode: "Nao foi possivel consultar o centro de custo."
+        }));
+        setIsCenterCostLookupLoading(false);
+      }
+    }, 280);
+
+    return () => {
+      isCurrentLookup = false;
+      abortController.abort();
+      window.clearTimeout(lookupTimeout);
+    };
+  }, [formState.centerCostCode, isModalOpen]);
+
   const manufacturerOptions = useMemo(() => {
     return Array.from(new Set(inventoryRows.map((row) => row.manufacturer))).sort((first, second) =>
       first.localeCompare(second)
@@ -455,32 +676,49 @@ export function InstrumentsContent() {
     return sortedRows.slice(0, visibleRowsCount);
   }, [sortedRows, visibleRowsCount]);
 
+  const loadingPlaceholderCount = useMemo(() => {
+    if (!isLoadingMore) {
+      return 0;
+    }
+
+    return Math.min(LOAD_MORE_PLACEHOLDER_ROWS, Math.max(sortedRows.length - visibleRows.length, 0));
+  }, [isLoadingMore, sortedRows.length, visibleRows.length]);
+
+  const sortAnimationKey = `${sortKey ?? "default"}-${sortDirection}`;
+
+  function getRowAnimationDelay(index: number) {
+    const staggerStep = Math.min(index % LOAD_MORE_ROWS, MAX_ROW_ENTER_STAGGER_STEPS);
+    return `${staggerStep * ROW_ENTER_STAGGER_MS}ms`;
+  }
+
   useEffect(() => {
+    clearLoadMoreTimeout();
     setVisibleRowsCount(INITIAL_VISIBLE_ROWS);
+    setIsLoadingMore(false);
+    if (tableScrollRef.current) {
+      tableScrollRef.current.scrollTop = 0;
+    }
   }, [searchTerm, categoryFilter, manufacturerFilter, calibrationFilter, sortKey, sortDirection]);
 
   useEffect(() => {
-    if (!loadMoreRef.current || visibleRowsCount >= sortedRows.length) return;
+    const container = tableScrollRef.current;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const [entry] = entries;
+    if (!container || isLoadingMore || visibleRowsCount >= sortedRows.length) {
+      return;
+    }
 
-        if (entry?.isIntersecting) {
-          setVisibleRowsCount((current) => Math.min(current + LOAD_MORE_ROWS, sortedRows.length));
-        }
-      },
-      {
-        rootMargin: "120px"
-      }
-    );
+    const remainingScroll = container.scrollHeight - container.scrollTop - container.clientHeight;
 
-    observer.observe(loadMoreRef.current);
+    if (remainingScroll <= LOAD_MORE_THRESHOLD_PX) {
+      scheduleLoadMore();
+    }
+  }, [isLoadingMore, sortedRows.length, visibleRows.length, visibleRowsCount]);
 
+  useEffect(() => {
     return () => {
-      observer.disconnect();
+      clearLoadMoreTimeout();
     };
-  }, [sortedRows.length, visibleRowsCount]);
+  }, []);
 
   return (
     <>
@@ -602,7 +840,11 @@ export function InstrumentsContent() {
         ) : null}
 
         <section className="inventory-table-card">
-          <div className="inventory-table-wrap">
+          <div
+            ref={tableScrollRef}
+            className="inventory-table-wrap"
+            onScroll={handleTableScroll}
+          >
             <table className="inventory-table">
               <thead>
                 <tr>
@@ -681,7 +923,7 @@ export function InstrumentsContent() {
                   <th>Ações</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody key={sortAnimationKey}>
                 {filteredRows.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="inventory-table__empty">
@@ -689,11 +931,15 @@ export function InstrumentsContent() {
                     </td>
                   </tr>
                 ) : null}
-                {visibleRows.map((row) => {
+                {visibleRows.map((row, index) => {
                   const { dateLabel, statusLabel } = getCalibrationDisplayParts(row.calibration);
 
                   return (
-                    <tr key={row.tag}>
+                    <tr
+                      key={row.tag}
+                      className="inventory-table__row--sort-transition"
+                      style={{ animationDelay: getRowAnimationDelay(index) }}
+                    >
                       <td data-label="Tag">
                         <span className="tag-pill">{row.tag}</span>
                       </td>
@@ -732,22 +978,56 @@ export function InstrumentsContent() {
                     </tr>
                   );
                 })}
+                {Array.from({ length: loadingPlaceholderCount }, (_, index) => (
+                  <tr
+                    key={`loading-row-${visibleRows.length + index}`}
+                    className="inventory-table__row--loading"
+                    aria-hidden="true"
+                  >
+                    <td data-label="Tag">
+                      <span className="inventory-table__skeleton inventory-table__skeleton--tag" />
+                    </td>
+                    <td data-label="Categoria">
+                      <span className="inventory-table__skeleton inventory-table__skeleton--text" />
+                    </td>
+                    <td data-label="Fabricante">
+                      <span className="inventory-table__skeleton inventory-table__skeleton--text inventory-table__skeleton--text-short" />
+                    </td>
+                    <td data-label="Prazo de calibração">
+                      <div className="calibration-cell">
+                        <span className="inventory-table__skeleton inventory-table__skeleton--date" />
+                        <span className="inventory-table__skeleton inventory-table__skeleton--badge" />
+                      </div>
+                    </td>
+                    <td data-label="Ações">
+                      <span className="inventory-table__skeleton inventory-table__skeleton--action" />
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
 
           <div className="inventory-table-footer">
             <p>
-              Exibindo {visibleRows.length === 0 ? 0 : 1}-{visibleRows.length} de {filteredRows.length} itens
+              Carregados {visibleRows.length} de {filteredRows.length} itens
             </p>
 
             {visibleRows.length < filteredRows.length ? (
-              <span className="inventory-table-footer__hint">Role para carregar mais</span>
+              isLoadingMore ? (
+                <span className="inventory-table-footer__loading" role="status" aria-live="polite">
+                  <span className="inventory-table-footer__loading-dots" aria-hidden="true">
+                    <span />
+                    <span />
+                    <span />
+                  </span>
+                  Carregando mais instrumentos
+                </span>
+              ) : (
+                <span className="inventory-table-footer__hint">Role dentro da tabela para carregar mais</span>
+              )
             ) : null}
           </div>
-          {visibleRows.length < filteredRows.length ? (
-            <div ref={loadMoreRef} className="inventory-load-sentinel" aria-hidden="true" />
-          ) : null}
         </section>
       </section>
 
@@ -940,6 +1220,55 @@ export function InstrumentsContent() {
                   </label>
 
                   <label className="instrument-modal__field">
+                    <span>Centro de custo</span>
+                    <div
+                      className={`instrument-modal__composed-input${
+                        validationErrors.centerCostCode ? " is-invalid" : ""
+                      }`}
+                    >
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="Ex: 3210300"
+                        value={formState.centerCostCode}
+                        onChange={(event) => {
+                          const nextCenterCostCode = event.target.value.replace(/\s+/g, "");
+                          setFormState((current) => ({
+                            ...current,
+                            centerCostCode: nextCenterCostCode,
+                            centerCostDescription: ""
+                          }));
+                          setValidationErrors((current) => ({
+                            ...current,
+                            centerCostCode: undefined
+                          }));
+                        }}
+                      />
+                      <span className="instrument-modal__composed-separator" aria-hidden="true">
+                        -
+                      </span>
+                      {formState.centerCostDescription || isCenterCostLookupLoading ? (
+                        <>
+                          <span
+                            className={`instrument-modal__composed-prefix${
+                              isCenterCostLookupLoading ? " is-placeholder" : ""
+                            }`}
+                          >
+                            {isCenterCostLookupLoading
+                              ? "Buscando centro de custo"
+                              : formState.centerCostDescription}
+                          </span>
+                        </>
+                      ) : null}
+                    </div>
+                    {validationErrors.centerCostCode ? (
+                      <small className="instrument-modal__field-error">
+                        {validationErrors.centerCostCode}
+                      </small>
+                    ) : null}
+                  </label>
+
+                  <label className="instrument-modal__field">
                     <span>Prazo de calibração</span>
                     <div className="instrument-modal__date-picker" ref={calendarRef}>
                       <button
@@ -1074,12 +1403,12 @@ export function InstrumentsContent() {
                         const nextFile = event.target.files?.[0];
                         setFormState((current) => ({
                           ...current,
-                          fileName: nextFile?.name ?? "No file chosen"
+                          fileName: nextFile?.name ?? EMPTY_FILE_LABEL
                         }));
                       }}
                     />
                     <label htmlFor="instrument-certificate" className="instrument-modal__file-button">
-                      Choose File
+                      Escolher arquivo
                     </label>
                     <span className="instrument-modal__file-name">{formState.fileName}</span>
                   </div>

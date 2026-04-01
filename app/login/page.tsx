@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/browser";
+import { ThemeToggle } from "@/app/_components/theme-toggle";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -56,6 +57,8 @@ export default function LoginPage() {
 
   return (
     <main className="login-screen">
+      <ThemeToggle className="login-theme-toggle" />
+
       <section className="login-hero">
         <div className="logo-mark" aria-hidden="true">
           <Image

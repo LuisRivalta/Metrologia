@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { SidebarUserBar } from "./sidebar-user-bar";
+import { ThemeToggle } from "./theme-toggle";
 
 type SectionKey = "dashboard" | "instrumentos" | "categorias" | "configuracoes";
 
@@ -99,33 +100,7 @@ export function ManagementShell({ activeItem, children }: ManagementShellProps) 
           </div>
 
           <div className="topbar-right">
-            <button type="button" className="icon-button" aria-label="Notificações">
-              <svg viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M12 4a4 4 0 0 1 4 4v2.4c0 .8.2 1.7.7 2.4l1.1 1.8H6.2l1.1-1.8c.5-.7.7-1.6.7-2.4V8a4 4 0 0 1 4-4Z"
-                  fill="currentColor"
-                />
-                <path
-                  d="M9.5 18a2.5 2.5 0 0 0 5 0"
-                  stroke="currentColor"
-                  strokeWidth="1.6"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </button>
-
-            <button type="button" className="icon-button" aria-label="Ajuda">
-              <svg viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.15" />
-                <path
-                  d="M9.7 9.3a2.5 2.5 0 1 1 4 2c-.9.6-1.7 1.1-1.7 2.2m0 3h.1"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
+            <ThemeToggle />
           </div>
         </header>
 

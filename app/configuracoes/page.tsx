@@ -1,12 +1,10 @@
-import { ManagementShell, PlaceholderSection } from "../_components/management-shell";
+import { ManagementShell } from "../_components/management-shell";
+import { SettingsHomeContent } from "../_components/settings-home-content";
 
 export default function ConfiguracoesPage() {
   return (
     <ManagementShell activeItem="configuracoes">
-      <PlaceholderSection
-        title="Configurações"
-        description="Página padrão criada. Depois podemos adicionar preferências, permissões e parâmetros do sistema."
-      />
+      <SettingsHomeContent />
     </ManagementShell>
   );
 }

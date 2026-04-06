@@ -20,10 +20,15 @@ export default function RootLayout({ children }: RootLayoutProps) {
             try {
               var storedTheme = window.localStorage.getItem("metrologia-theme");
               var theme = storedTheme === "dark" ? "dark" : "light";
+              var storedFontScale = window.localStorage.getItem("metrologia-font-scale");
+              var fontScale =
+                storedFontScale === "sm" || storedFontScale === "lg" ? storedFontScale : "md";
               document.documentElement.dataset.theme = theme;
+              document.documentElement.dataset.fontScale = fontScale;
               document.documentElement.style.colorScheme = theme;
             } catch (error) {
               document.documentElement.dataset.theme = "light";
+              document.documentElement.dataset.fontScale = "md";
               document.documentElement.style.colorScheme = "light";
             }
           `}

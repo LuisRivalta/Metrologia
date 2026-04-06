@@ -1,20 +1,16 @@
 "use client";
 
 import { type FormEvent, useEffect, useMemo, useState } from "react";
-
-type Category = {
-  id: string;
-  name: string;
-};
+import type { CategoryItem } from "@/lib/categories";
 
 type CategoryModalMode = "create" | "edit";
 
-const initialCategories: Category[] = [
-  { id: "cat-1", name: "Manometro Digital" },
-  { id: "cat-2", name: "Paquimetro Digital" },
-  { id: "cat-3", name: "Termometro Infravermelho" },
-  { id: "cat-4", name: "Micrometro Externo" }
-];
+type CategoryApiResponse = {
+  error?: string;
+  item?: CategoryItem;
+  items?: CategoryItem[];
+  success?: boolean;
+};
 
 function normalizeSearchValue(value: string) {
   return value
@@ -24,26 +20,29 @@ function normalizeSearchValue(value: string) {
     .trim();
 }
 
-function createCategoryId() {
-  return `cat-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-}
-
 export function CategoriesContent() {
-  const [categories, setCategories] = useState<Category[]>(initialCategories);
+  const [categories, setCategories] = useState<CategoryItem[]>([]);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<CategoryModalMode>("create");
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [categoryName, setCategoryName] = useState("");
   const [validationError, setValidationError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingCategoryId, setDeletingCategoryId] = useState<string | null>(null);
 
-  const filteredCategories = useMemo(() => {
-    const normalizedSearchTerm = normalizeSearchValue(searchTerm);
-    const sortedCategories = [...categories].sort((first, second) =>
+  const sortedCategories = useMemo(() => {
+    return [...categories].sort((first, second) =>
       normalizeSearchValue(first.name).localeCompare(normalizeSearchValue(second.name), "pt-BR", {
         sensitivity: "base"
       })
     );
+  }, [categories]);
+
+  const filteredCategories = useMemo(() => {
+    const normalizedSearchTerm = normalizeSearchValue(searchTerm);
 
     if (!normalizedSearchTerm) {
       return sortedCategories;
@@ -52,17 +51,18 @@ export function CategoriesContent() {
     return sortedCategories.filter((category) =>
       normalizeSearchValue(category.name).includes(normalizedSearchTerm)
     );
-  }, [categories, searchTerm]);
+  }, [searchTerm, sortedCategories]);
+
+  useEffect(() => {
+    void loadCategories();
+  }, []);
 
   useEffect(() => {
     if (!isModalOpen) return;
 
     function handleEscape(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setIsModalOpen(false);
-        setEditingCategoryId(null);
-        setCategoryName("");
-        setValidationError("");
+      if (event.key === "Escape" && !isSubmitting) {
+        closeModal();
       }
     }
 
@@ -70,7 +70,45 @@ export function CategoriesContent() {
     return () => {
       document.removeEventListener("keydown", handleEscape);
     };
-  }, [isModalOpen]);
+  }, [isModalOpen, isSubmitting]);
+
+  async function loadCategories() {
+    setIsLoadingCategories(true);
+    setLoadError("");
+
+    try {
+      const response = await fetch("/api/categorias", {
+        method: "GET",
+        cache: "no-store"
+      });
+
+      const payload = (await response.json()) as CategoryApiResponse;
+
+      if (!response.ok) {
+        setCategories([]);
+        setLoadError(payload.error ?? "Nao foi possivel carregar as categorias.");
+        setIsLoadingCategories(false);
+        return;
+      }
+
+      setCategories(payload.items ?? []);
+      setLoadError("");
+      setIsLoadingCategories(false);
+    } catch {
+      setCategories([]);
+      setLoadError("Nao foi possivel carregar as categorias.");
+      setIsLoadingCategories(false);
+    }
+  }
+
+  function closeModal() {
+    setIsModalOpen(false);
+    setModalMode("create");
+    setEditingCategoryId(null);
+    setCategoryName("");
+    setValidationError("");
+    setIsSubmitting(false);
+  }
 
   function openCreateModal() {
     setModalMode("create");
@@ -80,7 +118,7 @@ export function CategoriesContent() {
     setIsModalOpen(true);
   }
 
-  function openEditModal(category: Category) {
+  function openEditModal(category: CategoryItem) {
     setModalMode("edit");
     setEditingCategoryId(category.id);
     setCategoryName(category.name);
@@ -88,14 +126,7 @@ export function CategoriesContent() {
     setIsModalOpen(true);
   }
 
-  function closeModal() {
-    setIsModalOpen(false);
-    setEditingCategoryId(null);
-    setCategoryName("");
-    setValidationError("");
-  }
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const trimmedName = categoryName.trim();
@@ -105,29 +136,85 @@ export function CategoriesContent() {
       return;
     }
 
-    const normalizedName = normalizeSearchValue(trimmedName);
-    const hasDuplicateName = categories.some(
-      (category) =>
-        category.id !== editingCategoryId && normalizeSearchValue(category.name) === normalizedName
-    );
+    setIsSubmitting(true);
+    setValidationError("");
 
-    if (hasDuplicateName) {
-      setValidationError("Ja existe uma categoria com esse nome.");
-      return;
-    }
+    try {
+      const response = await fetch("/api/categorias", {
+        method: modalMode === "edit" ? "PATCH" : "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          id: editingCategoryId,
+          name: trimmedName
+        })
+      });
 
-    if (modalMode === "edit" && editingCategoryId) {
-      setCategories((current) =>
-        current.map((category) =>
-          category.id === editingCategoryId ? { ...category, name: trimmedName } : category
-        )
-      );
+      const payload = (await response.json()) as CategoryApiResponse;
+
+      if (!response.ok || !payload.item) {
+        setValidationError(payload.error ?? "Nao foi possivel salvar a categoria.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (modalMode === "edit" && editingCategoryId) {
+        setCategories((current) =>
+          current.map((category) =>
+            category.id === editingCategoryId ? payload.item ?? category : category
+          )
+        );
+      } else {
+        setCategories((current) => [...current, payload.item as CategoryItem]);
+      }
+
+      setLoadError("");
       closeModal();
+    } catch {
+      setValidationError("Nao foi possivel salvar a categoria.");
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleDeleteCategory(category: CategoryItem) {
+    const confirmed = window.confirm(`Excluir a categoria "${category.name}"?`);
+
+    if (!confirmed) {
       return;
     }
 
-    setCategories((current) => [...current, { id: createCategoryId(), name: trimmedName }]);
-    closeModal();
+    setDeletingCategoryId(category.id);
+
+    try {
+      const response = await fetch("/api/categorias", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ id: category.id })
+      });
+
+      const payload = (await response.json()) as CategoryApiResponse;
+
+      if (!response.ok) {
+        setLoadError(payload.error ?? "Nao foi possivel excluir a categoria.");
+        setDeletingCategoryId(null);
+        return;
+      }
+
+      setCategories((current) => current.filter((item) => item.id !== category.id));
+      setLoadError("");
+
+      if (editingCategoryId === category.id) {
+        closeModal();
+      }
+
+      setDeletingCategoryId(null);
+    } catch {
+      setLoadError("Nao foi possivel excluir a categoria.");
+      setDeletingCategoryId(null);
+    }
   }
 
   return (
@@ -170,8 +257,10 @@ export function CategoriesContent() {
               <h2>Categorias cadastradas</h2>
               <p>Cadastre e edite os nomes usados nos instrumentos.</p>
             </div>
-            <span className="category-card__count">{categories.length} categorias</span>
+            <span className="category-card__count">{sortedCategories.length} categorias</span>
           </div>
+
+          {loadError ? <p className="settings-status-banner settings-status-banner--error">{loadError}</p> : null}
 
           <div className="inventory-table-wrap">
             <table className="inventory-table category-table">
@@ -182,60 +271,93 @@ export function CategoriesContent() {
                 </tr>
               </thead>
               <tbody>
-                {filteredCategories.length === 0 ? (
+                {isLoadingCategories ? (
                   <tr>
                     <td colSpan={2} className="inventory-table__empty">
-                      Nenhuma categoria encontrada com a busca atual.
+                      Carregando categorias...
                     </td>
                   </tr>
                 ) : null}
 
-                {filteredCategories.map((category, index) => (
-                  <tr key={category.id}>
-                    <td data-label="Categoria">
-                      <div className="category-name-cell">
-                        <span className="category-index">{String(index + 1).padStart(2, "0")}</span>
-                        <strong className="category-name">{category.name}</strong>
-                      </div>
-                    </td>
-                    <td data-label="Acoes" className="category-table__actions">
-                      <button
-                        type="button"
-                        className="table-action category-table__edit"
-                        aria-label={`Editar ${category.name}`}
-                        onClick={() => openEditModal(category)}
-                      >
-                        <svg viewBox="0 0 24 24" fill="none">
-                          <path d="M4 16.8V20h3.2L18 9.2 14.8 6 4 16.8Z" fill="currentColor" />
-                          <path
-                            d="m13.8 7 3.2 3.2"
-                            stroke="currentColor"
-                            strokeWidth="1.6"
-                            strokeLinecap="round"
-                          />
-                        </svg>
-                      </button>
+                {!isLoadingCategories && filteredCategories.length === 0 ? (
+                  <tr>
+                    <td colSpan={2} className="inventory-table__empty">
+                      {searchTerm ? "Nenhuma categoria encontrada com a busca atual." : "Nenhuma categoria cadastrada."}
                     </td>
                   </tr>
-                ))}
+                ) : null}
+
+                {!isLoadingCategories
+                  ? filteredCategories.map((category, index) => (
+                      <tr key={category.id}>
+                        <td data-label="Categoria">
+                          <div className="category-name-cell">
+                            <span className="category-index">{String(index + 1).padStart(2, "0")}</span>
+                            <strong className="category-name">{category.name}</strong>
+                          </div>
+                        </td>
+                        <td data-label="Acoes" className="category-table__actions">
+                          <div className="category-table__action-list">
+                            <button
+                              type="button"
+                              className="table-action category-table__edit"
+                              aria-label={`Editar ${category.name}`}
+                              onClick={() => openEditModal(category)}
+                              disabled={deletingCategoryId === category.id}
+                            >
+                              <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M4 16.8V20h3.2L18 9.2 14.8 6 4 16.8Z" fill="currentColor" />
+                                <path
+                                  d="m13.8 7 3.2 3.2"
+                                  stroke="currentColor"
+                                  strokeWidth="1.6"
+                                  strokeLinecap="round"
+                                />
+                              </svg>
+                            </button>
+
+                            <button
+                              type="button"
+                              className="table-action category-table__delete"
+                              aria-label={`Excluir ${category.name}`}
+                              onClick={() => handleDeleteCategory(category)}
+                              disabled={deletingCategoryId === category.id}
+                            >
+                              <svg viewBox="0 0 24 24" fill="none">
+                                <path
+                                  d="M6.5 7.5h11M9 7.5V6.2c0-.7.5-1.2 1.2-1.2h3.6c.7 0 1.2.5 1.2 1.2v1.3M8.2 10.2l.6 7.1c.1 1 .9 1.7 1.9 1.7h2.6c1 0 1.8-.8 1.9-1.7l.6-7.1"
+                                  stroke="currentColor"
+                                  strokeWidth="1.7"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                                <path
+                                  d="M10.5 11.2v5.2M13.5 11.2v5.2"
+                                  stroke="currentColor"
+                                  strokeWidth="1.7"
+                                  strokeLinecap="round"
+                                />
+                              </svg>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  : null}
               </tbody>
             </table>
           </div>
 
           <div className="inventory-table-footer">
             <p>
-              Exibindo {filteredCategories.length} de {categories.length} categorias
+              Exibindo {filteredCategories.length} de {sortedCategories.length} categorias
             </p>
           </div>
         </section>
       </section>
 
       {isModalOpen ? (
-        <div
-          className="instrument-modal-backdrop"
-          role="presentation"
-          onClick={closeModal}
-        >
+        <div className="instrument-modal-backdrop" role="presentation" onClick={() => !isSubmitting && closeModal()}>
           <section
             className="instrument-modal category-modal"
             role="dialog"
@@ -253,6 +375,7 @@ export function CategoriesContent() {
                 className="instrument-modal__close"
                 aria-label="Fechar modal"
                 onClick={closeModal}
+                disabled={isSubmitting}
               >
                 <svg viewBox="0 0 24 24" fill="none">
                   <path
@@ -276,7 +399,9 @@ export function CategoriesContent() {
                       value={categoryName}
                       onChange={(event) => {
                         setCategoryName(event.target.value);
-                        setValidationError("");
+                        if (validationError) {
+                          setValidationError("");
+                        }
                       }}
                       className={validationError ? "is-invalid" : undefined}
                       autoFocus
@@ -288,11 +413,11 @@ export function CategoriesContent() {
                 </div>
 
                 <footer className="instrument-modal__footer">
-                  <button type="button" className="instrument-modal__cancel" onClick={closeModal}>
+                  <button type="button" className="instrument-modal__cancel" onClick={closeModal} disabled={isSubmitting}>
                     Cancelar
                   </button>
-                  <button type="submit" className="instrument-modal__submit">
-                    {modalMode === "edit" ? "Salvar alteracoes" : "Salvar categoria"}
+                  <button type="submit" className="instrument-modal__submit" disabled={isSubmitting}>
+                    {isSubmitting ? "Salvando..." : modalMode === "edit" ? "Salvar alteracao" : "Salvar categoria"}
                   </button>
                 </footer>
               </div>

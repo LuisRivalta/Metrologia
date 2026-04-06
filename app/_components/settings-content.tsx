@@ -25,6 +25,9 @@ export function SettingsContent() {
   const [validationError, setValidationError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deletingMeasurementId, setDeletingMeasurementId] = useState<string | null>(null);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
+  const [pendingDeleteMeasurement, setPendingDeleteMeasurement] = useState<MeasurementItem | null>(null);
 
   const sortedMeasurements = useMemo(() => {
     return [...measurements].sort((first, second) =>
@@ -50,6 +53,21 @@ export function SettingsContent() {
       document.removeEventListener("keydown", handleEscape);
     };
   }, [isModalOpen, isSubmitting]);
+
+  useEffect(() => {
+    if (!isDeleteConfirmOpen) return;
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape" && !deletingMeasurementId) {
+        closeDeleteConfirm();
+      }
+    }
+
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [isDeleteConfirmOpen, deletingMeasurementId]);
 
   async function loadMeasurements() {
     setIsLoadingMeasurements(true);
@@ -88,6 +106,18 @@ export function SettingsContent() {
     setMeasureDescription("");
     setValidationError("");
     setIsSubmitting(false);
+  }
+
+  function openDeleteConfirm(measurement: MeasurementItem) {
+    setPendingDeleteMeasurement(measurement);
+    setDeleteConfirmationText("");
+    setIsDeleteConfirmOpen(true);
+  }
+
+  function closeDeleteConfirm() {
+    setPendingDeleteMeasurement(null);
+    setDeleteConfirmationText("");
+    setIsDeleteConfirmOpen(false);
   }
 
   function openCreateModal() {
@@ -161,7 +191,13 @@ export function SettingsContent() {
     }
   }
 
-  async function handleDeleteMeasurement(measurementId: string) {
+  async function handleDeleteMeasurement() {
+    const measurementId = pendingDeleteMeasurement?.id;
+
+    if (!measurementId || deleteConfirmationText.trim() !== "CONFIRMAR") {
+      return;
+    }
+
     setDeletingMeasurementId(measurementId);
 
     try {
@@ -188,6 +224,7 @@ export function SettingsContent() {
         closeModal();
       }
 
+      closeDeleteConfirm();
       setDeletingMeasurementId(null);
     } catch {
       setLoadError("Nao foi possivel excluir a medida.");
@@ -228,7 +265,7 @@ export function SettingsContent() {
           <div className="settings-card__header settings-card__header--split">
             <div>
               <h2>Medidas cadastradas</h2>
-              <p>Lista real vinda do banco, com formatacao amigavel para o sistema.</p>
+              <p>A interface mostra simbolos amigaveis, mesmo com o banco usando um formato tecnico.</p>
             </div>
             <span className="category-card__count">{sortedMeasurements.length} medidas</span>
           </div>
@@ -299,7 +336,7 @@ export function SettingsContent() {
                               type="button"
                               className="settings-measure-list__action settings-measure-list__action--delete"
                               aria-label={`Excluir medida ${measurement.name}`}
-                              onClick={() => handleDeleteMeasurement(measurement.id)}
+                              onClick={() => openDeleteConfirm(measurement)}
                               disabled={deletingMeasurementId === measurement.id}
                             >
                               <svg viewBox="0 0 24 24" fill="none">
@@ -382,6 +419,10 @@ export function SettingsContent() {
                       placeholder="Ex: kgf/cm²"
                       className={validationError ? "is-invalid" : ""}
                     />
+                    <small className="instrument-modal__field-help">
+                      O sistema converte automaticamente para o formato interno do banco, como{" "}
+                      <code>kgf_cm2</code>, <code>grau</code> ou <code>celsius</code>.
+                    </small>
                     {validationError ? <small className="instrument-modal__field-error">{validationError}</small> : null}
                   </label>
 
@@ -406,6 +447,50 @@ export function SettingsContent() {
                 </button>
               </footer>
             </form>
+          </section>
+        </div>
+      ) : null}
+
+      {isDeleteConfirmOpen && pendingDeleteMeasurement ? (
+        <div
+          className="instrument-delete-confirm-backdrop"
+          role="presentation"
+          onClick={deletingMeasurementId ? undefined : closeDeleteConfirm}
+        >
+          <section
+            className="instrument-delete-confirm"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="settings-delete-confirm-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h3 id="settings-delete-confirm-title">Confirmar exclusao</h3>
+            <p>
+              Para apagar a medida <strong>{pendingDeleteMeasurement.name}</strong>, digite{" "}
+              <strong>CONFIRMAR</strong> no campo abaixo.
+            </p>
+
+            <input
+              type="text"
+              value={deleteConfirmationText}
+              onChange={(event) => setDeleteConfirmationText(event.target.value)}
+              placeholder="Digite CONFIRMAR"
+              disabled={Boolean(deletingMeasurementId)}
+            />
+
+            <div className="instrument-delete-confirm__actions">
+              <button type="button" onClick={closeDeleteConfirm} disabled={Boolean(deletingMeasurementId)}>
+                Voltar
+              </button>
+              <button
+                type="button"
+                className="is-danger"
+                onClick={handleDeleteMeasurement}
+                disabled={deleteConfirmationText.trim() !== "CONFIRMAR" || Boolean(deletingMeasurementId)}
+              >
+                {deletingMeasurementId ? "Excluindo..." : "Excluir Medida"}
+              </button>
+            </div>
           </section>
         </div>
       ) : null}

@@ -62,7 +62,7 @@ export function ManagementShell({ activeItem, children }: ManagementShellProps) 
           </div>
 
           <div>
-            <h1>Controle de Estoque</h1>
+            <h1>Metrologia PRO</h1>
             <p>Conformidade ISO-9001</p>
           </div>
         </div>
@@ -106,9 +106,6 @@ export function ManagementShell({ activeItem, children }: ManagementShellProps) 
 
         {children}
 
-        <footer className="inventory-footer">
-          <span>(c) 2024 Metrologia Pro. Precisão pronta para auditoria.</span>
-        </footer>
       </section>
     </main>
   );

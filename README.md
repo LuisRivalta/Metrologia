@@ -1,154 +1,102 @@
 # Metrologia PRO
 
-Sistema web para gestão de instrumentos, medidas, categorias, prazos de calibração e conformidade metrológica.
+Sistema web para controle de instrumentos, categorias, unidades de medida, prazos de calibracao e rotinas metrologicas internas.
 
-## Visão Geral
-
-O projeto foi criado para substituir controles manuais em planilhas por uma aplicação web centralizada, com foco em:
-
-- padronização de cadastros;
-- rastreabilidade operacional;
-- gestão de vencimentos de calibração;
-- preparação para auditorias e evolução futura de certificados e histórico técnico.
+## Visao Geral
+- Aplicacao construída com Next.js App Router e TypeScript.
+- Persistencia principal em Supabase, usando o schema `calibracao`.
+- Interface focada em operacao interna, cadastro tecnico e acompanhamento de conformidade.
 
 ## Stack
-
-- Next.js 15
-- React 19
+- Next.js
+- React
 - TypeScript
 - Supabase
-- CSS global em `app/globals.css`
+- CSS global
+- CSS Modules
+- Three.js
+- Motion
 
 ## Estrutura Principal
-
 - `app/`
-  - páginas, rotas e APIs do App Router
+  - Paginas da aplicacao
+  - Rotas API
+  - Componentes visuais
 - `app/_components/`
-  - componentes visuais e shells compartilhados
-- `app/api/`
-  - integração server-side com o banco
+  - Componentes reutilizaveis como `LightPillar`, `ShinyText` e `BorderGlow`
 - `lib/`
-  - mapeamentos, serialização, regras de negócio e clientes Supabase
+  - Serializacao, mapeamento e metricas
 - `public/`
-  - assets estáticos
+  - Assets estaticos
 
-## Rotas Atuais
+## Funcionalidades Implementadas
+- CRUD real de unidades de medida
+- CRUD real de categorias
+- CRUD real de instrumentos
+- Dashboard com dados reais do projeto
+- Detalhe individual por instrumento
+- Campos padrao por categoria
+- Campos extras configuraveis por instrumento
+- Confirmacoes de exclusao em fluxos sensiveis
+- Acessibilidade basica de fonte em configuracoes
+- Tela de login redesenhada com:
+  - fundo `LightPillar`
+  - titulo com `ShinyText`
+  - card com `BorderGlow`
+  - validacao visual com shake e mensagem inline
 
+## Principais Rotas
 - `/login`
 - `/dashboard`
 - `/instrumentos`
 - `/instrumentos/[id]`
-- `/categorias`
 - `/configuracoes`
 - `/configuracoes/medidas`
 
-## APIs Internas
-
+## Rotas API
 - `/api/medidas`
 - `/api/categorias`
 - `/api/instrumentos`
 - `/api/instrumentos/metadata`
 - `/api/centro-custo`
 
-## Integrações
+## Banco de Dados
+Schema principal:
+- `calibracao`
 
-- Supabase Auth
-- Supabase Database
-- Tabelas já integradas:
-  - `calibracao.unidadas_medidas`
-  - `calibracao.categorias_instrumentos`
-  - `calibracao.instrumentos`
-  - `calibracao.categoria_campos_medicao`
-  - `calibracao.instrumento_campos_medicao`
-  - `datasul.centro_custo`
-
-## Funcionalidades Implementadas
-
-- layout principal com sidebar e alternância de tema;
-- tela de login com layout visual dedicado;
-- dashboard com dados reais de instrumentos e categorias;
-- CRUD de medidas com integração real ao Supabase;
-- CRUD de categorias com integração real ao Supabase;
-- CRUD de instrumentos com integração real ao schema `calibracao`;
-- página individual de detalhe por instrumento;
-- modal de instrumento com campos padrão por categoria;
-- criação de nova categoria dentro do modal de instrumento;
-- consulta de centro de custo por API interna;
-- controle de acessibilidade para tamanho de fonte.
-
-## Status Atual
-
-- `medidas`
-  - integrado a dados reais;
-- `categorias`
-  - integrado a dados reais;
+Tabelas relevantes:
+- `categorias_instrumentos`
+- `unidadas_medidas`
 - `instrumentos`
-  - integrado a dados reais, com detalhe individual e campos de medição;
-- `dashboard`
-  - integrado a dados reais de instrumentos e categorias;
-- `calibrações e resultados`
-  - tabelas expostas no schema, mas ainda não ligadas à interface principal.
+- `categoria_campos_medicao`
+- `instrumento_campos_medicao`
+- `calibracoes`
+- `calibracao_resultados`
 
-## Variáveis de Ambiente
-
-O projeto usa as seguintes variáveis em `.env`:
-
+## Variaveis de Ambiente
+Esperadas no projeto:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 
 ## Como Rodar
-
-### Pré-requisitos
-
-- Node.js
-- npm
-
-### Instalação
-
 ```bash
 npm install
-```
-
-### Ambiente
-
-Configure o arquivo `.env` com as credenciais do Supabase usadas pelo projeto.
-
-### Desenvolvimento
-
-```bash
 npm run dev
 ```
 
-### Build
-
+Aplicacao local:
 ```bash
-npm run build
+http://localhost:3000
 ```
 
-### Produção local
+## Status Atual
+- Base principal ligada ao schema `calibracao`
+- Login em refinamento visual
+- Dashboard funcional com foco em metrologia
+- Instrumentos, categorias e medidas operando com persistencia real
 
-```bash
-npm run start
-```
-
-## Scripts
-
-- `npm run dev`
-- `npm run build`
-- `npm run start`
-- `npm run lint`
-
-## Documentação do Projeto
-
+## Documentacao
 - [CONTEXT.md](/c:/Metrologia/CONTEXT.md)
 - [LOGS.md](/c:/Metrologia/LOGS.md)
 - [PRD_Metrologia.md](/c:/Metrologia/PRD_Metrologia.md)
-
-## Observações
-
-- O projeto usa múltiplos schemas no Supabase e as consultas precisam respeitar o schema correto.
-- As regras de serialização e exibição de medidas ficam centralizadas em `lib/measurements.ts`.
-- As regras de categorias ficam centralizadas em `lib/categories.ts`.
-- As regras de instrumentos, prazo e apresentação ficam em `lib/instruments.ts`.
-- A consolidação dos números do dashboard fica em `lib/dashboard-metrics.ts`.

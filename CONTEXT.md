@@ -1,85 +1,106 @@
-# 📌 Nome do Projeto
+# Nome do Projeto
 - Nome: Metrologia PRO
-- Descrição curta: Sistema web para gestão de instrumentos, medidas, categorias, prazos de calibração e conformidade metrológica.
+- Descricao curta: Sistema web para controle de instrumentos, categorias, unidades de medida, prazos de calibracao e operacao metrologica interna.
 
-# 🎯 Objetivo
-- Qual problema resolve: substitui controles manuais em planilhas por uma aplicação web centralizada, auditável e orientada a prazo de calibração.
-- Público-alvo: time de metrologia, qualidade, engenharia e áreas operacionais que consultam instrumentos e conformidade.
-- Benefícios principais: centralização dos cadastros, padronização das categorias e medidas, rastreabilidade operacional e base pronta para auditoria.
+# Objetivo
+- Resolver a organizacao e o acompanhamento de instrumentos de medicao e calibracao em um unico ambiente.
+- Atender times internos responsaveis por metrologia, controle tecnico, qualidade e auditoria.
+- Entregar rastreabilidade operacional, padronizacao cadastral e visualizacao rapida do status dos instrumentos.
 
-# 🧠 Regras de Negócio
-- A `tag` do instrumento é manual, obrigatória e deve ser única.
-- Cada categoria pode ter campos de medição padrão.
-- Ao selecionar uma categoria no modal de instrumento, os campos padrão da categoria são carregados automaticamente.
-- O usuário pode criar uma nova categoria dentro do modal de instrumento e já definir seus campos padrão no mesmo fluxo.
-- O instrumento pode receber campos extras sem alterar o padrão global da categoria.
-- Medidas são persistidas em formato canônico no banco e exibidas em formato amigável na interface.
-- O dashboard considera `perto de vencer` como item ainda dentro do prazo no indicador principal de conformidade.
-- Os alertas do dashboard priorizam instrumentos vencidos mais antigos e, depois, os instrumentos mais próximos do vencimento.
-- Ao excluir um instrumento, os campos específicos desse instrumento também devem ser removidos.
-- A consulta de centro de custo é somente leitura e depende do código informado.
+# Regras de Negocio
+- Categorias e unidades de medida sao mantidas no schema `calibracao`.
+- O nome salvo no banco pode seguir formato tecnico/canonico, enquanto a interface exibe uma versao amigavel ao usuario.
+- Cada categoria pode possuir campos de medicao padrao.
+- Ao selecionar uma categoria no cadastro de instrumento, os campos padrao devem ser carregados automaticamente.
+- O usuario pode adicionar campos extras manualmente em um instrumento, sem depender apenas do padrao da categoria.
+- A `tag` do instrumento e digitada manualmente pelo usuario.
+- O dashboard deve priorizar informacoes pertinentes a metrologia: total de instrumentos, total de categorias, prazos e distribuicao por status.
+- Em regras de prazo, itens "perto de vencer" ainda contam como "no prazo" para o indice agregado.
+- Exclusoes sensiveis devem passar por confirmacao explicita na interface.
+- Alteracoes de banco so devem acontecer quando solicitadas explicitamente e apenas no schema `calibracao`.
 
-# 🏗️ Arquitetura
-- Tecnologias usadas: Next.js 15, React 19, TypeScript, Supabase e CSS global em `app/globals.css`.
-- Estrutura de pastas resumida: `app/`, `app/_components/`, `app/api/`, `lib/`, `public/`.
-- Rotas principais: `/login`, `/dashboard`, `/instrumentos`, `/instrumentos/[id]`, `/categorias`, `/configuracoes`, `/configuracoes/medidas`.
-- APIs internas atuais: `/api/medidas`, `/api/categorias`, `/api/instrumentos`, `/api/instrumentos/metadata`, `/api/centro-custo`.
-- Como os módulos se comunicam:
-- As páginas renderizam componentes de `app/_components`.
-- Componentes cliente usam `fetch` para as rotas de `app/api`.
-- As rotas usam `supabaseAdmin` para leitura e escrita server-side.
-- O login usa `supabaseBrowser.auth`.
-- O dashboard usa `lib/dashboard-metrics.ts` para consolidar dados reais do schema `calibracao`.
-- A lógica de serialização, mapeamento e transformação fica concentrada em `lib/`.
+# Arquitetura
+- Tecnologias usadas:
+  - Next.js App Router
+  - React
+  - TypeScript
+  - Supabase
+  - CSS global + CSS Modules
+  - Three.js
+  - Motion
+- Estrutura de pastas:
+  - `app/`: paginas, rotas API e componentes de interface
+  - `app/_components/`: componentes reutilizaveis do sistema
+  - `app/api/`: rotas server-side para integracao com Supabase
+  - `lib/`: mapeadores, serializadores, metricas e clientes auxiliares
+  - `public/`: assets estaticos
+- Comunicacao entre modulos:
+  - As telas usam componentes React na camada de UI.
+  - As rotas em `app/api/` centralizam operacoes server-side no Supabase.
+  - Os arquivos em `lib/` padronizam transformacoes, serializacao e leitura de dados.
+  - O login usa Supabase Auth no cliente e componentes visuais dedicados para a experiencia da tela inicial.
 
-# 🔌 Integrações
-- APIs utilizadas: rotas internas do Next.js para medidas, categorias, instrumentos, metadados de instrumentos e centro de custo.
-- Serviços externos: Supabase Auth e Supabase Database.
-- Schemas consultados atualmente: `calibracao` e `datasul`.
-- Integrações em uso:
-- `calibracao.unidadas_medidas`
-- `calibracao.categorias_instrumentos`
-- `calibracao.instrumentos`
-- `calibracao.categoria_campos_medicao`
-- `calibracao.instrumento_campos_medicao`
-- `datasul.centro_custo`
+# Integracoes
+- APIs utilizadas:
+  - Supabase Auth
+  - Supabase PostgREST
+- Servicos externos:
+  - Banco Supabase
+- Integracoes visuais locais:
+  - `LightPillar` para efeito de fundo na tela de login
+  - `ShinyText` para destaque visual do titulo principal
+  - `BorderGlow` para glow interativo no card de login
 
-# 🗄️ Banco de Dados
-- Descrição geral: o projeto usa Supabase com múltiplos schemas; o módulo principal grava dados no schema `calibracao`.
-- Principais tabelas já integradas:
-- `calibracao.unidadas_medidas`: cadastro de unidades e tipos de medida.
-- `calibracao.categorias_instrumentos`: categorias técnicas de instrumentos com `nome` e `slug`.
-- `calibracao.instrumentos`: cadastro principal de instrumentos.
-- `calibracao.categoria_campos_medicao`: campos padrão por categoria.
-- `calibracao.instrumento_campos_medicao`: campos efetivos por instrumento.
-- `datasul.centro_custo`: consulta de centro de custo por código.
-- Tabelas já expostas, mas ainda não ligadas ao fluxo principal da interface: `calibracao.calibracoes` e `calibracao.calibracao_resultados`.
+# Banco de Dados
+- Descricao geral:
+  - O projeto trabalha principalmente com o schema `calibracao`.
+  - A aplicacao consome tabelas reais para categorias, instrumentos, calibracoes e campos de medicao.
+- Principais tabelas:
+  - `calibracao.categorias_instrumentos`
+  - `calibracao.unidadas_medidas`
+  - `calibracao.instrumentos`
+  - `calibracao.categoria_campos_medicao`
+  - `calibracao.instrumento_campos_medicao`
+  - `calibracao.calibracoes`
+  - `calibracao.calibracao_resultados`
 
-# ⚙️ Padrões e Convenções
-- Nomeação: `slug` para identificadores técnicos, `nome` para exibição e `tag` como identificador operacional digitado pelo usuário.
-- Organização de código: componentes visuais em `app/_components`, regras de negócio e mapeamentos em `lib`, integração com banco em `app/api`.
-- Padrão de acesso ao banco: consultas e mutações server-side via `supabaseAdmin.schema(...)`.
-- Padrão visual: layout compartilhado via `ManagementShell`, tema claro/escuro e estilos centralizados em `app/globals.css`.
-- Boas práticas adotadas: validação de payloads, normalização antes de persistir, tipagem dos retornos, tratamento explícito de erros e rotas dinâmicas com `force-dynamic` quando necessário.
+# Padroes e Convencoes
+- Nomeacao:
+  - Componentes React em PascalCase.
+  - Helpers e utilitarios em arquivos de `lib/` com foco funcional.
+  - Campos tecnicos do banco seguem o schema existente do projeto.
+- Organizacao de codigo:
+  - Componentes visuais reutilizaveis ficam em `app/_components`.
+  - Regras de transformacao de dados ficam em `lib/`.
+  - Acesso a banco server-side passa por rotas API ou funcoes server-side controladas.
+- Boas praticas:
+  - Preservar o formato canonico no banco quando necessario.
+  - Priorizar exibicao amigavel na interface.
+  - Evitar mocks quando ja existir tabela real disponivel.
+  - Manter responsividade e suporte ao tema escuro nas telas principais.
+  - Em fluxos de login, exibir feedback de erro direto e objetivo para o usuario.
 
-# 🚧 Status Atual
-- O que já foi feito:
-- CRUD real de medidas integrado ao Supabase.
-- CRUD real de categorias integrado ao Supabase.
-- CRUD real de instrumentos integrado ao schema `calibracao`.
-- Página individual de detalhe por instrumento em `/instrumentos/[id]`.
-- Modal de instrumento com carregamento de campos padrão por categoria.
-- Fluxo de criação de nova categoria dentro do modal de instrumento.
-- Dashboard conectado a dados reais de instrumentos e categorias.
-- Tela de login redesenhada.
-- Ajustes de acessibilidade em configurações para tamanho de fonte.
-- Confirmações de exclusão aplicadas onde o fluxo exige maior segurança.
-- O que está em andamento:
-- Refinos visuais de dashboard, login e detalhe de instrumento.
-- Evolução do histórico técnico do instrumento.
-- Consolidação da documentação funcional e técnica.
-- Próximos passos:
-- Integrar histórico de calibrações e resultados na página individual do instrumento.
-- Implementar fluxo de certificados previsto no PRD.
-- Evoluir alertas automáticos de vencimento.
-- Adicionar trilha de auditoria e relatórios operacionais.
+# Status Atual
+- Ja foi feito:
+  - CRUD real de unidades de medida no schema `calibracao`
+  - CRUD real de categorias em `calibracao.categorias_instrumentos`
+  - CRUD real de instrumentos em `calibracao.instrumentos`
+  - Pagina individual de detalhe por instrumento
+  - Dashboard com metricas reais de instrumentos, categorias e status de prazo
+  - Campos padrao por categoria e campos extras por instrumento
+  - Melhorias visuais e de acessibilidade em configuracoes
+  - Redesign da tela de login com layout full-screen
+  - Integracao do fundo `LightPillar` no login
+  - Integracao do `ShinyText` no titulo principal do hero
+  - Integracao do `BorderGlow` no card de login
+  - Validacao visual no login com shake do botao e mensagem inline de erro
+  - Revisao ortografica dos principais textos da tela de login
+- Em andamento:
+  - Refinos visuais da tela de login
+  - Ajustes finos de efeito visual no hero e no brilho do titulo
+  - Evolucao da experiencia detalhada por instrumento
+- Proximos passos:
+  - Expandir historico detalhado de calibracoes por instrumento
+  - Evoluir o dashboard com novas leituras reais da operacao metrologica
+  - Padronizar ainda mais a documentacao tecnica e funcional
+  - Continuar a limpeza visual e consistencia do fluxo de autenticacao

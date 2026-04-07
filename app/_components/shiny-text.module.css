@@ -1,0 +1,33 @@
+.shinyText {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  isolation: isolate;
+  will-change: transform;
+  overflow: visible;
+  vertical-align: top;
+}
+
+.baseText,
+.shineLayer {
+  font: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  text-align: inherit;
+  white-space: inherit;
+}
+
+.baseText {
+  display: block;
+}
+
+.shineLayer {
+  position: absolute;
+  inset: 0;
+  display: block;
+  pointer-events: none;
+  mix-blend-mode: normal;
+  filter:
+    drop-shadow(0 0 6px rgba(43, 184, 255, 0.2))
+    drop-shadow(0 0 12px rgba(43, 184, 255, 0.14));
+}

@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { InstrumentDetailItem } from "@/lib/instruments";
+import { PageTransitionLink } from "./page-transition-link";
 
 type InstrumentDetailContentProps = {
   instrumentId: number;
@@ -92,7 +92,7 @@ export function InstrumentDetailContent({
   return (
     <section className="inventory-content instrument-detail-content">
       <div className="instrument-detail-nav">
-        <Link href="/instrumentos" className="instrument-detail-back">
+        <PageTransitionLink href="/instrumentos" className="instrument-detail-back">
           <span aria-hidden="true" className="instrument-detail-back__icon">
             <svg viewBox="0 0 24 24" fill="none">
               <path
@@ -105,7 +105,14 @@ export function InstrumentDetailContent({
             </svg>
           </span>
           Voltar para instrumentos
-        </Link>
+        </PageTransitionLink>
+
+        <PageTransitionLink
+          href={`/instrumentos/${instrumentId}/calibracoes`}
+          className="instrument-detail-link-chip"
+        >
+          Log de calibrações
+        </PageTransitionLink>
       </div>
 
       {isLoading ? (

@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
+import { PageTransitionLink } from "./page-transition-link";
 
 type FontScale = "sm" | "md" | "lg";
 
@@ -64,7 +64,11 @@ export function SettingsHomeContent() {
 
         <div className="settings-home-grid">
           {settingsShortcuts.map((shortcut) => (
-            <Link key={shortcut.href} href={shortcut.href} className="settings-shortcut-card">
+            <PageTransitionLink
+              key={shortcut.href}
+              href={shortcut.href}
+              className="settings-shortcut-card"
+            >
               <div className="settings-shortcut-card__icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none">
                   <path
@@ -83,7 +87,7 @@ export function SettingsHomeContent() {
               </div>
 
               <span className="settings-shortcut-card__cta">Abrir cadastro</span>
-            </Link>
+            </PageTransitionLink>
           ))}
 
           <article className="settings-shortcut-card settings-accessibility-card">

@@ -15,13 +15,16 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [validationMessage, setValidationMessage] = useState("");
   const [isLoginDenied, setIsLoginDenied] = useState(false);
   const shakeTimeoutRef = useRef<number | null>(null);
+  const redirectTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     let isMounted = true;
+    void router.prefetch("/dashboard");
 
     async function checkSession() {
       const {
@@ -29,7 +32,7 @@ export default function LoginPage() {
       } = await supabaseBrowser.auth.getSession();
 
       if (session && isMounted) {
-        router.replace("/instrumentos");
+        router.replace("/dashboard");
       }
     }
 
@@ -45,8 +48,31 @@ export default function LoginPage() {
       if (shakeTimeoutRef.current) {
         window.clearTimeout(shakeTimeoutRef.current);
       }
+
+      if (redirectTimeoutRef.current) {
+        window.clearTimeout(redirectTimeoutRef.current);
+      }
     };
   }, []);
+
+  function redirectToDashboard() {
+    if (redirectTimeoutRef.current) {
+      window.clearTimeout(redirectTimeoutRef.current);
+    }
+
+    const navigate = () => {
+      router.replace("/dashboard");
+      router.refresh();
+    };
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      navigate();
+      return;
+    }
+
+    setIsRedirecting(true);
+    redirectTimeoutRef.current = window.setTimeout(navigate, 320);
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -70,6 +96,7 @@ export default function LoginPage() {
     }
 
     setIsSubmitting(true);
+    setIsRedirecting(false);
 
     const { error } = await supabaseBrowser.auth.signInWithPassword({
       email,
@@ -82,12 +109,12 @@ export default function LoginPage() {
       return;
     }
 
-    router.replace("/instrumentos");
-    router.refresh();
+    redirectToDashboard();
   }
 
   return (
-    <main className="login-screen">
+    <main className={`login-screen${isRedirecting ? " is-transitioning" : ""}`}>
+      <div className="login-screen__transition-wave" aria-hidden="true" />
       <section className="login-layout">
         <div className="login-layout__backdrop" aria-hidden="true">
           <LightPillar
@@ -173,6 +200,7 @@ export default function LoginPage() {
                       placeholder="usuario@empresa.com.br"
                       autoComplete="email"
                       value={email}
+                      disabled={isSubmitting || isRedirecting}
                       onChange={(event) => {
                         setEmail(event.target.value);
                         setValidationMessage("");
@@ -215,6 +243,7 @@ export default function LoginPage() {
                       placeholder="********"
                       autoComplete="current-password"
                       value={password}
+                      disabled={isSubmitting || isRedirecting}
                       onChange={(event) => {
                         setPassword(event.target.value);
                         setValidationMessage("");
@@ -225,6 +254,7 @@ export default function LoginPage() {
                       type="button"
                       className="ghost-icon"
                       aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                      disabled={isSubmitting || isRedirecting}
                       onClick={() => setShowPassword((current) => !current)}
                     >
                       <svg viewBox="0 0 24 24" fill="none">
@@ -243,7 +273,7 @@ export default function LoginPage() {
 
                 <div className="login-form__row">
                   <label className="checkbox">
-                    <input type="checkbox" defaultChecked />
+                    <input type="checkbox" defaultChecked disabled={isSubmitting || isRedirecting} />
                     <span>Lembrar neste dispositivo</span>
                   </label>
                 </div>
@@ -254,7 +284,7 @@ export default function LoginPage() {
                   <button
                     type="submit"
                     className={`primary-button${isLoginDenied ? " is-shaking" : ""}`}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isRedirecting}
                   >
                     <span aria-hidden="true">
                       <svg viewBox="0 0 24 24" fill="none">
@@ -274,7 +304,11 @@ export default function LoginPage() {
                         />
                       </svg>
                     </span>
-                    {isSubmitting ? "Entrando..." : "Entrar no sistema"}
+                    {isRedirecting
+                      ? "Abrindo dashboard..."
+                      : isSubmitting
+                        ? "Entrando..."
+                        : "Entrar no sistema"}
                   </button>
 
                   {validationMessage ? (

@@ -1,6 +1,7 @@
 import Image from "next/image";
-import Link from "next/link";
 import type { ReactNode } from "react";
+import { PageTransitionLink } from "./page-transition-link";
+import { PageTransitionManager } from "./page-transition-manager";
 import { SidebarUserBar } from "./sidebar-user-bar";
 import { ThemeToggle } from "./theme-toggle";
 
@@ -47,7 +48,8 @@ const sidebarItems: SidebarItem[] = [
 
 export function ManagementShell({ activeItem, children }: ManagementShellProps) {
   return (
-    <main className="inventory-page">
+    <main className="inventory-page page-entry-shell">
+      <PageTransitionManager />
       <aside className="inventory-sidebar">
         <div className="sidebar-brand">
           <div className="sidebar-brand__mark" aria-hidden="true">
@@ -69,9 +71,10 @@ export function ManagementShell({ activeItem, children }: ManagementShellProps) 
 
         <nav className="sidebar-nav" aria-label="Menu principal">
           {sidebarItems.map((item) => (
-            <Link
+            <PageTransitionLink
               key={item.key}
               href={item.href}
+              disableTransition={item.key === activeItem}
               className={`sidebar-link${item.key === activeItem ? " is-active" : ""}`}
             >
               <span className="sidebar-link__icon" aria-hidden="true">
@@ -84,7 +87,7 @@ export function ManagementShell({ activeItem, children }: ManagementShellProps) 
                 />
               </span>
               <span>{item.label}</span>
-            </Link>
+            </PageTransitionLink>
           ))}
         </nav>
 

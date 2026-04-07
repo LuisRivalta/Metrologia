@@ -1,13 +1,13 @@
 "use client";
 
 import { type FormEvent, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import type { InstrumentDetailItem, InstrumentItem } from "@/lib/instruments";
 import type {
   MeasurementFieldItem,
   MeasurementFieldSource
 } from "@/lib/measurement-fields";
 import type { MeasurementItem } from "@/lib/measurements";
+import { PageTransitionLink } from "./page-transition-link";
 
 type InstrumentFormState = {
   tag: string;
@@ -547,7 +547,7 @@ export function InstrumentsContent() {
                   const { dateLabel, statusLabel } = getCalibrationDisplayParts(row.calibration);
                   return (
                     <tr key={row.id}>
-                      <td data-label="Tag"><Link href={`/instrumentos/${row.id}`} className="tag-pill tag-pill--link">{row.tag}</Link></td>
+                      <td data-label="Tag"><PageTransitionLink href={`/instrumentos/${row.id}`} className="tag-pill tag-pill--link">{row.tag}</PageTransitionLink></td>
                       <td data-label="Categoria">{row.category}</td>
                       <td data-label="Fabricante">{row.manufacturer}</td>
                       <td data-label="Prazo de calibração"><div className="calibration-cell"><span className={`calibration-cell__date calibration-cell__date--${row.tone}`}>{dateLabel}</span>{statusLabel ? <span className={`calibration-badge calibration-badge--${row.tone}`}>{statusLabel}</span> : null}</div></td>

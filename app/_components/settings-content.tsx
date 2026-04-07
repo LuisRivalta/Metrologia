@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 import type { MeasurementItem } from "@/lib/measurements";
+import { PageTransitionLink } from "./page-transition-link";
 
 type MeasurementModalMode = "create" | "edit";
 
@@ -236,7 +236,7 @@ export function SettingsContent() {
     <>
       <section className="inventory-content">
         <div className="settings-back-link-wrap">
-          <Link href="/configuracoes" className="settings-back-link">
+          <PageTransitionLink href="/configuracoes" className="settings-back-link">
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path
                 d="M15 6 9 12l6 6"
@@ -247,7 +247,7 @@ export function SettingsContent() {
               />
             </svg>
             Voltar para configuracoes
-          </Link>
+          </PageTransitionLink>
         </div>
 
         <div className="inventory-actions settings-measure-actions">

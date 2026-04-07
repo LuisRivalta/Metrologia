@@ -54,6 +54,26 @@ input {
   font: inherit;
 }
 
+.login-screen__transition-wave {
+  position: absolute;
+  inset: -18%;
+  z-index: 4;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    radial-gradient(circle at 18% 50%, rgba(122, 170, 255, 0.22) 0%, rgba(122, 170, 255, 0) 28%),
+    linear-gradient(
+      110deg,
+      rgba(4, 11, 33, 0) 0%,
+      rgba(8, 17, 42, 0.16) 36%,
+      rgba(143, 202, 255, 0.12) 52%,
+      rgba(4, 12, 34, 0.58) 70%,
+      rgba(4, 12, 34, 0.94) 100%
+    );
+  transform: translateX(-28%) skewX(-10deg);
+  filter: blur(10px);
+}
+
 .login-screen {
   position: relative;
   min-height: 100vh;
@@ -63,6 +83,40 @@ input {
   overflow: hidden;
   isolation: isolate;
   background: linear-gradient(135deg, #14378d 0%, #12357f 36%, #0d275f 68%, #091942 100%);
+}
+
+.login-screen.is-transitioning {
+  cursor: progress;
+}
+
+.login-screen.is-transitioning .login-layout {
+  pointer-events: none;
+}
+
+.login-screen.is-transitioning .login-screen__transition-wave {
+  animation: login-transition-wave 0.54s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.login-screen.is-transitioning .login-card-glow {
+  animation: login-card-exit 0.42s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.login-screen.is-transitioning .login-hero {
+  animation: login-hero-exit 0.46s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.login-screen.is-transitioning .login-layout__pillar,
+.login-screen.is-transitioning .login-layout__tint {
+  animation: login-backdrop-exit 0.58s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+html.page-is-transitioning,
+html.page-is-transitioning body {
+  cursor: progress;
+}
+
+html.page-is-transitioning .page-entry-shell {
+  pointer-events: none;
 }
 
 .login-layout {
@@ -409,6 +463,57 @@ input {
   }
   80% {
     transform: translateX(4px);
+  }
+}
+
+@keyframes login-transition-wave {
+  0% {
+    opacity: 0;
+    transform: translateX(-34%) skewX(-10deg);
+    filter: blur(18px);
+  }
+  35% {
+    opacity: 0.72;
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(24%) skewX(-10deg);
+    filter: blur(0);
+  }
+}
+
+@keyframes login-card-exit {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(-24px, 16px, 0) scale(0.96);
+    filter: blur(12px);
+  }
+}
+
+@keyframes login-hero-exit {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(40px, -10px, 0) scale(1.02);
+    filter: blur(14px);
+  }
+}
+
+@keyframes login-backdrop-exit {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.04) translateX(2%);
   }
 }
 
@@ -1458,6 +1563,22 @@ input {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .login-screen.is-transitioning .login-screen__transition-wave,
+  .login-screen.is-transitioning .login-card-glow,
+  .login-screen.is-transitioning .login-hero,
+  .login-screen.is-transitioning .login-layout__pillar,
+  .login-screen.is-transitioning .login-layout__tint,
+  html.page-is-transitioning .page-entry-shell .inventory-sidebar,
+  html.page-is-transitioning .page-entry-shell .inventory-topbar,
+  html.page-is-transitioning .page-entry-shell .inventory-content > *,
+  .page-entry-shell .inventory-sidebar,
+  .page-entry-shell .inventory-topbar,
+  .page-entry-shell .inventory-content > * {
+    animation: none;
+    transform: none;
+    filter: none;
+  }
+
   .inventory-table__row--sort-transition {
     animation: none;
   }
@@ -2311,6 +2432,150 @@ input {
   display: grid;
   gap: 18px;
   padding: clamp(14px, 1.4vw, 22px) clamp(16px, 2vw, 28px) 18px;
+}
+
+.page-entry-shell .inventory-sidebar {
+  transform-origin: left center;
+  animation: page-sidebar-enter 0.56s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.page-entry-shell .inventory-topbar {
+  animation: page-topbar-enter 0.56s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
+}
+
+.page-entry-shell .inventory-content > * {
+  will-change: transform, opacity, filter;
+  animation: page-section-enter 0.58s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.page-entry-shell .inventory-content > :nth-child(1) {
+  animation-delay: 0.12s;
+}
+
+.page-entry-shell .inventory-content > :nth-child(2) {
+  animation-delay: 0.22s;
+}
+
+.page-entry-shell .inventory-content > :nth-child(3) {
+  animation-delay: 0.32s;
+}
+
+.page-entry-shell .inventory-content > :nth-child(4) {
+  animation-delay: 0.4s;
+}
+
+.page-entry-shell .inventory-content > :nth-child(5) {
+  animation-delay: 0.48s;
+}
+
+html.page-is-transitioning .page-entry-shell .inventory-sidebar {
+  animation: page-sidebar-exit 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+html.page-is-transitioning .page-entry-shell .inventory-topbar {
+  animation: page-topbar-exit 0.18s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+html.page-is-transitioning .page-entry-shell .inventory-content > * {
+  animation: page-section-exit 0.18s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+html.page-is-transitioning .page-entry-shell .inventory-content > :nth-child(1) {
+  animation-delay: 0s;
+}
+
+html.page-is-transitioning .page-entry-shell .inventory-content > :nth-child(2) {
+  animation-delay: 0.03s;
+}
+
+html.page-is-transitioning .page-entry-shell .inventory-content > :nth-child(3) {
+  animation-delay: 0.06s;
+}
+
+html.page-is-transitioning .page-entry-shell .inventory-content > :nth-child(4) {
+  animation-delay: 0.09s;
+}
+
+html.page-is-transitioning .page-entry-shell .inventory-content > :nth-child(5) {
+  animation-delay: 0.12s;
+}
+
+@keyframes page-sidebar-enter {
+  0% {
+    opacity: 0;
+    transform: translateX(-26px) scale(0.985);
+    filter: blur(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes page-sidebar-exit {
+  0% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-18px) scale(0.985);
+    filter: blur(10px);
+  }
+}
+
+@keyframes page-topbar-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(-18px);
+    filter: blur(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes page-topbar-exit {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-14px);
+    filter: blur(8px);
+  }
+}
+
+@keyframes page-section-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.99);
+    filter: blur(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes page-section-exit {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.992);
+    filter: blur(10px);
+  }
 }
 
 .dashboard-hero {
@@ -3595,6 +3860,10 @@ input {
 
 .instrument-detail-nav {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
   margin-bottom: 0;
 }
 
@@ -3613,6 +3882,25 @@ input {
 
 .instrument-detail-back:hover {
   background: rgba(10, 40, 86, 0.12);
+}
+
+.instrument-detail-link-chip {
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(20, 79, 156, 0.1);
+  color: #144f9c;
+  font-size: 0.82rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.instrument-detail-link-chip:hover {
+  background: rgba(20, 79, 156, 0.16);
+  color: #0c3e83;
 }
 
 .instrument-detail-back__icon {
@@ -3865,6 +4153,203 @@ input {
   font-size: 0.94rem;
 }
 
+.instrument-calibration-content {
+  gap: 12px;
+}
+
+.instrument-calibration-card__header {
+  margin-bottom: 12px;
+}
+
+.instrument-calibration-card__heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.instrument-calibration-card__heading h3 {
+  margin: 0;
+  color: #0a214f;
+  font-size: clamp(1.18rem, 0.45vw + 1.1rem, 1.42rem);
+  line-height: 1.05;
+}
+
+.instrument-calibration-filters {
+  margin-bottom: 18px;
+  display: grid;
+  gap: 14px;
+}
+
+.instrument-calibration-filters__presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.instrument-calibration-filter-chip {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid rgba(16, 35, 78, 0.1);
+  border-radius: 999px;
+  background: #eef3ff;
+  color: #28416c;
+  font-size: 0.82rem;
+  font-weight: 800;
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+.instrument-calibration-filter-chip:hover {
+  background: #e4edff;
+  color: #0c3e83;
+}
+
+.instrument-calibration-filter-chip.is-active {
+  border-color: rgba(20, 79, 156, 0.18);
+  background: linear-gradient(180deg, #1b5fd2 0%, #103f8d 100%);
+  color: #ffffff;
+  box-shadow: 0 10px 22px rgba(20, 79, 156, 0.18);
+}
+
+.instrument-calibration-filters__custom {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.instrument-calibration-date-field {
+  display: grid;
+  gap: 6px;
+}
+
+.instrument-calibration-date-field span {
+  color: #627391;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.instrument-calibration-date-field input {
+  min-height: 40px;
+  min-width: 190px;
+  padding: 0 12px;
+  border: 1px solid rgba(16, 35, 78, 0.12);
+  border-radius: 12px;
+  background: #f8fbff;
+  color: #0d2149;
+  font: inherit;
+}
+
+.instrument-calibration-filter-clear {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid rgba(16, 35, 78, 0.1);
+  border-radius: 12px;
+  background: transparent;
+  color: #5f7191;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.instrument-calibration-filter-clear:hover {
+  background: rgba(20, 79, 156, 0.06);
+  color: #0c3e83;
+}
+
+.instrument-calibration-empty {
+  min-height: 96px;
+  display: grid;
+  align-items: center;
+}
+
+.instrument-calibration-list {
+  display: grid;
+  gap: 12px;
+}
+
+.instrument-calibration-entry {
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(16, 35, 78, 0.08);
+  background:
+    radial-gradient(circle at top right, rgba(20, 79, 156, 0.05), transparent 34%),
+    linear-gradient(180deg, rgba(243, 247, 255, 0.96) 0%, rgba(255, 255, 255, 0.98) 100%);
+  display: grid;
+  gap: 12px;
+}
+
+.instrument-calibration-entry__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.instrument-calibration-entry__title {
+  display: grid;
+  gap: 6px;
+}
+
+.instrument-calibration-entry__title strong {
+  color: #0d2149;
+  font-size: 1rem;
+}
+
+.instrument-calibration-entry__title p {
+  margin: 0;
+  color: #627391;
+  font-size: 0.86rem;
+}
+
+.instrument-calibration-entry__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.instrument-calibration-entry__meta {
+  min-height: 62px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  display: grid;
+  gap: 4px;
+  background: #eef3ff;
+}
+
+.instrument-calibration-entry__meta span {
+  color: #627391;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.instrument-calibration-entry__meta strong {
+  color: #0d2149;
+  font-size: 0.9rem;
+  line-height: 1.25;
+}
+
+.instrument-calibration-entry__notes {
+  margin: 0;
+  color: #5f7191;
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.instrument-calibration-entry__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
 @media (max-width: 1200px) {
   .dashboard-grid,
   .dashboard-lower-grid,
@@ -3900,8 +4385,39 @@ input {
     width: 100%;
   }
 
+  .instrument-calibration-entry__grid,
+  .instrument-detail-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .instrument-calibration-filters__custom {
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 640px) {
+  .instrument-calibration-filters__presets {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .instrument-calibration-entry__grid,
   .instrument-detail-fields {
     grid-template-columns: 1fr;
+  }
+
+  .instrument-calibration-date-field,
+  .instrument-calibration-date-field input,
+  .instrument-calibration-filter-clear {
+    width: 100%;
+  }
+
+  .instrument-calibration-entry__actions {
+    justify-content: stretch;
+  }
+
+  .instrument-calibration-entry__actions .instrument-detail-link-chip {
+    width: 100%;
   }
 }
 
@@ -5142,6 +5658,16 @@ html[data-theme="dark"] .instrument-detail-back:hover {
   color: #ffffff;
 }
 
+html[data-theme="dark"] .instrument-detail-link-chip {
+  background: rgba(74, 108, 170, 0.16);
+  color: #dce7fb;
+}
+
+html[data-theme="dark"] .instrument-detail-link-chip:hover {
+  background: rgba(74, 108, 170, 0.24);
+  color: #ffffff;
+}
+
 html[data-theme="dark"] .instrument-detail-hero__eyebrow {
   color: #8faad6;
 }
@@ -5184,6 +5710,70 @@ html[data-theme="dark"] .instrument-detail-field {
   background:
     radial-gradient(circle at top right, rgba(94, 142, 217, 0.14), transparent 36%),
     linear-gradient(180deg, rgba(18, 31, 52, 0.96) 0%, rgba(13, 24, 41, 0.98) 100%);
+}
+
+html[data-theme="dark"] .instrument-calibration-card__heading h3,
+html[data-theme="dark"] .instrument-calibration-entry__title strong,
+html[data-theme="dark"] .instrument-calibration-entry__meta strong {
+  color: #eef5ff;
+}
+
+html[data-theme="dark"] .instrument-calibration-entry__title p,
+html[data-theme="dark"] .instrument-calibration-entry__notes {
+  color: #96abd1;
+}
+
+html[data-theme="dark"] .instrument-calibration-filter-chip {
+  border-color: rgba(129, 151, 191, 0.12);
+  background: #121f34;
+  color: #dce7fb;
+}
+
+html[data-theme="dark"] .instrument-calibration-filter-chip:hover {
+  background: #182945;
+  color: #ffffff;
+}
+
+html[data-theme="dark"] .instrument-calibration-filter-chip.is-active {
+  border-color: rgba(74, 108, 170, 0.28);
+  background: linear-gradient(180deg, #2f73ea 0%, #1c4d9f 100%);
+  color: #ffffff;
+  box-shadow: 0 10px 22px rgba(41, 108, 224, 0.24);
+}
+
+html[data-theme="dark"] .instrument-calibration-date-field span {
+  color: #a8c3f2;
+}
+
+html[data-theme="dark"] .instrument-calibration-date-field input {
+  border-color: rgba(129, 151, 191, 0.12);
+  background: #121f34;
+  color: #eef5ff;
+}
+
+html[data-theme="dark"] .instrument-calibration-filter-clear {
+  border-color: rgba(129, 151, 191, 0.12);
+  color: #96abd1;
+}
+
+html[data-theme="dark"] .instrument-calibration-filter-clear:hover {
+  background: rgba(74, 108, 170, 0.16);
+  color: #ffffff;
+}
+
+html[data-theme="dark"] .instrument-calibration-entry {
+  border-color: rgba(129, 151, 191, 0.12);
+  background:
+    radial-gradient(circle at top right, rgba(94, 142, 217, 0.14), transparent 36%),
+    linear-gradient(180deg, rgba(18, 31, 52, 0.96) 0%, rgba(13, 24, 41, 0.98) 100%);
+}
+
+html[data-theme="dark"] .instrument-calibration-entry__meta {
+  background: #121f34;
+}
+
+html[data-theme="dark"] .instrument-calibration-entry__meta span {
+  color: #a8c3f2;
 }
 
 html[data-theme="dark"] .instrument-detail-field__badge--category {

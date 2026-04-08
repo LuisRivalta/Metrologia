@@ -113,22 +113,3 @@ export function ManagementShell({ activeItem, children }: ManagementShellProps) 
     </main>
   );
 }
-
-export function PlaceholderSection({
-  title,
-  description
-}: {
-  title: string;
-  description: string;
-}) {
-  return (
-    <section className="inventory-content">
-      <section className="inventory-table-card placeholder-card">
-        <div className="placeholder-card__body">
-          <h2>{title}</h2>
-          <p>{description}</p>
-        </div>
-      </section>
-    </section>
-  );
-}

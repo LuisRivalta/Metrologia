@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import BorderGlow from "@/app/_components/border-glow";
 import LightPillar from "@/app/_components/light-pillar";
 import ShinyText from "@/app/_components/shiny-text";
+import { syncSupabaseSessionCookies } from "@/lib/supabase/auth-session";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 
 export default function LoginPage() {
@@ -32,6 +33,7 @@ export default function LoginPage() {
       } = await supabaseBrowser.auth.getSession();
 
       if (session && isMounted) {
+        syncSupabaseSessionCookies(session);
         router.replace("/dashboard");
       }
     }
@@ -98,7 +100,7 @@ export default function LoginPage() {
     setIsSubmitting(true);
     setIsRedirecting(false);
 
-    const { error } = await supabaseBrowser.auth.signInWithPassword({
+    const { data, error } = await supabaseBrowser.auth.signInWithPassword({
       email,
       password
     });
@@ -109,6 +111,7 @@ export default function LoginPage() {
       return;
     }
 
+    syncSupabaseSessionCookies(data.session ?? null);
     redirectToDashboard();
   }
 
@@ -270,13 +273,6 @@ export default function LoginPage() {
                     </button>
                   </div>
                 </label>
-
-                <div className="login-form__row">
-                  <label className="checkbox">
-                    <input type="checkbox" defaultChecked disabled={isSubmitting || isRedirecting} />
-                    <span>Lembrar neste dispositivo</span>
-                  </label>
-                </div>
 
                 {errorMessage ? <p className="login-error">{errorMessage}</p> : null}
 

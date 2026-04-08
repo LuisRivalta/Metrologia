@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { serializeCategorySlug } from "@/lib/categories";
+import { isValidIsoDate } from "@/lib/date-utils";
 import {
   mapCategoryMeasurementFieldRow,
   mapInstrumentMeasurementFieldRow,
@@ -59,10 +60,6 @@ function buildGenericError() {
 
 function isPermissionDenied(message?: string) {
   return (message ?? "").toLowerCase().includes("permission denied");
-}
-
-function isValidDate(value: string) {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
 
 function normalizeText(value: string | null | undefined) {
@@ -629,7 +626,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Fabricante obrigatorio." }, { status: 400 });
   }
 
-  if (!calibrationDate || !isValidDate(calibrationDate)) {
+  if (!calibrationDate || !isValidIsoDate(calibrationDate)) {
     return NextResponse.json({ error: "Prazo de calibracao obrigatorio." }, { status: 400 });
   }
 
@@ -741,7 +738,7 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Fabricante obrigatorio." }, { status: 400 });
   }
 
-  if (!calibrationDate || !isValidDate(calibrationDate)) {
+  if (!calibrationDate || !isValidIsoDate(calibrationDate)) {
     return NextResponse.json({ error: "Prazo de calibracao obrigatorio." }, { status: 400 });
   }
 

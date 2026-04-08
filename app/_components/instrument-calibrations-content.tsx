@@ -39,18 +39,18 @@ function getEmptyHistoryMessage(
   dateTo: string
 ) {
   if (dateFrom && dateTo) {
-    return `Nenhuma calibração aprovada foi encontrada para ${tag} entre ${formatDateLabel(dateFrom)} e ${formatDateLabel(dateTo)}.`;
+    return `Nenhuma calibração foi encontrada para ${tag} entre ${formatDateLabel(dateFrom)} e ${formatDateLabel(dateTo)}.`;
   }
 
   if (dateFrom) {
-    return `Nenhuma calibração aprovada foi encontrada para ${tag} a partir de ${formatDateLabel(dateFrom)}.`;
+    return `Nenhuma calibração foi encontrada para ${tag} a partir de ${formatDateLabel(dateFrom)}.`;
   }
 
   if (dateTo) {
-    return `Nenhuma calibração aprovada foi encontrada para ${tag} até ${formatDateLabel(dateTo)}.`;
+    return `Nenhuma calibração foi encontrada para ${tag} até ${formatDateLabel(dateTo)}.`;
   }
 
-  return `Nenhuma calibração aprovada foi encontrada para ${tag} no período de ${selectedPeriodLabel.toLowerCase()}.`;
+  return `Nenhuma calibração foi encontrada para ${tag} no período de ${selectedPeriodLabel.toLowerCase()}.`;
 }
 
 export function InstrumentCalibrationsContent({

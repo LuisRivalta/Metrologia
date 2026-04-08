@@ -4218,7 +4218,7 @@ html.page-is-transitioning .page-entry-shell .inventory-content > :nth-child(5) 
 
 .instrument-calibration-filters__custom {
   display: flex;
-  align-items: end;
+  align-items: flex-end;
   gap: 10px;
   flex-wrap: wrap;
 }

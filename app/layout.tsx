@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import { AuthSessionSync } from "./_components/auth-session-sync";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -15,6 +16,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body>
+        <AuthSessionSync />
         <Script id="theme-init" strategy="beforeInteractive">
           {`
             try {

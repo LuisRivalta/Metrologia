@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { clearSupabaseSessionCookies } from "@/lib/supabase/auth-session";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 
 export function LogoutButton() {
@@ -19,6 +20,7 @@ export function LogoutButton() {
       return;
     }
 
+    clearSupabaseSessionCookies();
     startTransition(() => {
       router.replace("/login");
       router.refresh();

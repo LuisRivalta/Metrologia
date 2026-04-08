@@ -1,7 +1,6 @@
 import { formatInstrumentAlertNote, mapInstrumentRow, type InstrumentCategoryRow, type InstrumentDbRow } from "@/lib/instruments";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
-type DashboardTone = "neutral" | "warning" | "danger";
 type DashboardInstrumentRow = ReturnType<typeof mapInstrumentRow>;
 
 export type DashboardSummaryCard = { title: string; value: string; note?: string; tone: "positive" | "neutral" };

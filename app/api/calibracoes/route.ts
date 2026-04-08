@@ -2,12 +2,12 @@ import { NextResponse } from "next/server";
 import {
   getCalibrationFilterStartDate,
   isCalibrationFilterPreset,
-  isValidIsoDate,
   mapCalibrationHistoryRow,
   type CalibrationFilterPreset,
   type CalibrationDbRow,
   type CalibrationResultDbRow
 } from "@/lib/calibrations";
+import { isValidIsoDate } from "@/lib/date-utils";
 import {
   mapInstrumentRow,
   type InstrumentCategoryRow,
@@ -180,8 +180,7 @@ export async function GET(request: Request) {
     (calibrationResultsResponse.data ?? []) as CalibrationResultDbRow[]
   );
   const items = calibrationRows
-    .map((row) => mapCalibrationHistoryRow(row, resultsByCalibrationId.get(row.id) ?? []))
-    .filter((item) => item.statusTone === "neutral");
+    .map((row) => mapCalibrationHistoryRow(row, resultsByCalibrationId.get(row.id) ?? []));
 
   return NextResponse.json({
     instrument,

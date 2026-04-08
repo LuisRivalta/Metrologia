@@ -1,3 +1,4 @@
+import { parseValidIsoDate } from "@/lib/date-utils";
 import type { MeasurementFieldItem } from "@/lib/measurement-fields";
 
 export type InstrumentTone = "neutral" | "warning" | "danger";
@@ -7,10 +8,6 @@ export type InstrumentDbRow = {
   tag: string | null;
   categoria_id: number | null;
   fabricante: string | null;
-  faixa_unidade_id?: number | null;
-  resolucao_unidade_id?: number | null;
-  divisao_unidade_id?: number | null;
-  capacidade_unidade_id?: number | null;
   data_ultima_calibracao: string | null;
   proxima_calibracao: string | null;
   created_at?: string | null;
@@ -67,8 +64,13 @@ function getStartOfDay(referenceDate: Date) {
 }
 
 function formatDateShort(value: string) {
-  const [year, month, day] = value.split("-").map(Number);
-  return `${String(day).padStart(2, "0")} ${shortMonthNames[(month ?? 1) - 1]} ${year}`;
+  const parsedDate = parseValidIsoDate(value);
+
+  if (!parsedDate) {
+    return "Data invalida";
+  }
+
+  return `${String(parsedDate.getDate()).padStart(2, "0")} ${shortMonthNames[parsedDate.getMonth()]} ${parsedDate.getFullYear()}`;
 }
 
 function buildCategoryPrefix(categorySlug: string, categoryName: string) {
@@ -100,8 +102,7 @@ function buildCategoryPrefix(categorySlug: string, categoryName: string) {
 }
 
 export function parseIsoDate(value: string) {
-  const [year, month, day] = value.split("-").map(Number);
-  return new Date(year, month - 1, day);
+  return parseValidIsoDate(value);
 }
 
 export function serializeDate(date: Date) {
@@ -127,6 +128,15 @@ export function getRelativeCalibration(calibrationDateValue: string | null, refe
 
   const currentDay = getStartOfDay(referenceDate);
   const targetDay = parseIsoDate(calibrationDateValue);
+
+  if (!targetDay) {
+    return {
+      tone: "danger" as const,
+      diffInDays: Number.MIN_SAFE_INTEGER,
+      description: "Data invalida"
+    };
+  }
+
   const diffInDays = Math.ceil((targetDay.getTime() - currentDay.getTime()) / 86400000);
 
   if (diffInDays < 0) {
@@ -163,6 +173,14 @@ export function formatInstrumentCalibration(calibrationDateValue: string | null,
     };
   }
 
+  if (!parseIsoDate(calibrationDateValue)) {
+    return {
+      calibration: `Data invalida (${calibrationDateValue})`,
+      tone: "danger" as const,
+      diffInDays: Number.MIN_SAFE_INTEGER
+    };
+  }
+
   const relativeCalibration = getRelativeCalibration(calibrationDateValue, referenceDate);
 
   return {
@@ -175,6 +193,10 @@ export function formatInstrumentCalibration(calibrationDateValue: string | null,
 export function formatInstrumentAlertNote(calibrationDateValue: string | null, diffInDays: number) {
   if (!calibrationDateValue) {
     return "Sem prazo de calibração definido";
+  }
+
+  if (!parseIsoDate(calibrationDateValue)) {
+    return `Prazo de calibracao invalido (${calibrationDateValue})`;
   }
 
   const dateLabel = calibrationDateValue.replace(/^(\d{4})-(\d{2})-(\d{2})$/, "$3/$2/$1");

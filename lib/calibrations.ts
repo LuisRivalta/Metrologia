@@ -1,3 +1,4 @@
+import { isValidIsoDate, parseValidIsoDate } from "@/lib/date-utils";
 import { getRelativeCalibration, type InstrumentTone } from "@/lib/instruments";
 
 export type CalibrationDbRow = {
@@ -67,10 +68,6 @@ function stripDiacritics(value: string) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
-export function isValidIsoDate(value: string) {
-  return /^\d{4}-\d{2}-\d{2}$/.test(normalizeText(value));
-}
-
 export function isCalibrationFilterPreset(value: string): value is CalibrationFilterPreset {
   return calibrationFilterOptions.some((option) => option.value === value);
 }
@@ -100,13 +97,13 @@ export function getCalibrationFilterStartDate(
 
 function formatDateShort(value: string | null | undefined) {
   const normalizedValue = normalizeText(value);
+  const parsedDate = parseValidIsoDate(normalizedValue);
 
-  if (!normalizedValue || !/^\d{4}-\d{2}-\d{2}$/.test(normalizedValue)) {
+  if (!parsedDate) {
     return "Não informado";
   }
 
-  const [year, month, day] = normalizedValue.split("-").map(Number);
-  return `${String(day).padStart(2, "0")} ${shortMonthNames[(month ?? 1) - 1]} ${year}`;
+  return `${String(parsedDate.getDate()).padStart(2, "0")} ${shortMonthNames[parsedDate.getMonth()]} ${parsedDate.getFullYear()}`;
 }
 
 function formatDateTimeLabel(value: string | null | undefined) {

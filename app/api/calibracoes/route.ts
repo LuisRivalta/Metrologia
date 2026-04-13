@@ -382,14 +382,6 @@ export async function POST(request: Request) {
     return buildCreateCalibrationError("Instrumento invalido.");
   }
 
-  if (!certificate) {
-    return buildCreateCalibrationError("Numero do certificado obrigatorio.");
-  }
-
-  if (!laboratory) {
-    return buildCreateCalibrationError("Laboratorio obrigatorio.");
-  }
-
   if (!responsible) {
     return buildCreateCalibrationError("Responsavel obrigatorio.");
   }
@@ -489,6 +481,7 @@ export async function POST(request: Request) {
       };
     })
   });
+  const certificateLabel = certificate || normalizeText(certificateFile.name);
 
   const insertCalibrationResponse = await supabaseAdmin
     .schema("calibracao")
@@ -498,8 +491,8 @@ export async function POST(request: Request) {
       data_calibracao: calibrationDate,
       data_emissao_certificado: certificateDate,
       data_validade: validityDate,
-      certificado: certificate,
-      laboratorio: laboratory,
+      certificado: certificateLabel,
+      laboratorio: laboratory || null,
       responsavel: responsible,
       status_geral: status,
       observacoes: serializedObservations || null,

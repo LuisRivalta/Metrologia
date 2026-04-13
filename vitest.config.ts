@@ -9,6 +9,18 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    include: ["tests/**/*.test.ts"]
+    include: ["tests/**/*.test.ts"],
+    testTimeout: 10_000,
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "html", "json-summary"],
+      reportsDirectory: "./coverage",
+      include: ["lib/**/*.ts"],
+      exclude: [
+        "lib/api/**",
+        "lib/server/**",
+        "lib/supabase/**"
+      ]
+    }
   }
 });

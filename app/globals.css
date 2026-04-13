@@ -4801,6 +4801,36 @@ html.page-is-transitioning .page-entry-shell .inventory-content > :nth-child(5) 
   line-height: 1.5;
 }
 
+.instrument-calibration-review__confirm {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(238, 243, 255, 0.9);
+  display: grid;
+  gap: 8px;
+}
+
+.instrument-calibration-review__confirm-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #14325e;
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+.instrument-calibration-review__confirm-check input {
+  width: 18px;
+  height: 18px;
+  accent-color: #144f9c;
+}
+
+.instrument-calibration-review__confirm p {
+  margin: 0;
+  color: #5f7191;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
 .instrument-calibration-review__list {
   display: grid;
   gap: 10px;
@@ -5180,6 +5210,17 @@ html.page-is-transitioning .page-entry-shell .inventory-content > :nth-child(5) 
 
 .calibration-field-table__value input {
   padding: 0 12px;
+}
+
+.calibration-field-table__value-static {
+  display: grid;
+  gap: 4px;
+}
+
+.calibration-field-table__value-static span {
+  color: #66758f;
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
 .calibration-field-table__status-pill {
@@ -6880,6 +6921,18 @@ html[data-theme="dark"] .instrument-calibration-review__warnings p {
   color: #ffd99f;
 }
 
+html[data-theme="dark"] .instrument-calibration-review__confirm {
+  background: #121f34;
+}
+
+html[data-theme="dark"] .instrument-calibration-review__confirm-check {
+  color: #eef5ff;
+}
+
+html[data-theme="dark"] .instrument-calibration-review__confirm p {
+  color: #96abd1;
+}
+
 html[data-theme="dark"] .instrument-calibration-review__item {
   border-color: rgba(129, 151, 191, 0.12);
   background:
@@ -6995,6 +7048,10 @@ html[data-theme="dark"] .calibration-field-table__field strong,
 html[data-theme="dark"] .calibration-field-table__measurement strong,
 html[data-theme="dark"] .calibration-field-table__value strong {
   color: #eef5ff;
+}
+
+html[data-theme="dark"] .calibration-field-table__value-static span {
+  color: #96abd1;
 }
 
 html[data-theme="dark"] .calibration-field-table__value input {

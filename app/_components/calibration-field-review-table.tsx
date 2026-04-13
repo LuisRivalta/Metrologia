@@ -7,6 +7,7 @@ type CalibrationFieldReviewTableRow = {
   fieldName: string;
   measurementName: string;
   value: string;
+  autoCalculated?: boolean;
   unit?: string;
   confidence: number | null;
   evidence: string;
@@ -17,17 +18,10 @@ type CalibrationFieldReviewTableProps = {
   rows: CalibrationFieldReviewTableRow[];
   emptyMessage: string;
   editable?: boolean;
+  showStatusColumn?: boolean;
   onValueChange?: (rowId: string | number, value: string) => void;
   onStatusChange?: (rowId: string | number, status: CalibrationFieldReviewStatus) => void;
 };
-
-function formatConfidence(confidence: number | null) {
-  if (confidence === null) {
-    return "Sem confianca";
-  }
-
-  return `${Math.round(confidence * 100)}% de confianca`;
-}
 
 function getStatusLabel(status: CalibrationFieldReviewStatus) {
   if (status === "conforming") return "Conforme";
@@ -39,6 +33,7 @@ export function CalibrationFieldReviewTable({
   rows,
   emptyMessage,
   editable = false,
+  showStatusColumn = true,
   onValueChange,
   onStatusChange
 }: CalibrationFieldReviewTableProps) {
@@ -55,8 +50,7 @@ export function CalibrationFieldReviewTable({
             <th>Campo</th>
             <th>Medida</th>
             <th>Valor</th>
-            <th>Apoio</th>
-            <th>Conforme</th>
+            {showStatusColumn ? <th>Conforme</th> : null}
           </tr>
         </thead>
         <tbody>
@@ -73,7 +67,7 @@ export function CalibrationFieldReviewTable({
                 {row.unit ? <span>Leitura IA: {row.unit}</span> : null}
               </td>
               <td className="calibration-field-table__value">
-                {editable ? (
+                {editable && !row.autoCalculated ? (
                   <input
                     type="text"
                     value={row.value}
@@ -81,36 +75,37 @@ export function CalibrationFieldReviewTable({
                     onChange={(event) => onValueChange?.(row.id, event.target.value)}
                   />
                 ) : (
-                  <strong>{row.value || "Nao informado"}</strong>
+                  <div className="calibration-field-table__value-static">
+                    <strong>{row.value || (row.autoCalculated ? "Calculado automaticamente" : "Nao informado")}</strong>
+                    {row.autoCalculated ? <span>Soma automatica</span> : null}
+                  </div>
                 )}
               </td>
-              <td className="calibration-field-table__support">
-                <span>{formatConfidence(row.confidence)}</span>
-                <p>{row.evidence || "Sem evidencia destacada."}</p>
-              </td>
-              <td className="calibration-field-table__status">
-                {editable ? (
-                  <label className="calibration-field-table__check">
-                    <input
-                      type="checkbox"
-                      checked={row.status === "conforming"}
-                      onChange={(event) =>
-                        onStatusChange?.(
-                          row.id,
-                          event.target.checked ? "conforming" : "unknown"
-                        )
-                      }
-                    />
-                    <span>Verificado</span>
-                  </label>
-                ) : (
-                  <span
-                    className={`calibration-field-table__status-pill calibration-field-table__status-pill--${row.status}`}
-                  >
-                    {getStatusLabel(row.status)}
-                  </span>
-                )}
-              </td>
+              {showStatusColumn ? (
+                <td className="calibration-field-table__status">
+                  {editable ? (
+                    <label className="calibration-field-table__check">
+                      <input
+                        type="checkbox"
+                        checked={row.status === "conforming"}
+                        onChange={(event) =>
+                          onStatusChange?.(
+                            row.id,
+                            event.target.checked ? "conforming" : "unknown"
+                          )
+                        }
+                      />
+                      <span>Verificado</span>
+                    </label>
+                  ) : (
+                    <span
+                      className={`calibration-field-table__status-pill calibration-field-table__status-pill--${row.status}`}
+                    >
+                      {getStatusLabel(row.status)}
+                    </span>
+                  )}
+                </td>
+              ) : null}
             </tr>
           ))}
         </tbody>

@@ -278,10 +278,6 @@ export function InstrumentCalibrationsContent({
                         <strong>{item.validityDate}</strong>
                       </div>
                       <div className="instrument-calibration-entry__meta">
-                        <span>Laboratorio</span>
-                        <strong>{item.laboratory}</strong>
-                      </div>
-                      <div className="instrument-calibration-entry__meta">
                         <span>Responsavel</span>
                         <strong>{item.responsible}</strong>
                       </div>
@@ -319,6 +315,7 @@ export function InstrumentCalibrationsContent({
                             evidence: field.evidence,
                             status: field.status
                           }))}
+                          showStatusColumn={false}
                           emptyMessage="Sem itens registrados para esta calibracao."
                         />
                       </div>

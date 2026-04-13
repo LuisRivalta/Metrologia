@@ -1,44 +1,92 @@
 # Rotina de TDD
 
 ## Objetivo
-Usar testes pequenos e rapidos para proteger regras de negocio antes de mexer em fluxos da aplicacao.
+Usar testes pequenos, rapidos e orientados a comportamento para proteger regras de negocio antes de alterar fluxos do sistema.
 
-## Scripts
-- `npm run test`: roda a suite inteira uma vez.
-- `npm run test:watch`: deixa o Vitest observando alteracoes.
-- `npm run test:tdd`: alias para o modo watch, pensado para o ciclo de TDD.
+## Comandos
+- `npm run test`: roda a suite completa uma vez.
+- `npm run test:tdd`: abre o modo watch para o ciclo vermelho -> verde -> refatorar.
+- `npm run test:watch`: alias simples do watch do Vitest.
+- `npm run test:coverage`: gera cobertura em texto, HTML e `json-summary`.
+- `npm run test:ci`: roda `test` e `build` em sequencia para validacao final local.
 
-## Ciclo padrao
+## Ciclo Completo
 1. Escolha um comportamento novo ou um bug real.
-2. Escreva primeiro um teste que falha.
-3. Implemente o minimo para deixar o teste verde.
-4. Refatore com a suite verde.
-5. Rode `npm run test` antes de abrir PR.
-6. Se a mudanca tocar interface, finalize com `npm run build`.
+2. Escreva primeiro um teste que falha pelo motivo certo.
+3. Rode `npm run test:tdd` e confirme o vermelho.
+4. Implemente o minimo para deixar o teste verde.
+5. Refatore sem mudar comportamento.
+6. Rode `npm run test`.
+7. Rode `npm run test:coverage` quando a mudanca tocar regra de negocio relevante.
+8. Se a mudanca tocar tela, rota ou serializacao importante, finalize com `npm run build`.
 
-## Onde escrever testes
+## O Que Testar Primeiro
+- Datas, vencimentos e comparacoes de prazo.
+- Serializacao e parse de registros de calibracao.
+- Calculos automaticos por categoria.
+- Normalizacao de payloads de API.
+- Conversoes de medida, slug e nome tecnico.
+- Regressao de bug: todo bug corrigido deve ganhar um teste que reproduza o caso original.
+
+## Onde Escrever Testes
 - `tests/lib/*.test.ts` para regras puras de negocio.
-- Ao encontrar logica dentro de componentes ou rotas, extraia para `lib/` antes de testar.
-- Nomeie os testes pelo comportamento esperado, nao pela implementacao.
+- Extraia logica de componentes ou rotas para `lib/` antes de testar.
+- De preferencia a testes pequenos e focados em uma regra por vez.
 
-## Regra pratica para este projeto
-- Datas, serializacao e calculos de calibracao devem ganhar teste antes de ajuste.
-- Validacoes de payload devem nascer em funcoes puras sempre que possivel.
-- Bugs corrigidos devem voltar com um teste que reproduza o caso original.
+## Nome dos Testes
+- Escreva pelo comportamento esperado.
+- Prefira `it("calcula ...")`, `it("ignora ...")`, `it("retorna erro quando ...")`.
+- Evite nomes presos a detalhes internos de implementacao.
 
-## Fluxo recomendado
+## Estrategia Recomendada Neste Projeto
+- Componentes devem ficar finos.
+- Regras de metrologia, validacoes e calculos devem morar em `lib/`.
+- A IA deve extrair valores; a regra de negocio deve ser testada e calculada localmente.
+- Se uma regra variar por categoria, o comportamento da categoria deve ter teste proprio.
+
+## Checklist de Pronto
+- Existe teste cobrindo o comportamento novo ou o bug corrigido.
+- O teste falhou antes da implementacao.
+- A implementacao minima deixou o teste verde.
+- A refatoracao manteve a suite verde.
+- `npm run test` passou.
+- `npm run build` passou quando a mudanca afetou fluxo real da aplicacao.
+
+## Cobertura
+O projeto gera cobertura para `lib/**/*.ts`, excluindo camadas de infraestrutura como:
+- `lib/api/**`
+- `lib/server/**`
+- `lib/supabase/**`
+
+Arquivos de saida:
+- `coverage/index.html`
+- `coverage/coverage-summary.json`
+
+## Exemplo Rapido
 ```bash
 npm run test:tdd
 ```
 
-Com o watch aberto:
-- escreva um teste vermelho
-- implemente o minimo
-- confirme o verde
-- refatore
+No watch:
+1. escrever um teste vermelho em `tests/lib/...`
+2. implementar o minimo em `lib/...`
+3. confirmar o verde
+4. refatorar
 
-## Suite inicial criada
-- `tests/lib/date-utils.test.ts`
+Depois:
+```bash
+npm run test
+npm run test:coverage
+npm run build
+```
+
+## Suite Atual
+- `tests/lib/calibrations.test.ts`
+- `tests/lib/calibration-certificates.test.ts`
+- `tests/lib/calibration-derivations.test.ts`
+- `tests/lib/calibration-extraction.test.ts`
+- `tests/lib/calibration-records.test.ts`
 - `tests/lib/categories.test.ts`
-- `tests/lib/measurements.test.ts`
+- `tests/lib/date-utils.test.ts`
 - `tests/lib/instruments.test.ts`
+- `tests/lib/measurements.test.ts`

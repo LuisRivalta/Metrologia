@@ -3,6 +3,10 @@
 import { type ChangeEvent, type FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { fetchApi } from "@/lib/api/client";
+import {
+  applyCalibrationDerivedValues,
+  isAutoCalculatedCalibrationField
+} from "@/lib/calibration-derivations";
 import { calibrationStatusOptions, type CalibrationHistoryItem } from "@/lib/calibrations";
 import type { InstrumentDetailItem } from "@/lib/instruments";
 import {
@@ -67,8 +71,6 @@ type CalibrationExtractionApiResponse = {
   error?: string;
   extraction?: {
     header: {
-      certificate: string | null;
-      laboratory: string | null;
       responsible: string | null;
       calibrationDate: string | null;
       certificateDate: string | null;
@@ -81,8 +83,6 @@ type CalibrationExtractionApiResponse = {
 };
 
 type CreateCalibrationFormState = {
-  certificate: string;
-  laboratory: string;
   responsible: string;
   status: (typeof calibrationStatusOptions)[number]["value"];
   calibrationDate: string;
@@ -112,8 +112,6 @@ type ValidationErrors = Partial<
     | "newCategoryName"
     | "manufacturer"
     | "fields"
-    | "certificate"
-    | "laboratory"
     | "responsible"
     | "calibrationDate"
     | "certificateDate"
@@ -141,8 +139,6 @@ function createEmptyCalibrationFormState(): CreateCalibrationFormState {
   const today = getTodayIsoDate();
 
   return {
-    certificate: "",
-    laboratory: "",
     responsible: "",
     status: calibrationStatusOptions[0].value,
     calibrationDate: today,
@@ -211,6 +207,34 @@ function buildReviewItems(
   });
 }
 
+function getCategoryCalculationIdentifier(categorySlug: string | null | undefined, categoryName: string | null | undefined) {
+  return categorySlug || categoryName || "";
+}
+
+function scrollToFirstValidationIssue() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.requestAnimationFrame(() => {
+    const firstIssue = document.querySelector(".is-invalid, .instrument-modal__field-error");
+
+    if (!(firstIssue instanceof HTMLElement)) {
+      return;
+    }
+
+    firstIssue.scrollIntoView({ behavior: "smooth", block: "center" });
+
+    if (
+      firstIssue instanceof HTMLInputElement ||
+      firstIssue instanceof HTMLSelectElement ||
+      firstIssue instanceof HTMLTextAreaElement
+    ) {
+      firstIssue.focus();
+    }
+  });
+}
+
 export function InstrumentCreateContent() {
   const router = useRouter();
   const [step, setStep] = useState<Step>("details");
@@ -226,6 +250,7 @@ export function InstrumentCreateContent() {
   const [isLoadingMetadata, setIsLoadingMetadata] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
+  const [isPageConformityChecked, setIsPageConformityChecked] = useState(false);
   const [extractionError, setExtractionError] = useState("");
   const [extractionMessage, setExtractionMessage] = useState("");
   const [extractionWarnings, setExtractionWarnings] = useState<string[]>([]);
@@ -238,11 +263,6 @@ export function InstrumentCreateContent() {
     () => selectedCategory?.name ?? "",
     [selectedCategory]
   );
-  const reviewedSummary = useMemo(() => ({
-    conforming: fieldReviewItems.filter((field) => field.status === "conforming").length,
-    pending: fieldReviewItems.filter((field) => field.status !== "conforming").length
-  }), [fieldReviewItems]);
-
   useEffect(() => {
     void loadMetadata();
   }, []);
@@ -257,8 +277,13 @@ export function InstrumentCreateContent() {
   }, [selectedCategory]);
 
   useEffect(() => {
-    setFieldReviewItems((current) => buildReviewItems(fieldRows, measurements, current));
-  }, [fieldRows, measurements]);
+    setFieldReviewItems((current) =>
+      applyCalibrationDerivedValues(
+        getCategoryCalculationIdentifier(selectedCategory?.slug, selectedCategory?.name),
+        buildReviewItems(fieldRows, measurements, current)
+      )
+    );
+  }, [fieldRows, measurements, selectedCategory]);
 
   async function loadMetadata() {
     setIsLoadingMetadata(true);
@@ -315,8 +340,6 @@ export function InstrumentCreateContent() {
 
   function getStepTwoErrors() {
     const nextErrors: ValidationErrors = {};
-    if (!calibrationForm.certificate.trim()) nextErrors.certificate = "Numero do certificado obrigatorio.";
-    if (!calibrationForm.laboratory.trim()) nextErrors.laboratory = "Laboratorio obrigatorio.";
     if (!calibrationForm.responsible.trim()) nextErrors.responsible = "Responsavel obrigatorio.";
     if (!calibrationForm.calibrationDate) nextErrors.calibrationDate = "Data da calibracao obrigatoria.";
     if (!calibrationForm.certificateDate) nextErrors.certificateDate = "Data de emissao do certificado obrigatoria.";
@@ -386,8 +409,6 @@ export function InstrumentCreateContent() {
 
       setCalibrationForm((current) => ({
         ...current,
-        certificate: responsePayload.extraction?.header.certificate ?? current.certificate,
-        laboratory: responsePayload.extraction?.header.laboratory ?? current.laboratory,
         responsible: responsePayload.extraction?.header.responsible ?? current.responsible,
         calibrationDate: responsePayload.extraction?.header.calibrationDate ?? current.calibrationDate,
         certificateDate: responsePayload.extraction?.header.certificateDate ?? current.certificateDate,
@@ -395,7 +416,9 @@ export function InstrumentCreateContent() {
         observations: responsePayload.extraction?.header.observations ?? current.observations
       }));
       setFieldReviewItems((current) =>
-        current.map((field) => {
+        applyCalibrationDerivedValues(
+          getCategoryCalculationIdentifier(selectedCategory?.slug, selectedCategory?.name),
+          current.map((field) => {
           const extractedField = responsePayload.extraction?.fields.find((item) => item.fieldSlug === field.fieldSlug);
 
           if (!extractedField) return field;
@@ -411,14 +434,13 @@ export function InstrumentCreateContent() {
                 ? "conforming"
                 : "unknown"
           };
-        })
+          })
+        )
       );
       setExtractionWarnings(responsePayload.extraction.warnings);
       setExtractionMessage("Leitura concluida. Revise os dados sugeridos pela IA antes de salvar o cadastro.");
       setValidationErrors((current) => ({
         ...current,
-        certificate: undefined,
-        laboratory: undefined,
         responsible: undefined,
         calibrationDate: undefined,
         certificateDate: undefined,
@@ -437,22 +459,42 @@ export function InstrumentCreateContent() {
     event.preventDefault();
 
     if (step === "details") {
-      const nextErrors = getStepOneErrors();
+      const stepOneErrors = getStepOneErrors();
+      const nextErrors =
+        Object.keys(stepOneErrors).length > 0
+          ? {
+              ...stepOneErrors,
+              form: "Revise os campos obrigatorios antes de continuar."
+            }
+          : stepOneErrors;
       setValidationErrors(nextErrors);
 
-      if (Object.keys(nextErrors).length > 0) return;
+      if (Object.keys(stepOneErrors).length > 0) {
+        scrollToFirstValidationIssue();
+        return;
+      }
 
       setStep("certificate");
       return;
     }
 
-    const nextErrors = {
+    const mergedErrors = {
       ...getStepOneErrors(),
       ...getStepTwoErrors()
     };
+    const nextErrors =
+      Object.keys(mergedErrors).length > 0
+        ? {
+            ...mergedErrors,
+            form: "Revise os campos obrigatorios acima antes de salvar."
+          }
+        : mergedErrors;
     setValidationErrors(nextErrors);
 
-    if (Object.keys(nextErrors).length > 0) return;
+    if (Object.keys(mergedErrors).length > 0) {
+      scrollToFirstValidationIssue();
+      return;
+    }
 
     setIsSubmitting(true);
 
@@ -499,8 +541,6 @@ export function InstrumentCreateContent() {
 
       const calibrationPayload = new FormData();
       calibrationPayload.set("instrumentId", String(createdInstrumentId));
-      calibrationPayload.set("certificate", calibrationForm.certificate.trim());
-      calibrationPayload.set("laboratory", calibrationForm.laboratory.trim());
       calibrationPayload.set("responsible", calibrationForm.responsible.trim());
       calibrationPayload.set("status", calibrationForm.status);
       calibrationPayload.set("calibrationDate", calibrationForm.calibrationDate);
@@ -523,7 +563,7 @@ export function InstrumentCreateContent() {
                     unit: field.unit,
                     confidence: field.confidence,
                     evidence: field.evidence,
-                    status: field.status
+                    status: isPageConformityChecked ? "conforming" : "unknown"
                   }
                 : null;
             })
@@ -663,7 +703,7 @@ export function InstrumentCreateContent() {
                   />
 
                   {validationErrors.fields ? <p className="instrument-modal__field-error instrument-fields-builder__error">{validationErrors.fields}</p> : null}
-                </section>
+              </section>
             </>
           ) : (
             <>
@@ -675,8 +715,6 @@ export function InstrumentCreateContent() {
               </section>
 
               <div className="instrument-modal__grid">
-                <label className="instrument-modal__field"><span>Numero do certificado</span><input type="text" className={validationErrors.certificate ? "is-invalid" : undefined} value={calibrationForm.certificate} onChange={(event) => { setCalibrationForm((current) => ({ ...current, certificate: event.target.value })); setValidationErrors((current) => ({ ...current, certificate: undefined, form: undefined })); }} />{validationErrors.certificate ? <small className="instrument-modal__field-error">{validationErrors.certificate}</small> : null}</label>
-                <label className="instrument-modal__field"><span>Laboratorio</span><input type="text" className={validationErrors.laboratory ? "is-invalid" : undefined} value={calibrationForm.laboratory} onChange={(event) => { setCalibrationForm((current) => ({ ...current, laboratory: event.target.value })); setValidationErrors((current) => ({ ...current, laboratory: undefined, form: undefined })); }} />{validationErrors.laboratory ? <small className="instrument-modal__field-error">{validationErrors.laboratory}</small> : null}</label>
                 <label className="instrument-modal__field"><span>Responsavel</span><input type="text" className={validationErrors.responsible ? "is-invalid" : undefined} value={calibrationForm.responsible} onChange={(event) => { setCalibrationForm((current) => ({ ...current, responsible: event.target.value })); setValidationErrors((current) => ({ ...current, responsible: undefined, form: undefined })); }} />{validationErrors.responsible ? <small className="instrument-modal__field-error">{validationErrors.responsible}</small> : null}</label>
                 <label className="instrument-modal__field"><span>Status geral</span><select value={calibrationForm.status} onChange={(event) => setCalibrationForm((current) => ({ ...current, status: event.target.value as CreateCalibrationFormState["status"] }))}>{calibrationStatusOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
                 <label className="instrument-modal__field"><span>Data da calibracao</span><input type="date" className={validationErrors.calibrationDate ? "is-invalid" : undefined} value={calibrationForm.calibrationDate} onChange={(event) => { setCalibrationForm((current) => ({ ...current, calibrationDate: event.target.value })); setValidationErrors((current) => ({ ...current, calibrationDate: undefined, form: undefined })); }} />{validationErrors.calibrationDate ? <small className="instrument-modal__field-error">{validationErrors.calibrationDate}</small> : null}</label>
@@ -685,7 +723,7 @@ export function InstrumentCreateContent() {
               </div>
 
               <section className={`instrument-calibration-upload${validationErrors.certificateFile ? " is-invalid" : ""}`}>
-                <div className="instrument-calibration-upload__copy"><strong>Certificado em PDF</strong><p>Envie o arquivo oficial para criar o instrumento ja com a calibracao inicial registrada.</p></div>
+                <div className="instrument-calibration-upload__copy"><strong>Certificado em PDF</strong><p>Envie o arquivo oficial para criar o instrumento ja com a calibracao inicial registrada. O nome do PDF sera usado no log.</p></div>
                 <input type="file" accept="application/pdf,.pdf" onChange={(event: ChangeEvent<HTMLInputElement>) => { const nextFile = event.target.files?.[0] ?? null; setCalibrationForm((current) => ({ ...current, certificateFile: nextFile })); clearExtractionFeedback(); setValidationErrors((current) => ({ ...current, certificateFile: undefined, form: undefined })); }} />
                 {calibrationForm.certificateFile ? <div className="instrument-calibration-upload__file"><span>{`${calibrationForm.certificateFile.name} (${formatFileSize(calibrationForm.certificateFile.size)})`}</span><button type="button" onClick={() => setCalibrationForm((current) => ({ ...current, certificateFile: null }))}>Remover arquivo</button></div> : null}
                 <div className="instrument-calibration-upload__actions"><button type="button" className="instrument-calibration-upload__extract" onClick={handleExtractWithAi} disabled={!calibrationForm.certificateFile || isExtracting || isSubmitting}>{isExtracting ? "Lendo certificado..." : "Extrair com IA"}</button></div>
@@ -697,7 +735,7 @@ export function InstrumentCreateContent() {
               <section className="instrument-calibration-review">
                 <div className="instrument-calibration-review__header">
                   <div><h3>Tabela de calibracao</h3><p>Digite os valores dos itens e use a IA como pre-preenchimento quando o certificado ajudar.</p></div>
-                  <div className="instrument-calibration-review__summary"><span>{reviewedSummary.conforming} conformes</span><span>{reviewedSummary.pending} sem check</span></div>
+                  <div className="instrument-calibration-review__summary"><span>{fieldReviewItems.length} itens</span></div>
                 </div>
                 {extractionWarnings.length > 0 ? <div className="instrument-calibration-review__warnings">{extractionWarnings.map((warning, index) => <p key={`${warning}-${index}`}>{warning}</p>)}</div> : null}
                 <CalibrationFieldReviewTable
@@ -705,6 +743,10 @@ export function InstrumentCreateContent() {
                     id: field.fieldSlug,
                     fieldName: field.fieldName,
                     measurementName: field.measurementName,
+                    autoCalculated: isAutoCalculatedCalibrationField(
+                      getCategoryCalculationIdentifier(selectedCategory?.slug, selectedCategory?.name),
+                      field.fieldSlug
+                    ),
                     value: field.value,
                     unit: field.unit,
                     confidence: field.confidence,
@@ -712,32 +754,35 @@ export function InstrumentCreateContent() {
                     status: field.status
                   }))}
                   editable
+                  showStatusColumn={false}
                   emptyMessage="Esse cadastro ainda nao possui itens configurados no template de calibracao."
                   onValueChange={(rowId, value) =>
                     setFieldReviewItems((current) =>
-                      current.map((item) =>
-                        item.fieldSlug === rowId
-                          ? {
-                              ...item,
-                              value
-                            }
-                          : item
-                      )
-                    )
-                  }
-                  onStatusChange={(rowId, status) =>
-                    setFieldReviewItems((current) =>
-                      current.map((item) =>
-                        item.fieldSlug === rowId
-                          ? {
-                              ...item,
-                              status
-                            }
-                          : item
+                      applyCalibrationDerivedValues(
+                        getCategoryCalculationIdentifier(selectedCategory?.slug, selectedCategory?.name),
+                        current.map((item) =>
+                          item.fieldSlug === rowId
+                            ? {
+                                ...item,
+                                value
+                              }
+                            : item
+                        )
                       )
                     )
                   }
                 />
+                <div className="instrument-calibration-review__confirm">
+                  <label className="instrument-calibration-review__confirm-check">
+                    <input
+                      type="checkbox"
+                      checked={isPageConformityChecked}
+                      onChange={(event) => setIsPageConformityChecked(event.target.checked)}
+                    />
+                    <span>Confirmo a conformidade desta calibracao.</span>
+                  </label>
+                  <p>Use esse check somente depois de revisar a tabela inteira.</p>
+                </div>
               </section>
 
               <label className="instrument-modal__field instrument-modal__field--full"><span>Observacoes</span><textarea className="instrument-calibration-form__textarea" value={calibrationForm.observations} onChange={(event) => setCalibrationForm((current) => ({ ...current, observations: event.target.value }))} rows={5} /></label>

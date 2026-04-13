@@ -1,11 +1,10 @@
 import type { MeasurementFieldItem } from "@/lib/measurement-fields";
 
 export const defaultCalibrationExtractionModel =
-  process.env.GEMINI_CALIBRATION_EXTRACTION_MODEL?.trim() || "gemini-2.5-flash";
+  process.env.OPENROUTER_CALIBRATION_EXTRACTION_MODEL?.trim() ||
+  "nvidia/nemotron-nano-12b-v2-vl:free";
 
 export type CalibrationExtractionHeader = {
-  certificate: string | null;
-  laboratory: string | null;
   responsible: string | null;
   calibrationDate: string | null;
   certificateDate: string | null;
@@ -78,8 +77,6 @@ function buildHeaderSchema() {
   return {
     type: "object",
     properties: {
-      certificate: { type: ["string", "null"] },
-      laboratory: { type: ["string", "null"] },
       responsible: { type: ["string", "null"] },
       calibrationDate: { type: ["string", "null"] },
       certificateDate: { type: ["string", "null"] },
@@ -87,8 +84,6 @@ function buildHeaderSchema() {
       observations: { type: ["string", "null"] }
     },
     required: [
-      "certificate",
-      "laboratory",
       "responsible",
       "calibrationDate",
       "certificateDate",
@@ -150,6 +145,7 @@ export function buildCalibrationExtractionPrompt(args: {
     "Retorne somente dados que estejam explicitamente no documento ou claramente derivados dele.",
     "Se um dado nao estiver visivel, use null.",
     "Nao invente resultados, datas, nomes ou status.",
+    "Nao retorne numero do certificado nem laboratorio.",
     "Para cada campo esperado, procure a linha correspondente e indique se esta conforme quando isso aparecer no certificado.",
     "Use somente os field_slug fornecidos abaixo.",
     "",
@@ -178,8 +174,6 @@ export function normalizeCalibrationExtractionResult(
 
   return {
     header: {
-      certificate: normalizeNullableText(payload.header?.certificate),
-      laboratory: normalizeNullableText(payload.header?.laboratory),
       responsible: normalizeNullableText(payload.header?.responsible),
       calibrationDate: normalizeNullableIsoDate(payload.header?.calibrationDate),
       certificateDate: normalizeNullableIsoDate(payload.header?.certificateDate),

@@ -43,7 +43,6 @@ describe("calibration-extraction", () => {
     const normalized = normalizeCalibrationExtractionResult(
       {
         header: {
-          certificate: " PI-361 ",
           calibrationDate: "2026-04-10",
           certificateDate: "10/04/2026"
         },
@@ -63,7 +62,6 @@ describe("calibration-extraction", () => {
     );
 
     expect(normalized.header).toMatchObject({
-      certificate: "PI-361",
       calibrationDate: "2026-04-10",
       certificateDate: null
     });

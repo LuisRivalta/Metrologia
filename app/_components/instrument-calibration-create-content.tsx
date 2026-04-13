@@ -4,6 +4,10 @@ import { type ChangeEvent, type FormEvent, useEffect, useMemo, useState } from "
 import { useRouter } from "next/navigation";
 import { fetchApi } from "@/lib/api/client";
 import {
+  applyCalibrationDerivedValues,
+  isAutoCalculatedCalibrationField
+} from "@/lib/calibration-derivations";
+import {
   calibrationStatusOptions,
   type CalibrationHistoryItem
 } from "@/lib/calibrations";
@@ -41,8 +45,6 @@ type CalibrationExtractionApiResponse = {
   error?: string;
   extraction?: {
     header: {
-      certificate: string | null;
-      laboratory: string | null;
       responsible: string | null;
       calibrationDate: string | null;
       certificateDate: string | null;
@@ -55,8 +57,6 @@ type CalibrationExtractionApiResponse = {
 };
 
 type CalibrationCreateFormState = {
-  certificate: string;
-  laboratory: string;
   responsible: string;
   status: (typeof calibrationStatusOptions)[number]["value"];
   calibrationDate: string;
@@ -82,8 +82,6 @@ type CalibrationFieldReviewItem = {
 
 type CalibrationCreateValidationErrors = Partial<
   Record<
-    | "certificate"
-    | "laboratory"
     | "responsible"
     | "status"
     | "calibrationDate"
@@ -105,8 +103,6 @@ function createEmptyFormState(): CalibrationCreateFormState {
   const today = getTodayIsoDate();
 
   return {
-    certificate: "",
-    laboratory: "",
     responsible: "",
     status: calibrationStatusOptions[0].value,
     calibrationDate: today,
@@ -145,6 +141,30 @@ function formatFileSize(fileSize: number) {
   return `${Math.ceil(fileSize / 1024)} KB`;
 }
 
+function scrollToFirstValidationIssue() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.requestAnimationFrame(() => {
+    const firstIssue = document.querySelector(".is-invalid, .instrument-modal__field-error");
+
+    if (!(firstIssue instanceof HTMLElement)) {
+      return;
+    }
+
+    firstIssue.scrollIntoView({ behavior: "smooth", block: "center" });
+
+    if (
+      firstIssue instanceof HTMLInputElement ||
+      firstIssue instanceof HTMLSelectElement ||
+      firstIssue instanceof HTMLTextAreaElement
+    ) {
+      firstIssue.focus();
+    }
+  });
+}
+
 function getCalibrationStatusLabel(tone: InstrumentDetailItem["tone"]) {
   if (tone === "danger") return "Vencido";
   if (tone === "warning") return "Perto de vencer";
@@ -167,6 +187,10 @@ function isPdfFile(file: File) {
   return file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
 }
 
+function getCalibrationCategoryIdentifier(item: InstrumentDetailItem | null) {
+  return item?.categorySlug || item?.category || "";
+}
+
 export function InstrumentCalibrationCreateContent({
   instrumentId
 }: InstrumentCalibrationCreateContentProps) {
@@ -181,6 +205,7 @@ export function InstrumentCalibrationCreateContent({
   const [loadError, setLoadError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
+  const [isPageConformityChecked, setIsPageConformityChecked] = useState(false);
   const [extractionError, setExtractionError] = useState("");
   const [extractionMessage, setExtractionMessage] = useState("");
   const [extractionWarnings, setExtractionWarnings] = useState<string[]>([]);
@@ -209,7 +234,12 @@ export function InstrumentCalibrationCreateContent({
 
         if (!isMounted) return;
         setInstrument(payload.item);
-        setFieldResults(createFieldReviewItems(payload.item));
+        setFieldResults(
+          applyCalibrationDerivedValues(
+            getCalibrationCategoryIdentifier(payload.item),
+            createFieldReviewItems(payload.item)
+          )
+        );
         setLoadError("");
         setIsLoading(false);
       } catch {
@@ -236,23 +266,8 @@ export function InstrumentCalibrationCreateContent({
     return `${formState.certificateFile.name} (${formatFileSize(formState.certificateFile.size)})`;
   }, [formState.certificateFile]);
 
-  const reviewedSummary = useMemo(() => {
-    return {
-      conforming: fieldResults.filter((field) => field.status === "conforming").length,
-      pending: fieldResults.filter((field) => field.status !== "conforming").length
-    };
-  }, [fieldResults]);
-
   function validateForm() {
     const nextErrors: CalibrationCreateValidationErrors = {};
-
-    if (!formState.certificate.trim()) {
-      nextErrors.certificate = "Numero do certificado obrigatorio.";
-    }
-
-    if (!formState.laboratory.trim()) {
-      nextErrors.laboratory = "Laboratorio obrigatorio.";
-    }
 
     if (!formState.responsible.trim()) {
       nextErrors.responsible = "Responsavel obrigatorio.";
@@ -291,8 +306,12 @@ export function InstrumentCalibrationCreateContent({
       nextErrors.certificateFile = "O certificado deve ter no maximo 10 MB.";
     }
 
+    if (Object.keys(nextErrors).length > 0) {
+      nextErrors.form = "Revise os campos obrigatorios acima antes de salvar.";
+    }
+
     setValidationErrors(nextErrors);
-    return Object.keys(nextErrors).length === 0;
+    return Object.keys(nextErrors).filter((key) => key !== "form").length === 0;
   }
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
@@ -302,7 +321,12 @@ export function InstrumentCalibrationCreateContent({
       ...current,
       certificateFile: nextFile
     }));
-    setFieldResults(createFieldReviewItems(instrument));
+    setFieldResults(
+      applyCalibrationDerivedValues(
+        getCalibrationCategoryIdentifier(instrument),
+        createFieldReviewItems(instrument)
+      )
+    );
     setExtractionError("");
     setExtractionMessage("");
     setExtractionWarnings([]);
@@ -342,8 +366,6 @@ export function InstrumentCalibrationCreateContent({
 
       setFormState((current) => ({
         ...current,
-        certificate: responsePayload.extraction?.header.certificate ?? current.certificate,
-        laboratory: responsePayload.extraction?.header.laboratory ?? current.laboratory,
         responsible: responsePayload.extraction?.header.responsible ?? current.responsible,
         calibrationDate:
           responsePayload.extraction?.header.calibrationDate ?? current.calibrationDate,
@@ -353,7 +375,9 @@ export function InstrumentCalibrationCreateContent({
         observations: responsePayload.extraction?.header.observations ?? current.observations
       }));
       setFieldResults((current) =>
-        current.map((field) => {
+        applyCalibrationDerivedValues(
+          getCalibrationCategoryIdentifier(instrument),
+          current.map((field) => {
           const extractedField = responsePayload.extraction?.fields.find(
             (item) => item.fieldId === field.fieldId
           );
@@ -373,7 +397,8 @@ export function InstrumentCalibrationCreateContent({
                 ? "conforming"
                 : "unknown"
           };
-        })
+          })
+        )
       );
       setExtractionWarnings(responsePayload.extraction.warnings);
       setExtractionMessage(
@@ -381,8 +406,6 @@ export function InstrumentCalibrationCreateContent({
       );
       setValidationErrors((current) => ({
         ...current,
-        certificate: undefined,
-        laboratory: undefined,
         responsible: undefined,
         calibrationDate: undefined,
         certificateDate: undefined,
@@ -400,6 +423,7 @@ export function InstrumentCalibrationCreateContent({
     event.preventDefault();
 
     if (!validateForm()) {
+      scrollToFirstValidationIssue();
       return;
     }
 
@@ -408,8 +432,6 @@ export function InstrumentCalibrationCreateContent({
     try {
       const payload = new FormData();
       payload.set("instrumentId", String(instrumentId));
-      payload.set("certificate", formState.certificate.trim());
-      payload.set("laboratory", formState.laboratory.trim());
       payload.set("responsible", formState.responsible.trim());
       payload.set("status", formState.status);
       payload.set("calibrationDate", formState.calibrationDate);
@@ -428,7 +450,7 @@ export function InstrumentCalibrationCreateContent({
             unit: field.unit,
             confidence: field.confidence,
             evidence: field.evidence,
-            status: field.status
+            status: isPageConformityChecked ? "conforming" : "unknown"
           }))
         )
       );
@@ -557,32 +579,6 @@ export function InstrumentCalibrationCreateContent({
             <form className="instrument-calibration-form" onSubmit={handleSubmit}>
               <div className="instrument-calibration-form__grid">
                 <label className="instrument-modal__field">
-                  <span>Numero do certificado</span>
-                  <input
-                    type="text"
-                    placeholder="Ex: CAL-2026-048"
-                    className={validationErrors.certificate ? "is-invalid" : undefined}
-                    value={formState.certificate}
-                    onChange={(event) => {
-                      setFormState((current) => ({
-                        ...current,
-                        certificate: event.target.value
-                      }));
-                      setValidationErrors((current) => ({
-                        ...current,
-                        certificate: undefined,
-                        form: undefined
-                      }));
-                    }}
-                  />
-                  {validationErrors.certificate ? (
-                    <small className="instrument-modal__field-error">
-                      {validationErrors.certificate}
-                    </small>
-                  ) : null}
-                </label>
-
-                <label className="instrument-modal__field">
                   <span>Status geral</span>
                   <select
                     className={validationErrors.status ? "is-invalid" : undefined}
@@ -608,32 +604,6 @@ export function InstrumentCalibrationCreateContent({
                   {validationErrors.status ? (
                     <small className="instrument-modal__field-error">
                       {validationErrors.status}
-                    </small>
-                  ) : null}
-                </label>
-
-                <label className="instrument-modal__field">
-                  <span>Laboratorio</span>
-                  <input
-                    type="text"
-                    placeholder="Ex: RBC Metrologia"
-                    className={validationErrors.laboratory ? "is-invalid" : undefined}
-                    value={formState.laboratory}
-                    onChange={(event) => {
-                      setFormState((current) => ({
-                        ...current,
-                        laboratory: event.target.value
-                      }));
-                      setValidationErrors((current) => ({
-                        ...current,
-                        laboratory: undefined,
-                        form: undefined
-                      }));
-                    }}
-                  />
-                  {validationErrors.laboratory ? (
-                    <small className="instrument-modal__field-error">
-                      {validationErrors.laboratory}
                     </small>
                   ) : null}
                 </label>
@@ -752,7 +722,7 @@ export function InstrumentCalibrationCreateContent({
               >
                 <div className="instrument-calibration-upload__copy">
                   <strong>Certificado em PDF</strong>
-                  <p>Envie o arquivo oficial para manter o historico de auditoria vinculado ao instrumento.</p>
+                  <p>Envie o arquivo oficial para manter o historico de auditoria vinculado ao instrumento. O nome do PDF sera usado no log.</p>
                 </div>
 
                 <input
@@ -825,8 +795,7 @@ export function InstrumentCalibrationCreateContent({
                   </div>
 
                   <div className="instrument-calibration-review__summary">
-                    <span>{reviewedSummary.conforming} conformes</span>
-                    <span>{reviewedSummary.pending} sem check</span>
+                    <span>{fieldResults.length} itens</span>
                   </div>
                 </div>
 
@@ -843,6 +812,10 @@ export function InstrumentCalibrationCreateContent({
                     id: field.fieldId,
                     fieldName: field.fieldName,
                     measurementName: field.measurementName,
+                    autoCalculated: isAutoCalculatedCalibrationField(
+                      getCalibrationCategoryIdentifier(instrument),
+                      field.fieldSlug
+                    ),
                     value: field.value,
                     unit: field.unit,
                     confidence: field.confidence,
@@ -850,32 +823,36 @@ export function InstrumentCalibrationCreateContent({
                     status: field.status
                   }))}
                   editable
+                  showStatusColumn={false}
                   emptyMessage="Esse instrumento ainda nao possui itens configurados no template de calibracao."
                   onValueChange={(rowId, value) =>
                     setFieldResults((current) =>
-                      current.map((item) =>
-                        item.fieldId === rowId
-                          ? {
-                              ...item,
-                              value
-                            }
-                          : item
-                      )
-                    )
-                  }
-                  onStatusChange={(rowId, status) =>
-                    setFieldResults((current) =>
-                      current.map((item) =>
-                        item.fieldId === rowId
-                          ? {
-                              ...item,
-                              status
-                            }
-                          : item
+                      applyCalibrationDerivedValues(
+                        getCalibrationCategoryIdentifier(instrument),
+                        current.map((item) =>
+                          item.fieldId === rowId
+                            ? {
+                                ...item,
+                                value
+                              }
+                            : item
+                        )
                       )
                     )
                   }
                 />
+
+                <div className="instrument-calibration-review__confirm">
+                  <label className="instrument-calibration-review__confirm-check">
+                    <input
+                      type="checkbox"
+                      checked={isPageConformityChecked}
+                      onChange={(event) => setIsPageConformityChecked(event.target.checked)}
+                    />
+                    <span>Confirmo a conformidade desta calibracao.</span>
+                  </label>
+                  <p>Use esse check somente depois de revisar a tabela inteira.</p>
+                </div>
               </section>
 
               <label className="instrument-modal__field instrument-modal__field--full">

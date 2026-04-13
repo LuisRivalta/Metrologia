@@ -1,12 +1,5 @@
 import { NextResponse } from "next/server";
 import {
-  ApiError,
-  FileState,
-  GoogleGenAI,
-  createPartFromUri,
-  createUserContent
-} from "@google/genai";
-import {
   buildCalibrationExtractionPrompt,
   buildCalibrationExtractionSchema,
   defaultCalibrationExtractionModel,
@@ -31,8 +24,24 @@ type FetchError = Error & {
   };
 };
 
-const geminiFileProcessingPollMs = 1_000;
-const geminiFileProcessingTimeoutMs = 60_000;
+type OpenRouterErrorPayload = {
+  error?: {
+    message?: string;
+    code?: number | string;
+  };
+};
+
+type OpenRouterSuccessPayload = {
+  choices?: Array<{
+    message?: {
+      content?: string | Array<{ type?: string; text?: string }>;
+    };
+  }>;
+};
+
+const openRouterUrl = "https://openrouter.ai/api/v1/chat/completions";
+const defaultOpenRouterTimeoutMs = 25_000;
+const freeModelOpenRouterTimeoutMs = 20_000;
 
 function normalizeText(value: string | null | undefined) {
   return (value ?? "").trim().replace(/\s+/g, " ");
@@ -106,96 +115,198 @@ function parseManualExtractionFields(rawValue: string) {
   }
 }
 
-function getGeminiApiKey() {
-  return process.env.GEMINI_API_KEY?.trim() || process.env.GOOGLE_API_KEY?.trim() || "";
+function getOpenRouterApiKey() {
+  return process.env.OPENROUTER_API_KEY?.trim() || "";
 }
 
-function getGeminiErrorMessage(error: unknown) {
-  const apiError = error as ApiError | null;
+function getOpenRouterErrorMessage(
+  status: number,
+  payload: OpenRouterErrorPayload | null,
+  fallbackMessage = ""
+) {
+  const rawMessage = normalizeText(payload?.error?.message) || normalizeText(fallbackMessage);
+
+  if (status === 400) {
+    if (/failed to parse/i.test(rawMessage)) {
+      return "A OpenRouter nao conseguiu interpretar este PDF no formato enviado. O fluxo foi ajustado para leitura nativa do modelo, entao tente novamente.";
+    }
+
+    return rawMessage || "A IA nao conseguiu interpretar esse certificado.";
+  }
+
+  if (status === 401 || status === 403) {
+    return "A chave da OpenRouter foi recusada. Revise OPENROUTER_API_KEY e as permissoes da conta.";
+  }
+
+  if (status === 402) {
+    return "A conta da OpenRouter esta sem creditos ou sem acesso liberado para este modelo.";
+  }
+
+  if (status === 429) {
+    return "A cota da OpenRouter foi atingida. Aguarde um pouco ou revise os limites da conta.";
+  }
+
+  if (status === 503) {
+    return "O modelo da OpenRouter esta temporariamente indisponivel ou sobrecarregado. Tente novamente em instantes.";
+  }
+
+  return rawMessage || "Nao foi possivel se comunicar com a OpenRouter.";
+}
+
+function getTransportErrorMessage(error: unknown) {
   const fetchError = error as FetchError | null;
   const causeCode = fetchError?.cause?.code ?? "";
+  const errorName = normalizeText((fetchError as { name?: string } | null)?.name);
   const rawMessage = normalizeText(fetchError?.message);
 
   if (causeCode === "SELF_SIGNED_CERT_IN_CHAIN") {
-    return "A conexao com a Gemini foi bloqueada pelo certificado HTTPS da rede local. Configure a cadeia de certificados da maquina ou use um trust store valido para liberar a chamada.";
+    return "A conexao com a OpenRouter foi bloqueada pelo certificado HTTPS da rede local. Configure a cadeia de certificados da maquina ou use um trust store valido para liberar a chamada.";
   }
 
-  if (typeof apiError?.status === "number") {
-    if (apiError.status === 400) {
-      return rawMessage || "A Gemini nao conseguiu interpretar esse certificado.";
-    }
-
-    if (apiError.status === 401 || apiError.status === 403) {
-      return "A chave da Gemini foi recusada. Revise GEMINI_API_KEY e as permissoes no Google AI Studio.";
-    }
-
-    if (apiError.status === 429 || /quota|resource exhausted|billing/i.test(rawMessage)) {
-      return "A cota da Gemini foi atingida. Revise o plano e os limites da chave usada para a extracao.";
-    }
+  if (errorName === "AbortError") {
+    return "A OpenRouter demorou mais do que o esperado para ler este PDF com o modelo atual. Tente novamente ou troque para um modelo mais rapido.";
   }
 
-  return rawMessage || "Nao foi possivel se comunicar com a Gemini.";
+  return rawMessage || "Nao foi possivel se comunicar com a OpenRouter.";
 }
 
-function getGeminiErrorStatus(error: unknown) {
-  const apiError = error as ApiError | null;
-
-  if (typeof apiError?.status === "number") {
-    if (apiError.status === 429) {
-      return 429;
-    }
-
-    return 502;
-  }
-
-  return 502;
+function encodePdfAsDataUrl(file: File, bytes: ArrayBuffer) {
+  const mimeType = normalizeText(file.type) || "application/pdf";
+  return `data:${mimeType};base64,${Buffer.from(bytes).toString("base64")}`;
 }
 
-function sleep(milliseconds: number) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, milliseconds);
+function buildOpenRouterPrompt(
+  basePrompt: string,
+  schema: ReturnType<typeof buildCalibrationExtractionSchema>,
+  includeSchemaHint: boolean
+) {
+  if (!includeSchemaHint) {
+    return basePrompt;
+  }
+
+  return [
+    basePrompt,
+    "",
+    "Retorne somente um objeto JSON valido, sem markdown, sem comentarios e sem texto extra.",
+    "Siga exatamente este JSON Schema:",
+    JSON.stringify(schema)
+  ].join("\n");
+}
+
+function extractAssistantText(payload: OpenRouterSuccessPayload | null) {
+  const content = payload?.choices?.[0]?.message?.content;
+
+  if (typeof content === "string") {
+    return content.trim();
+  }
+
+  if (Array.isArray(content)) {
+    return content
+      .map((part) => (part?.type === "text" ? normalizeText(part.text) : ""))
+      .filter(Boolean)
+      .join("\n")
+      .trim();
+  }
+
+  return "";
+}
+
+function shouldRetryWithoutJsonSchema(status: number, payload: OpenRouterErrorPayload | null) {
+  const message = normalizeText(payload?.error?.message).toLowerCase();
+
+  return (
+    status === 400 &&
+    /(json_schema|structured output|structured outputs|response_format|unsupported|not support)/i.test(
+      message
+    )
+  );
+}
+
+function shouldPreferJsonSchema(model: string) {
+  return !/:free$/i.test(normalizeText(model));
+}
+
+function getOpenRouterTimeoutMs(model: string) {
+  return /:free$/i.test(normalizeText(model))
+    ? freeModelOpenRouterTimeoutMs
+    : defaultOpenRouterTimeoutMs;
+}
+
+async function callOpenRouter(args: {
+  apiKey: string;
+  prompt: string;
+  schema: ReturnType<typeof buildCalibrationExtractionSchema>;
+  model: string;
+  fileName: string;
+  fileDataUrl: string;
+  useJsonSchema: boolean;
+}) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), getOpenRouterTimeoutMs(args.model));
+  const response = await fetch(openRouterUrl, {
+    method: "POST",
+    signal: controller.signal,
+    headers: {
+      Authorization: `Bearer ${args.apiKey}`,
+      "Content-Type": "application/json",
+      "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000",
+      "X-Title": "Metrologia PRO"
+    },
+    body: JSON.stringify({
+      model: args.model,
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: buildOpenRouterPrompt(args.prompt, args.schema, !args.useJsonSchema)
+            },
+            {
+              type: "file",
+              file: {
+                filename: args.fileName,
+                file_data: args.fileDataUrl
+              }
+            }
+          ]
+        }
+      ],
+      response_format: args.useJsonSchema
+        ? {
+            type: "json_schema",
+            json_schema: {
+              name: "calibration_extraction",
+              strict: true,
+              schema: args.schema
+            }
+          }
+        : {
+            type: "json_object"
+          },
+      temperature: 0,
+      stream: false
+    })
+  }).finally(() => {
+    clearTimeout(timeout);
   });
-}
 
-async function waitForGeminiFileReady(ai: GoogleGenAI, fileName: string) {
-  const startedAt = Date.now();
-  let uploadedFile = await ai.files.get({ name: fileName });
+  const rawText = await response.text();
+  const payload = rawText ? (JSON.parse(rawText) as OpenRouterSuccessPayload & OpenRouterErrorPayload) : null;
 
-  while (
-    uploadedFile.state === FileState.PROCESSING &&
-    Date.now() - startedAt < geminiFileProcessingTimeoutMs
-  ) {
-    await sleep(geminiFileProcessingPollMs);
-    uploadedFile = await ai.files.get({ name: fileName });
-  }
-
-  if (uploadedFile.state === FileState.FAILED) {
-    throw new Error(
-      normalizeText(uploadedFile.error?.message) ||
-        "A Gemini nao conseguiu processar o PDF enviado."
-    );
-  }
-
-  if (uploadedFile.state === FileState.PROCESSING) {
-    throw new Error("A Gemini demorou mais do que o esperado para processar o PDF.");
-  }
-
-  return uploadedFile;
-}
-
-async function deleteGeminiFile(ai: GoogleGenAI, fileName: string) {
-  try {
-    await ai.files.delete({ name: fileName });
-  } catch {
-    // Ignore cleanup failures.
-  }
+  return {
+    ok: response.ok,
+    status: response.status,
+    payload,
+    text: extractAssistantText(payload)
+  };
 }
 
 export async function POST(request: Request) {
-  const apiKey = getGeminiApiKey();
+  const apiKey = getOpenRouterApiKey();
 
   if (!apiKey) {
-    return buildError("Defina GEMINI_API_KEY para habilitar a extracao por IA.", 503);
+    return buildError("Defina OPENROUTER_API_KEY para habilitar a extracao por IA.", 503);
   }
 
   const formData = await request.formData();
@@ -263,9 +374,6 @@ export async function POST(request: Request) {
     );
   }
 
-  const ai = new GoogleGenAI({ apiKey });
-  let uploadedFileName = "";
-
   try {
     const extractionSchema = buildCalibrationExtractionSchema(extractionFields);
     const extractionPrompt = buildCalibrationExtractionPrompt({
@@ -273,40 +381,44 @@ export async function POST(request: Request) {
       category: extractionTarget.category,
       fields: extractionFields
     });
-
-    const uploadedFile = await ai.files.upload({
-      file: certificateFile,
-      config: {
-        mimeType: "application/pdf",
-        displayName: certificateFile.name
-      }
-    });
-    uploadedFileName = uploadedFile.name ?? "";
-
-    if (!uploadedFileName) {
-      return buildError("A Gemini nao retornou um identificador valido para o PDF enviado.", 502);
-    }
-
-    const readyFile = await waitForGeminiFileReady(ai, uploadedFileName);
-
-    if (!readyFile.uri) {
-      return buildError("A Gemini nao retornou um arquivo utilizavel para leitura.", 502);
-    }
-
-    const response = await ai.models.generateContent({
+    const fileBytes = await certificateFile.arrayBuffer();
+    const fileDataUrl = encodePdfAsDataUrl(certificateFile, fileBytes);
+    const preferJsonSchema = shouldPreferJsonSchema(defaultCalibrationExtractionModel);
+    let response = await callOpenRouter({
+      apiKey,
+      prompt: extractionPrompt,
+      schema: extractionSchema,
       model: defaultCalibrationExtractionModel,
-      contents: createUserContent([
-        extractionPrompt,
-        createPartFromUri(readyFile.uri, readyFile.mimeType || "application/pdf")
-      ]),
-      config: {
-        responseMimeType: "application/json",
-        responseJsonSchema: extractionSchema
-      }
+      fileName: certificateFile.name,
+      fileDataUrl,
+      useJsonSchema: preferJsonSchema
     });
 
-    if (!response.text?.trim()) {
-      return buildError("A Gemini nao retornou dados estruturados para este certificado.", 502);
+    if (
+      preferJsonSchema &&
+      !response.ok &&
+      shouldRetryWithoutJsonSchema(response.status, response.payload)
+    ) {
+      response = await callOpenRouter({
+        apiKey,
+        prompt: extractionPrompt,
+        schema: extractionSchema,
+        model: defaultCalibrationExtractionModel,
+        fileName: certificateFile.name,
+        fileDataUrl,
+        useJsonSchema: false
+      });
+    }
+
+    if (!response.ok) {
+      return buildError(
+        getOpenRouterErrorMessage(response.status, response.payload),
+        response.status === 429 ? 429 : 502
+      );
+    }
+
+    if (!response.text) {
+      return buildError("A OpenRouter nao retornou dados estruturados para este certificado.", 502);
     }
 
     const parsedPayload = JSON.parse(response.text) as Parameters<
@@ -323,10 +435,6 @@ export async function POST(request: Request) {
       extraction
     });
   } catch (error) {
-    return buildError(getGeminiErrorMessage(error), getGeminiErrorStatus(error));
-  } finally {
-    if (uploadedFileName) {
-      await deleteGeminiFile(ai, uploadedFileName);
-    }
+    return buildError(getTransportErrorMessage(error), 502);
   }
 }

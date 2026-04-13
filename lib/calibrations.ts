@@ -82,6 +82,26 @@ function stripDiacritics(value: string) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
+function extractCertificateLabelFromUrl(value: string | null | undefined) {
+  const normalizedValue = normalizeText(value);
+
+  if (!normalizedValue) {
+    return "";
+  }
+
+  const lastSegment = (() => {
+    try {
+      const parsedUrl = new URL(normalizedValue);
+      return parsedUrl.pathname.split("/").pop() ?? "";
+    } catch {
+      return normalizedValue.split("/").pop() ?? "";
+    }
+  })();
+  const decodedSegment = decodeURIComponent(lastSegment).split("?")[0].split("#")[0];
+
+  return normalizeText(decodedSegment.replace(/^calibracao-\d+-\d{14}-/i, ""));
+}
+
 export function isCalibrationFilterPreset(value: string): value is CalibrationFilterPreset {
   return calibrationFilterOptions.some((option) => option.value === value);
 }
@@ -184,7 +204,12 @@ function getStatusToneFromLabel(value: string) {
 
 function deriveStatus(
   row: CalibrationDbRow,
-  results: CalibrationResultDbRow[]
+  results: CalibrationResultDbRow[],
+  parsedResults?: {
+    totalResults: number;
+    conformingResults: number;
+    nonConformingResults: number;
+  }
 ) {
   const explicitStatus = normalizeText(row.status_geral);
   const explicitTone = getStatusToneFromLabel(explicitStatus);
@@ -196,9 +221,14 @@ function deriveStatus(
     };
   }
 
-  const totalResults = results.length;
-  const nonConformingResults = results.filter((item) => item.conforme === false).length;
-  const conformingResults = results.filter((item) => item.conforme === true).length;
+  const hasParsedResults = Boolean(parsedResults && parsedResults.totalResults > 0);
+  const totalResults = hasParsedResults ? parsedResults?.totalResults ?? 0 : results.length;
+  const nonConformingResults = hasParsedResults
+    ? parsedResults?.nonConformingResults ?? 0
+    : results.filter((item) => item.conforme === false).length;
+  const conformingResults = hasParsedResults
+    ? parsedResults?.conformingResults ?? 0
+    : results.filter((item) => item.conforme === true).length;
 
   if (totalResults > 0) {
     if (nonConformingResults > 0) {
@@ -245,13 +275,13 @@ export function mapCalibrationHistoryRow(
   results: CalibrationResultDbRow[]
 ): CalibrationHistoryItem {
   const parsedRecord = parseCalibrationRecord(row.observacoes);
-  const parsedTotalResults = parsedRecord.fields.length;
   const parsedConformingResults = parsedRecord.fields.filter(
     (item) => item.status === "conforming"
   ).length;
   const parsedNonConformingResults = parsedRecord.fields.filter(
     (item) => item.status === "non_conforming"
   ).length;
+  const parsedTotalResults = parsedConformingResults + parsedNonConformingResults;
   const totalResults = parsedTotalResults || results.length;
   const conformingResults =
     parsedTotalResults > 0
@@ -261,7 +291,11 @@ export function mapCalibrationHistoryRow(
     parsedTotalResults > 0
       ? parsedNonConformingResults
       : results.filter((item) => item.conforme === false).length;
-  const status = deriveStatus(row, results);
+  const status = deriveStatus(row, results, {
+    totalResults,
+    conformingResults,
+    nonConformingResults
+  });
 
   return {
     id: row.id,
@@ -270,7 +304,10 @@ export function mapCalibrationHistoryRow(
     certificateDate: formatDateShort(row.data_emissao_certificado),
     validityDate: formatDateShort(row.data_validade),
     validityDateValue: row.data_validade ?? undefined,
-    certificate: normalizeText(row.certificado) || `Registro #${row.id}`,
+    certificate:
+      normalizeText(row.certificado) ||
+      extractCertificateLabelFromUrl(row.arquivo_certificado_url) ||
+      `Registro #${row.id}`,
     laboratory: normalizeText(row.laboratorio) || "Não informado",
     responsible: normalizeText(row.responsavel) || "Não informado",
     statusLabel: status.statusLabel,

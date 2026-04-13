@@ -2,14 +2,12 @@ import { NextResponse } from "next/server";
 import { serializeCategorySlug } from "@/lib/categories";
 import { isValidIsoDate } from "@/lib/date-utils";
 import {
-  mapCategoryMeasurementFieldRow,
   mapInstrumentMeasurementFieldRow,
   serializeMeasurementFieldSlug,
   type CategoryMeasurementFieldRow,
   type InstrumentMeasurementFieldRow,
   type MeasurementFieldDraft,
-  type MeasurementFieldItem,
-  type MeasurementFieldSource
+  type MeasurementFieldItem
 } from "@/lib/measurement-fields";
 import {
   mapInstrumentRow,
@@ -22,11 +20,10 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 export const dynamic = "force-dynamic";
 
 type SanitizedMeasurementFieldInput = {
+  categoryFieldId: number | null;
   name: string;
   slug: string;
   measurementId: number;
-  source: MeasurementFieldSource;
-  categoryFieldId: number | null;
   order: number;
 };
 
@@ -74,36 +71,6 @@ function mapMeasurementsById(rows: MeasurementRow[]) {
   return new Map(rows.map((row) => [row.id, row]));
 }
 
-function mapCategoryFieldsByCategoryId(
-  rows: CategoryMeasurementFieldRow[],
-  measurementsById: Map<number, MeasurementRow>
-) {
-  const nextMap = new Map<number, MeasurementFieldItem[]>();
-
-  for (const row of rows) {
-    if (!row.categoria_id) continue;
-
-    const currentList = nextMap.get(row.categoria_id) ?? [];
-    currentList.push(mapCategoryMeasurementFieldRow(row, measurementsById));
-    nextMap.set(row.categoria_id, currentList);
-  }
-
-  for (const [categoryId, fields] of nextMap.entries()) {
-    nextMap.set(
-      categoryId,
-      [...fields].sort((first, second) => {
-        if (first.order !== second.order) {
-          return first.order - second.order;
-        }
-
-        return first.name.localeCompare(second.name, "pt-BR", { sensitivity: "base" });
-      })
-    );
-  }
-
-  return nextMap;
-}
-
 function mapInstrumentFieldsByInstrumentId(
   rows: InstrumentMeasurementFieldRow[],
   measurementsById: Map<number, MeasurementRow>
@@ -138,7 +105,7 @@ function sanitizeMeasurementFields(rawFields: MeasurementFieldDraft[] | undefine
   const fields = rawFields ?? [];
 
   if (fields.length === 0) {
-    return { error: "Adicione pelo menos um campo de medicao." };
+    return { fields: [] as SanitizedMeasurementFieldInput[] };
   }
 
   const seenSlugs = new Set<string>();
@@ -148,11 +115,6 @@ function sanitizeMeasurementFields(rawFields: MeasurementFieldDraft[] | undefine
     const name = normalizeText(rawField.name);
     const slug = serializeMeasurementFieldSlug(name);
     const measurementId = Number(rawField.measurementId);
-    const source = rawField.source === "category" ? "category" : "instrument";
-    const rawCategoryFieldId =
-      rawField.categoryFieldId === "" || rawField.categoryFieldId === undefined
-        ? null
-        : Number(rawField.categoryFieldId);
 
     if (!name) {
       return { error: `Preencha o nome do campo ${index + 1}.` };
@@ -172,11 +134,10 @@ function sanitizeMeasurementFields(rawFields: MeasurementFieldDraft[] | undefine
 
     seenSlugs.add(slug);
     sanitizedFields.push({
+      categoryFieldId: null,
       name,
       slug,
       measurementId,
-      source,
-      categoryFieldId: Number.isFinite(rawCategoryFieldId) ? rawCategoryFieldId : null,
       order: index
     });
   }
@@ -225,6 +186,29 @@ async function loadMeasurements() {
     .order("tipo", { ascending: true });
 }
 
+async function loadInstrumentMeasurementFields(instrumentIds: number[]) {
+  if (instrumentIds.length === 0) {
+    return {
+      data: [] as InstrumentMeasurementFieldRow[],
+      error: null as null | { message: string }
+    };
+  }
+
+  const response = await supabaseAdmin
+    .schema("calibracao")
+    .from("instrumento_campos_medicao")
+    .select("id, instrumento_id, categoria_campo_medicao_id, nome, slug, unidade_medida_id, tipo_valor, ordem, ativo")
+    .eq("ativo", true)
+    .in("instrumento_id", instrumentIds)
+    .order("ordem", { ascending: true })
+    .order("id", { ascending: true });
+
+  return {
+    data: (response.data ?? []) as InstrumentMeasurementFieldRow[],
+    error: response.error
+  };
+}
+
 async function loadCategoryMeasurementFields(categoryIds: number[]) {
   if (categoryIds.length === 0) {
     return {
@@ -248,27 +232,38 @@ async function loadCategoryMeasurementFields(categoryIds: number[]) {
   };
 }
 
-async function loadInstrumentMeasurementFields(instrumentIds: number[]) {
-  if (instrumentIds.length === 0) {
-    return {
-      data: [] as InstrumentMeasurementFieldRow[],
-      error: null as null | { message: string }
-    };
+function mapCategoryFieldRowsByCategoryId(rows: CategoryMeasurementFieldRow[]) {
+  const nextMap = new Map<number, CategoryMeasurementFieldRow[]>();
+
+  for (const row of rows) {
+    if (!row.categoria_id) {
+      continue;
+    }
+
+    const currentItems = nextMap.get(row.categoria_id) ?? [];
+    currentItems.push(row);
+    nextMap.set(row.categoria_id, currentItems);
   }
 
-  const response = await supabaseAdmin
-    .schema("calibracao")
-    .from("instrumento_campos_medicao")
-    .select("id, instrumento_id, categoria_campo_medicao_id, nome, slug, unidade_medida_id, tipo_valor, ordem, ativo")
-    .eq("ativo", true)
-    .in("instrumento_id", instrumentIds)
-    .order("ordem", { ascending: true })
-    .order("id", { ascending: true });
+  for (const [categoryId, fields] of nextMap.entries()) {
+    nextMap.set(
+      categoryId,
+      [...fields].sort((first, second) => {
+        const firstOrder = first.ordem ?? 0;
+        const secondOrder = second.ordem ?? 0;
 
-  return {
-    data: (response.data ?? []) as InstrumentMeasurementFieldRow[],
-    error: response.error
-  };
+        if (firstOrder !== secondOrder) {
+          return firstOrder - secondOrder;
+        }
+
+        return normalizeText(first.nome).localeCompare(normalizeText(second.nome), "pt-BR", {
+          sensitivity: "base"
+        });
+      })
+    );
+  }
+
+  return nextMap;
 }
 
 async function findCategoryByNameOrSlug(rawCategory: string) {
@@ -296,6 +291,39 @@ async function findCategoryByNameOrSlug(rawCategory: string) {
     .maybeSingle();
 }
 
+async function replaceInstrumentMeasurementFields(
+  instrumentId: number,
+  fields: SanitizedMeasurementFieldInput[]
+) {
+  const deleteResponse = await supabaseAdmin
+    .schema("calibracao")
+    .from("instrumento_campos_medicao")
+    .delete()
+    .eq("instrumento_id", instrumentId);
+
+  if (deleteResponse.error) {
+    return { error: deleteResponse.error };
+  }
+
+  const insertPayload = fields.map((field, index) => ({
+    instrumento_id: instrumentId,
+    categoria_campo_medicao_id: field.categoryFieldId,
+    nome: field.name,
+    slug: field.slug,
+    unidade_medida_id: field.measurementId,
+    tipo_valor: "numero",
+    ordem: index,
+    ativo: true
+  }));
+
+  const insertResponse = await supabaseAdmin
+    .schema("calibracao")
+    .from("instrumento_campos_medicao")
+    .insert(insertPayload);
+
+  return { error: insertResponse.error };
+}
+
 async function replaceCategoryMeasurementFields(
   categoryId: number,
   fields: SanitizedMeasurementFieldInput[]
@@ -307,7 +335,7 @@ async function replaceCategoryMeasurementFields(
     .eq("categoria_id", categoryId);
 
   if (deleteResponse.error) {
-    return { data: null, error: deleteResponse.error };
+    return { error: deleteResponse.error };
   }
 
   const insertPayload = fields.map((field, index) => ({
@@ -327,85 +355,58 @@ async function replaceCategoryMeasurementFields(
     .select("id, categoria_id, nome, slug, unidade_medida_id, tipo_valor, ordem, ativo");
 
   return {
-    data: (insertResponse.data ?? null) as CategoryMeasurementFieldRow[] | null,
+    data: (insertResponse.data ?? []) as CategoryMeasurementFieldRow[],
     error: insertResponse.error
   };
 }
 
-async function replaceInstrumentMeasurementFields(
-  instrumentId: number,
-  fields: SanitizedMeasurementFieldInput[],
-  categoryFieldIdsBySlug: Map<string, number>
-) {
-  const deleteResponse = await supabaseAdmin
-    .schema("calibracao")
-    .from("instrumento_campos_medicao")
-    .delete()
-    .eq("instrumento_id", instrumentId);
-
-  if (deleteResponse.error) {
-    return { error: deleteResponse.error };
+function buildInstrumentFieldsFromCategoryFields(categoryFields: CategoryMeasurementFieldRow[]) {
+  if (categoryFields.length === 0) {
+    return { error: "A categoria selecionada nao possui um template de calibracao cadastrado." };
   }
 
-  const insertPayload = fields.map((field, index) => ({
-    instrumento_id: instrumentId,
-    categoria_campo_medicao_id:
-      field.source === "category"
-        ? field.categoryFieldId ?? categoryFieldIdsBySlug.get(field.slug) ?? null
-        : null,
-    nome: field.name,
-    slug: field.slug,
-    unidade_medida_id: field.measurementId,
-    tipo_valor: "numero",
-    ordem: index,
-    ativo: true
-  }));
-
-  const insertResponse = await supabaseAdmin
-    .schema("calibracao")
-    .from("instrumento_campos_medicao")
-    .insert(insertPayload);
-
-  return { error: insertResponse.error };
-}
-
-function buildCategoryFieldIdsBySlug(rows: CategoryMeasurementFieldRow[]) {
-  return new Map(rows.map((row) => [normalizeText(row.slug), row.id] as const));
+  return {
+    fields: categoryFields.map((field, index) => ({
+      categoryFieldId: field.id,
+      name: normalizeText(field.nome),
+      slug: normalizeText(field.slug) || serializeMeasurementFieldSlug(field.nome ?? ""),
+      measurementId: field.unidade_medida_id ?? 0,
+      order: field.ordem ?? index
+    }))
+  };
 }
 
 function buildInstrumentDetail(
   row: InstrumentDbRow,
   categoriesById: Map<number, InstrumentCategoryRow>,
-  instrumentFieldsByInstrumentId: Map<number, MeasurementFieldItem[]>,
-  categoryFieldsByCategoryId: Map<number, MeasurementFieldItem[]>
+  instrumentFieldsByInstrumentId: Map<number, MeasurementFieldItem[]>
 ) {
   const baseItem = mapInstrumentRow(row, categoriesById);
-  const fields =
-    instrumentFieldsByInstrumentId.get(row.id) ??
-    (row.categoria_id ? categoryFieldsByCategoryId.get(row.categoria_id) : undefined) ??
-    [];
 
   return {
     ...baseItem,
-    fields
+    fields: instrumentFieldsByInstrumentId.get(row.id) ?? []
   };
 }
 
-async function resolveCategory(
-  rawCategory: string,
-  useNewCategory: boolean,
-  fields: SanitizedMeasurementFieldInput[]
-) {
+async function resolveCategory(rawCategory: string, useNewCategory: boolean) {
   if (useNewCategory) {
     const categoryName = normalizeText(rawCategory);
     const categorySlug = serializeCategorySlug(categoryName);
 
     if (!categoryName) {
-      return { response: NextResponse.json({ error: "Nome da nova categoria obrigatorio." }, { status: 400 }) };
+      return {
+        response: NextResponse.json(
+          { error: "Nome da nova categoria obrigatorio." },
+          { status: 400 }
+        )
+      };
     }
 
     if (!categorySlug) {
-      return { response: NextResponse.json({ error: "Nome da categoria invalido." }, { status: 400 }) };
+      return {
+        response: NextResponse.json({ error: "Nome da categoria invalido." }, { status: 400 })
+      };
     }
 
     const duplicateCategory = await findDuplicateCategorySlug(categorySlug);
@@ -419,7 +420,12 @@ async function resolveCategory(
     }
 
     if (duplicateCategory.data) {
-      return { response: NextResponse.json({ error: "Essa categoria ja esta cadastrada." }, { status: 409 }) };
+      return {
+        response: NextResponse.json(
+          { error: "Essa categoria ja esta cadastrada." },
+          { status: 409 }
+        )
+      };
     }
 
     const insertCategory = await supabaseAdmin
@@ -440,22 +446,8 @@ async function resolveCategory(
       return { response: buildGenericError() };
     }
 
-    const categoryFieldResponse = await replaceCategoryMeasurementFields(
-      insertCategory.data.id,
-      fields.map((field) => ({ ...field, source: "category" }))
-    );
-
-    if (categoryFieldResponse.error) {
-      if (isPermissionDenied(categoryFieldResponse.error.message)) {
-        return { response: buildSchemaPermissionError() };
-      }
-
-      return { response: buildGenericError() };
-    }
-
     return {
-      category: insertCategory.data as InstrumentCategoryRow,
-      categoryFieldRows: categoryFieldResponse.data ?? []
+      category: insertCategory.data as InstrumentCategoryRow
     };
   }
 
@@ -473,19 +465,8 @@ async function resolveCategory(
     return { response: NextResponse.json({ error: "Categoria nao encontrada." }, { status: 400 }) };
   }
 
-  const categoryFieldRowsResponse = await loadCategoryMeasurementFields([categoryLookup.data.id]);
-
-  if (categoryFieldRowsResponse.error) {
-    if (isPermissionDenied(categoryFieldRowsResponse.error.message)) {
-      return { response: buildSchemaPermissionError() };
-    }
-
-    return { response: buildGenericError() };
-  }
-
   return {
-    category: categoryLookup.data as InstrumentCategoryRow,
-    categoryFieldRows: categoryFieldRowsResponse.data
+    category: categoryLookup.data as InstrumentCategoryRow
   };
 }
 
@@ -520,20 +501,16 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Instrumento nao encontrado." }, { status: 404 });
     }
 
-    const [categoryRowsResponse, measurementRowsResponse, categoryFieldRowsResponse, instrumentFieldRowsResponse] =
+    const [categoryRowsResponse, measurementRowsResponse, instrumentFieldRowsResponse] =
       await Promise.all([
         loadCategories(),
         loadMeasurements(),
-        loadCategoryMeasurementFields(
-          instrumentResponse.data.categoria_id ? [instrumentResponse.data.categoria_id] : []
-        ),
         loadInstrumentMeasurementFields([instrumentId])
       ]);
 
     const combinedError =
       categoryRowsResponse.error ??
       measurementRowsResponse.error ??
-      categoryFieldRowsResponse.error ??
       instrumentFieldRowsResponse.error;
 
     if (combinedError) {
@@ -550,10 +527,6 @@ export async function GET(request: Request) {
     const measurementsById = mapMeasurementsById(
       (measurementRowsResponse.data ?? []) as MeasurementRow[]
     );
-    const categoryFieldsByCategoryId = mapCategoryFieldsByCategoryId(
-      categoryFieldRowsResponse.data,
-      measurementsById
-    );
     const instrumentFieldsByInstrumentId = mapInstrumentFieldsByInstrumentId(
       instrumentFieldRowsResponse.data,
       measurementsById
@@ -562,8 +535,7 @@ export async function GET(request: Request) {
     const item = buildInstrumentDetail(
       instrumentResponse.data as InstrumentDbRow,
       categoriesById,
-      instrumentFieldsByInstrumentId,
-      categoryFieldsByCategoryId
+      instrumentFieldsByInstrumentId
     );
 
     return NextResponse.json({ item });
@@ -622,10 +594,6 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!manufacturer) {
-    return NextResponse.json({ error: "Fabricante obrigatorio." }, { status: 400 });
-  }
-
   if (!calibrationDate || !isValidIsoDate(calibrationDate)) {
     return NextResponse.json({ error: "Prazo de calibracao obrigatorio." }, { status: 400 });
   }
@@ -648,14 +616,60 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Essa tag ja esta cadastrada." }, { status: 409 });
   }
 
-  const resolvedCategory = await resolveCategory(
-    category,
-    Boolean(payload.useNewCategory),
-    sanitizedFields.fields
-  );
+  const resolvedCategory = await resolveCategory(category, Boolean(payload.useNewCategory));
 
   if ("response" in resolvedCategory) {
     return resolvedCategory.response;
+  }
+
+  let instrumentFields = sanitizedFields.fields;
+
+  if (payload.useNewCategory && instrumentFields.length > 0) {
+    const createdCategoryFields = await replaceCategoryMeasurementFields(
+      resolvedCategory.category.id,
+      instrumentFields
+    );
+
+    if (createdCategoryFields.error) {
+      if (isPermissionDenied(createdCategoryFields.error.message)) {
+        return buildSchemaPermissionError();
+      }
+
+      return buildGenericError();
+    }
+
+    const builtCategoryFields = buildInstrumentFieldsFromCategoryFields(
+      createdCategoryFields.data ?? []
+    );
+
+    if ("error" in builtCategoryFields) {
+      return NextResponse.json({ error: builtCategoryFields.error }, { status: 400 });
+    }
+
+    instrumentFields = builtCategoryFields.fields;
+  }
+
+  if (instrumentFields.length === 0) {
+    const categoryFieldsResponse = await loadCategoryMeasurementFields([resolvedCategory.category.id]);
+
+    if (categoryFieldsResponse.error) {
+      if (isPermissionDenied(categoryFieldsResponse.error.message)) {
+        return buildSchemaPermissionError();
+      }
+
+      return buildGenericError();
+    }
+
+    const categoryFieldsByCategoryId = mapCategoryFieldRowsByCategoryId(categoryFieldsResponse.data);
+    const builtCategoryFields = buildInstrumentFieldsFromCategoryFields(
+      categoryFieldsByCategoryId.get(resolvedCategory.category.id) ?? []
+    );
+
+    if ("error" in builtCategoryFields) {
+      return NextResponse.json({ error: builtCategoryFields.error }, { status: 400 });
+    }
+
+    instrumentFields = builtCategoryFields.fields;
   }
 
   const insertInstrument = await supabaseAdmin
@@ -664,7 +678,7 @@ export async function POST(request: Request) {
     .insert({
       tag,
       categoria_id: resolvedCategory.category.id,
-      fabricante: manufacturer,
+      fabricante: manufacturer || null,
       proxima_calibracao: calibrationDate
     })
     .select("id, tag, categoria_id, fabricante, data_ultima_calibracao, proxima_calibracao")
@@ -678,21 +692,13 @@ export async function POST(request: Request) {
     return buildGenericError();
   }
 
-  const categoryFieldIdsBySlug = buildCategoryFieldIdsBySlug(
-    resolvedCategory.categoryFieldRows
-  );
-  const instrumentFields =
-    payload.useNewCategory
-      ? sanitizedFields.fields.map((field) => ({ ...field, source: "category" as const }))
-      : sanitizedFields.fields;
-  const replaceInstrumentFields = await replaceInstrumentMeasurementFields(
+  const replaceInstrumentFieldsResponse = await replaceInstrumentMeasurementFields(
     insertInstrument.data.id,
-    instrumentFields,
-    categoryFieldIdsBySlug
+    instrumentFields
   );
 
-  if (replaceInstrumentFields.error) {
-    if (isPermissionDenied(replaceInstrumentFields.error.message)) {
+  if (replaceInstrumentFieldsResponse.error) {
+    if (isPermissionDenied(replaceInstrumentFieldsResponse.error.message)) {
       return buildSchemaPermissionError();
     }
 
@@ -734,10 +740,6 @@ export async function PATCH(request: Request) {
     );
   }
 
-  if (!manufacturer) {
-    return NextResponse.json({ error: "Fabricante obrigatorio." }, { status: 400 });
-  }
-
   if (!calibrationDate || !isValidIsoDate(calibrationDate)) {
     return NextResponse.json({ error: "Prazo de calibracao obrigatorio." }, { status: 400 });
   }
@@ -760,14 +762,60 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Essa tag ja esta cadastrada." }, { status: 409 });
   }
 
-  const resolvedCategory = await resolveCategory(
-    category,
-    Boolean(payload.useNewCategory),
-    sanitizedFields.fields
-  );
+  const resolvedCategory = await resolveCategory(category, Boolean(payload.useNewCategory));
 
   if ("response" in resolvedCategory) {
     return resolvedCategory.response;
+  }
+
+  let instrumentFields = sanitizedFields.fields;
+
+  if (payload.useNewCategory && instrumentFields.length > 0) {
+    const createdCategoryFields = await replaceCategoryMeasurementFields(
+      resolvedCategory.category.id,
+      instrumentFields
+    );
+
+    if (createdCategoryFields.error) {
+      if (isPermissionDenied(createdCategoryFields.error.message)) {
+        return buildSchemaPermissionError();
+      }
+
+      return buildGenericError();
+    }
+
+    const builtCategoryFields = buildInstrumentFieldsFromCategoryFields(
+      createdCategoryFields.data ?? []
+    );
+
+    if ("error" in builtCategoryFields) {
+      return NextResponse.json({ error: builtCategoryFields.error }, { status: 400 });
+    }
+
+    instrumentFields = builtCategoryFields.fields;
+  }
+
+  if (instrumentFields.length === 0) {
+    const categoryFieldsResponse = await loadCategoryMeasurementFields([resolvedCategory.category.id]);
+
+    if (categoryFieldsResponse.error) {
+      if (isPermissionDenied(categoryFieldsResponse.error.message)) {
+        return buildSchemaPermissionError();
+      }
+
+      return buildGenericError();
+    }
+
+    const categoryFieldsByCategoryId = mapCategoryFieldRowsByCategoryId(categoryFieldsResponse.data);
+    const builtCategoryFields = buildInstrumentFieldsFromCategoryFields(
+      categoryFieldsByCategoryId.get(resolvedCategory.category.id) ?? []
+    );
+
+    if ("error" in builtCategoryFields) {
+      return NextResponse.json({ error: builtCategoryFields.error }, { status: 400 });
+    }
+
+    instrumentFields = builtCategoryFields.fields;
   }
 
   const updateInstrument = await supabaseAdmin
@@ -776,7 +824,7 @@ export async function PATCH(request: Request) {
     .update({
       tag,
       categoria_id: resolvedCategory.category.id,
-      fabricante: manufacturer,
+      fabricante: manufacturer || null,
       proxima_calibracao: calibrationDate
     })
     .eq("id", id)
@@ -791,21 +839,13 @@ export async function PATCH(request: Request) {
     return buildGenericError();
   }
 
-  const categoryFieldIdsBySlug = buildCategoryFieldIdsBySlug(
-    resolvedCategory.categoryFieldRows
-  );
-  const instrumentFields =
-    payload.useNewCategory
-      ? sanitizedFields.fields.map((field) => ({ ...field, source: "category" as const }))
-      : sanitizedFields.fields;
-  const replaceInstrumentFields = await replaceInstrumentMeasurementFields(
+  const replaceInstrumentFieldsResponse = await replaceInstrumentMeasurementFields(
     id,
-    instrumentFields,
-    categoryFieldIdsBySlug
+    instrumentFields
   );
 
-  if (replaceInstrumentFields.error) {
-    if (isPermissionDenied(replaceInstrumentFields.error.message)) {
+  if (replaceInstrumentFieldsResponse.error) {
+    if (isPermissionDenied(replaceInstrumentFieldsResponse.error.message)) {
       return buildSchemaPermissionError();
     }
 

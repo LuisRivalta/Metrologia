@@ -18,6 +18,9 @@ const exactDisplayByRaw: Record<string, string> = {
   kelvin: "K",
   grau: "\u00B0",
   graus: "\u00B0",
+  numero: "Numero",
+  ohm: "\u03A9",
+  um: "\u00B5m",
   lb_in: "lbf in",
   db: "dB",
   ph: "pH",
@@ -36,6 +39,7 @@ const exactDisplayByRaw: Record<string, string> = {
 };
 
 const exactRawByDisplay: Record<string, string> = {
+  numero: "numero",
   "\u00B0": "grau",
   "\u00BA": "grau",
   grau: "grau",
@@ -76,6 +80,13 @@ function normalizeMeasurementLookup(value: string) {
   return value
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[µμ]/g, "u")
+    .replace(/[Ωω]/g, "ohm")
+    .replace(/[\u00B0\u00BA]\s*c/gi, "celsius")
+    .replace(/[\u00B0\u00BA]\s*f/gi, "fahrenheit")
+    .replace(/[\u00B0\u00BA]/g, "grau")
+    .replace(/[%]/g, "pct")
+    .replace(/[\u00D7\u00B7]/g, "*")
     .replace(/\u00B2/g, "2")
     .replace(/\u00B3/g, "3")
     .toLowerCase()
@@ -139,6 +150,8 @@ export function serializeMeasurementType(inputValue: string) {
   return input
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[µμ]/g, "u")
+    .replace(/[Ωω]/g, "ohm")
     .replace(/\u00B2/g, "2")
     .replace(/\u00B3/g, "3")
     .replace(/[\u00B0\u00BA]\s*c/gi, "celsius")

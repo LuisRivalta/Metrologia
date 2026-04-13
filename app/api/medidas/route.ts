@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
-import { mapMeasurementRow, serializeMeasurementType, type MeasurementRow } from "@/lib/measurements";
+import {
+  formatMeasurementType,
+  mapMeasurementRow,
+  serializeMeasurementType,
+  type MeasurementRow
+} from "@/lib/measurements";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
@@ -79,7 +84,10 @@ export async function POST(request: Request) {
   }
 
   if (duplicateLookup.data) {
-    return NextResponse.json({ error: "Essa medida ja esta cadastrada." }, { status: 409 });
+    return NextResponse.json(
+      { error: `A medida ${formatMeasurementType(rawType) || rawType} ja esta cadastrada.` },
+      { status: 409 }
+    );
   }
 
   const { data, error } = await supabaseAdmin
@@ -133,7 +141,10 @@ export async function PATCH(request: Request) {
   }
 
   if (duplicateLookup.data) {
-    return NextResponse.json({ error: "Essa medida ja esta cadastrada." }, { status: 409 });
+    return NextResponse.json(
+      { error: `A medida ${formatMeasurementType(rawType) || rawType} ja esta cadastrada.` },
+      { status: 409 }
+    );
   }
 
   const { data, error } = await supabaseAdmin

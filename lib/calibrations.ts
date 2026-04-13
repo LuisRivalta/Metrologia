@@ -1,4 +1,8 @@
 import { isValidIsoDate, parseValidIsoDate } from "@/lib/date-utils";
+import {
+  parseCalibrationRecord,
+  type CalibrationStoredFieldEntry
+} from "@/lib/calibration-records";
 import { getRelativeCalibration, type InstrumentTone } from "@/lib/instruments";
 
 export type CalibrationDbRow = {
@@ -38,6 +42,7 @@ export type CalibrationHistoryItem = {
   statusLabel: string;
   statusTone: InstrumentTone;
   observations: string;
+  fieldEntries: CalibrationStoredFieldEntry[];
   certificateUrl: string | null;
   totalResults: number;
   conformingResults: number;
@@ -58,6 +63,15 @@ export const calibrationFilterOptions: Array<{
   { value: "5y", label: "5 anos" }
 ];
 
+export const calibrationStatusOptions = [
+  { value: "Aprovado", label: "Aprovado" },
+  { value: "Em revisao", label: "Em revisao" },
+  { value: "Perto de vencer", label: "Perto de vencer" },
+  { value: "Reprovado", label: "Reprovado" }
+] as const;
+
+export type CalibrationStatusValue = (typeof calibrationStatusOptions)[number]["value"];
+
 const shortMonthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
 function normalizeText(value: string | null | undefined) {
@@ -70,6 +84,10 @@ function stripDiacritics(value: string) {
 
 export function isCalibrationFilterPreset(value: string): value is CalibrationFilterPreset {
   return calibrationFilterOptions.some((option) => option.value === value);
+}
+
+export function isCalibrationStatusValue(value: string): value is CalibrationStatusValue {
+  return calibrationStatusOptions.some((option) => option.value === value);
 }
 
 export function getCalibrationFilterStartDate(
@@ -226,9 +244,23 @@ export function mapCalibrationHistoryRow(
   row: CalibrationDbRow,
   results: CalibrationResultDbRow[]
 ): CalibrationHistoryItem {
-  const totalResults = results.length;
-  const conformingResults = results.filter((item) => item.conforme === true).length;
-  const nonConformingResults = results.filter((item) => item.conforme === false).length;
+  const parsedRecord = parseCalibrationRecord(row.observacoes);
+  const parsedTotalResults = parsedRecord.fields.length;
+  const parsedConformingResults = parsedRecord.fields.filter(
+    (item) => item.status === "conforming"
+  ).length;
+  const parsedNonConformingResults = parsedRecord.fields.filter(
+    (item) => item.status === "non_conforming"
+  ).length;
+  const totalResults = parsedTotalResults || results.length;
+  const conformingResults =
+    parsedTotalResults > 0
+      ? parsedConformingResults
+      : results.filter((item) => item.conforme === true).length;
+  const nonConformingResults =
+    parsedTotalResults > 0
+      ? parsedNonConformingResults
+      : results.filter((item) => item.conforme === false).length;
   const status = deriveStatus(row, results);
 
   return {
@@ -243,7 +275,8 @@ export function mapCalibrationHistoryRow(
     responsible: normalizeText(row.responsavel) || "Não informado",
     statusLabel: status.statusLabel,
     statusTone: status.statusTone,
-    observations: normalizeText(row.observacoes),
+    observations: parsedRecord.notes,
+    fieldEntries: parsedRecord.fields,
     certificateUrl: normalizeText(row.arquivo_certificado_url) || null,
     totalResults,
     conformingResults,

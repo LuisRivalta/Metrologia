@@ -10,9 +10,8 @@
 # Regras de Negocio
 - Categorias e unidades de medida sao mantidas no schema `calibracao`.
 - O nome salvo no banco pode seguir formato tecnico/canonico, enquanto a interface exibe uma versao amigavel ao usuario.
-- Cada categoria pode possuir campos de medicao padrao.
-- Ao selecionar uma categoria no cadastro de instrumento, os campos padrao devem ser carregados automaticamente.
-- O usuario pode adicionar campos extras manualmente em um instrumento, sem depender apenas do padrao da categoria.
+- Categorias funcionam apenas como classificacao do instrumento.
+- Os campos de medicao pertencem ao instrumento e sao configurados manualmente no cadastro e na edicao.
 - A `tag` do instrumento e digitada manualmente pelo usuario.
 - O dashboard deve priorizar informacoes pertinentes a metrologia: total de instrumentos, total de categorias, prazos e distribuicao por status.
 - Em regras de prazo, itens "perto de vencer" ainda contam como "no prazo" para o indice agregado.
@@ -59,7 +58,6 @@
   - `calibracao.categorias_instrumentos`
   - `calibracao.unidadas_medidas`
   - `calibracao.instrumentos`
-  - `calibracao.categoria_campos_medicao`
   - `calibracao.instrumento_campos_medicao`
   - `calibracao.calibracoes`
   - `calibracao.calibracao_resultados`
@@ -87,7 +85,7 @@
   - CRUD real de instrumentos em `calibracao.instrumentos`
   - Pagina individual de detalhe por instrumento
   - Dashboard com metricas reais de instrumentos, categorias e status de prazo
-  - Campos padrao por categoria e campos extras por instrumento
+  - Campos de medicao configurados manualmente por instrumento
   - Melhorias visuais e de acessibilidade em configuracoes
   - Redesign da tela de login com layout full-screen
   - Integracao do fundo `LightPillar` no login

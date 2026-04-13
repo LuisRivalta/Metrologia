@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { fetchApi } from "@/lib/api/client";
 import {
   calibrationFilterOptions,
   type CalibrationFilterPreset,
   type CalibrationHistoryItem
 } from "@/lib/calibrations";
 import type { InstrumentItem } from "@/lib/instruments";
+import { CalibrationFieldReviewTable } from "./calibration-field-review-table";
 import { PageTransitionLink } from "./page-transition-link";
 
 type InstrumentCalibrationsContentProps = {
@@ -39,23 +42,24 @@ function getEmptyHistoryMessage(
   dateTo: string
 ) {
   if (dateFrom && dateTo) {
-    return `Nenhuma calibração foi encontrada para ${tag} entre ${formatDateLabel(dateFrom)} e ${formatDateLabel(dateTo)}.`;
+    return `Nenhuma calibracao foi encontrada para ${tag} entre ${formatDateLabel(dateFrom)} e ${formatDateLabel(dateTo)}.`;
   }
 
   if (dateFrom) {
-    return `Nenhuma calibração foi encontrada para ${tag} a partir de ${formatDateLabel(dateFrom)}.`;
+    return `Nenhuma calibracao foi encontrada para ${tag} a partir de ${formatDateLabel(dateFrom)}.`;
   }
 
   if (dateTo) {
-    return `Nenhuma calibração foi encontrada para ${tag} até ${formatDateLabel(dateTo)}.`;
+    return `Nenhuma calibracao foi encontrada para ${tag} ate ${formatDateLabel(dateTo)}.`;
   }
 
-  return `Nenhuma calibração foi encontrada para ${tag} no período de ${selectedPeriodLabel.toLowerCase()}.`;
+  return `Nenhuma calibracao foi encontrada para ${tag} no periodo de ${selectedPeriodLabel.toLowerCase()}.`;
 }
 
 export function InstrumentCalibrationsContent({
   instrumentId
 }: InstrumentCalibrationsContentProps) {
+  const searchParams = useSearchParams();
   const [selectedPeriod, setSelectedPeriod] = useState<CalibrationFilterPreset>("1y");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -82,7 +86,7 @@ export function InstrumentCalibrationsContent({
           params.set("period", selectedPeriod);
         }
 
-        const response = await fetch(`/api/calibracoes?${params.toString()}`, {
+        const response = await fetchApi(`/api/calibracoes?${params.toString()}`, {
           method: "GET",
           cache: "no-store"
         });
@@ -92,7 +96,7 @@ export function InstrumentCalibrationsContent({
           if (!isMounted) return;
           setInstrument(null);
           setItems([]);
-          setLoadError(payload.error ?? "Não foi possível carregar o log de calibrações.");
+          setLoadError(payload.error ?? "Nao foi possivel carregar o log de calibracoes.");
           setIsLoading(false);
           return;
         }
@@ -106,7 +110,7 @@ export function InstrumentCalibrationsContent({
         if (!isMounted) return;
         setInstrument(null);
         setItems([]);
-        setLoadError("Não foi possível carregar o log de calibrações.");
+        setLoadError("Nao foi possivel carregar o log de calibracoes.");
         setIsLoading(false);
       }
     }
@@ -120,6 +124,7 @@ export function InstrumentCalibrationsContent({
 
   const selectedPeriodLabel =
     calibrationFilterOptions.find((option) => option.value === selectedPeriod)?.label ?? "1 ano";
+  const hasCreatedMessage = searchParams.get("created") === "1";
 
   return (
     <section className="inventory-content instrument-detail-content instrument-calibration-content">
@@ -139,14 +144,29 @@ export function InstrumentCalibrationsContent({
           Voltar para o instrumento
         </PageTransitionLink>
 
-        <PageTransitionLink href="/instrumentos" className="instrument-detail-link-chip">
-          Lista de instrumentos
-        </PageTransitionLink>
+        <div className="instrument-detail-nav__actions">
+          <PageTransitionLink
+            href={`/instrumentos/${instrumentId}/calibracoes/nova`}
+            className="instrument-detail-link-chip instrument-detail-link-chip--primary"
+          >
+            Nova calibracao
+          </PageTransitionLink>
+
+          <PageTransitionLink href="/instrumentos" className="instrument-detail-link-chip">
+            Lista de instrumentos
+          </PageTransitionLink>
+        </div>
       </div>
+
+      {hasCreatedMessage ? (
+        <section className="inventory-table-card instrument-detail-banner instrument-detail-banner--success">
+          Calibracao registrada e certificado anexado com sucesso.
+        </section>
+      ) : null}
 
       {isLoading ? (
         <section className="inventory-table-card instrument-detail-card instrument-detail-card--state">
-          <p className="inventory-table__empty">Carregando log de calibrações...</p>
+          <p className="inventory-table__empty">Carregando log de calibracoes...</p>
         </section>
       ) : null}
 
@@ -157,148 +177,171 @@ export function InstrumentCalibrationsContent({
       ) : null}
 
       {!isLoading && instrument ? (
-        <>
-          <section className="instrument-detail-grid">
-            <article className="inventory-table-card instrument-detail-card instrument-detail-card--full">
-              <header className="instrument-detail-card__header instrument-calibration-card__header">
-                <div>
-                  <p className="instrument-detail-hero__eyebrow">Log de calibrações</p>
-                  <div className="instrument-calibration-card__heading">
-                    <h3>{instrument.tag}</h3>
-                  </div>
-                  <p>{instrument.category}</p>
+        <section className="instrument-detail-grid">
+          <article className="inventory-table-card instrument-detail-card instrument-detail-card--full">
+            <header className="instrument-detail-card__header instrument-calibration-card__header">
+              <div>
+                <p className="instrument-detail-hero__eyebrow">Log de calibracoes</p>
+                <div className="instrument-calibration-card__heading">
+                  <h3>{instrument.tag}</h3>
                 </div>
-                <span className="instrument-detail-card__count">{items.length} registros</span>
-              </header>
+                <p>{instrument.category}</p>
+              </div>
+              <span className="instrument-detail-card__count">{items.length} registros</span>
+            </header>
 
-              <div className="instrument-calibration-filters">
-                <div className="instrument-calibration-filters__presets" role="tablist" aria-label="Filtrar calibrações por período">
-                  {calibrationFilterOptions.map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      className={`instrument-calibration-filter-chip${
-                        !dateFrom && !dateTo && selectedPeriod === option.value ? " is-active" : ""
-                      }`}
-                      onClick={() => {
-                        setDateFrom("");
-                        setDateTo("");
-                        setSelectedPeriod(option.value);
-                      }}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="instrument-calibration-filters__custom">
-                  <label className="instrument-calibration-date-field">
-                    <span>Data inicial</span>
-                    <input
-                      type="date"
-                      value={dateFrom}
-                      onChange={(event) => setDateFrom(event.target.value)}
-                    />
-                  </label>
-
-                  <label className="instrument-calibration-date-field">
-                    <span>Data final</span>
-                    <input
-                      type="date"
-                      value={dateTo}
-                      onChange={(event) => setDateTo(event.target.value)}
-                    />
-                  </label>
-
-                  {dateFrom || dateTo ? (
-                    <button
-                      type="button"
-                      className="instrument-calibration-filter-clear"
-                      onClick={() => {
-                        setDateFrom("");
-                        setDateTo("");
-                      }}
-                    >
-                      Limpar intervalo
-                    </button>
-                  ) : null}
-                </div>
+            <div className="instrument-calibration-filters">
+              <div
+                className="instrument-calibration-filters__presets"
+                role="tablist"
+                aria-label="Filtrar calibracoes por periodo"
+              >
+                {calibrationFilterOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={`instrument-calibration-filter-chip${
+                      !dateFrom && !dateTo && selectedPeriod === option.value ? " is-active" : ""
+                    }`}
+                    onClick={() => {
+                      setDateFrom("");
+                      setDateTo("");
+                      setSelectedPeriod(option.value);
+                    }}
+                  >
+                    {option.label}
+                  </button>
+                ))}
               </div>
 
-              {items.length === 0 ? (
-                <div className="instrument-detail-empty instrument-calibration-empty">
-                  {getEmptyHistoryMessage(instrument.tag, selectedPeriodLabel, dateFrom, dateTo)}
-                </div>
-              ) : (
-                <div className="instrument-calibration-list">
-                  {items.map((item) => (
-                    <article key={item.id} className="instrument-calibration-entry">
-                      <div className="instrument-calibration-entry__top">
-                        <div className="instrument-calibration-entry__title">
-                          <strong>{item.certificate}</strong>
-                          <p>{item.calibrationDate}</p>
-                        </div>
+              <div className="instrument-calibration-filters__custom">
+                <label className="instrument-calibration-date-field">
+                  <span>Data inicial</span>
+                  <input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(event) => setDateFrom(event.target.value)}
+                  />
+                </label>
 
-                        <span className={`status-pill status-pill--${item.statusTone}`}>
-                          <span className="status-pill__dot" aria-hidden="true" />
-                          {item.statusLabel}
-                        </span>
+                <label className="instrument-calibration-date-field">
+                  <span>Data final</span>
+                  <input
+                    type="date"
+                    value={dateTo}
+                    onChange={(event) => setDateTo(event.target.value)}
+                  />
+                </label>
+
+                {dateFrom || dateTo ? (
+                  <button
+                    type="button"
+                    className="instrument-calibration-filter-clear"
+                    onClick={() => {
+                      setDateFrom("");
+                      setDateTo("");
+                    }}
+                  >
+                    Limpar intervalo
+                  </button>
+                ) : null}
+              </div>
+            </div>
+
+            {items.length === 0 ? (
+              <div className="instrument-detail-empty instrument-calibration-empty">
+                {getEmptyHistoryMessage(instrument.tag, selectedPeriodLabel, dateFrom, dateTo)}
+              </div>
+            ) : (
+              <div className="instrument-calibration-list">
+                {items.map((item) => (
+                  <article key={item.id} className="instrument-calibration-entry">
+                    <div className="instrument-calibration-entry__top">
+                      <div className="instrument-calibration-entry__title">
+                        <strong>{item.certificate}</strong>
+                        <p>{item.calibrationDate}</p>
                       </div>
 
-                      <div className="instrument-calibration-entry__grid">
-                        <div className="instrument-calibration-entry__meta">
-                          <span>Emissão do certificado</span>
-                          <strong>{item.certificateDate}</strong>
-                        </div>
-                        <div className="instrument-calibration-entry__meta">
-                          <span>Data de validade</span>
-                          <strong>{item.validityDate}</strong>
-                        </div>
-                        <div className="instrument-calibration-entry__meta">
-                          <span>Laboratório</span>
-                          <strong>{item.laboratory}</strong>
-                        </div>
-                        <div className="instrument-calibration-entry__meta">
-                          <span>Responsável</span>
-                          <strong>{item.responsible}</strong>
-                        </div>
-                        <div className="instrument-calibration-entry__meta">
-                          <span>Resultados conformes</span>
-                          <strong>
-                            {item.totalResults > 0
-                              ? `${item.conformingResults}/${item.totalResults}`
-                              : "Sem resultados"}
-                          </strong>
-                        </div>
-                        <div className="instrument-calibration-entry__meta">
-                          <span>Resultados não conformes</span>
-                          <strong>{item.nonConformingResults}</strong>
-                        </div>
+                      <span className={`status-pill status-pill--${item.statusTone}`}>
+                        <span className="status-pill__dot" aria-hidden="true" />
+                        {item.statusLabel}
+                      </span>
+                    </div>
+
+                    <div className="instrument-calibration-entry__grid">
+                      <div className="instrument-calibration-entry__meta">
+                        <span>Emissao do certificado</span>
+                        <strong>{item.certificateDate}</strong>
                       </div>
+                      <div className="instrument-calibration-entry__meta">
+                        <span>Data de validade</span>
+                        <strong>{item.validityDate}</strong>
+                      </div>
+                      <div className="instrument-calibration-entry__meta">
+                        <span>Laboratorio</span>
+                        <strong>{item.laboratory}</strong>
+                      </div>
+                      <div className="instrument-calibration-entry__meta">
+                        <span>Responsavel</span>
+                        <strong>{item.responsible}</strong>
+                      </div>
+                      <div className="instrument-calibration-entry__meta">
+                        <span>Resultados conformes</span>
+                        <strong>
+                          {item.totalResults > 0
+                            ? `${item.conformingResults}/${item.totalResults}`
+                            : "Sem resultados"}
+                        </strong>
+                      </div>
+                      <div className="instrument-calibration-entry__meta">
+                        <span>Resultados nao conformes</span>
+                        <strong>{item.nonConformingResults}</strong>
+                      </div>
+                    </div>
 
-                      {item.observations ? (
-                        <p className="instrument-calibration-entry__notes">{item.observations}</p>
-                      ) : null}
+                    {item.observations ? (
+                      <p className="instrument-calibration-entry__notes">{item.observations}</p>
+                    ) : null}
 
-                      {item.certificateUrl ? (
-                        <div className="instrument-calibration-entry__actions">
-                          <a
-                            href={item.certificateUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="instrument-detail-link-chip"
-                          >
-                            Abrir certificado
-                          </a>
-                        </div>
-                      ) : null}
-                    </article>
-                  ))}
-                </div>
-              )}
-            </article>
-          </section>
-        </>
+                    {item.fieldEntries.length > 0 ? (
+                      <div className="instrument-calibration-entry__results">
+                        <p className="instrument-calibration-entry__notes">
+                          Valores registrados nesta calibracao.
+                        </p>
+                        <CalibrationFieldReviewTable
+                          rows={item.fieldEntries.map((field) => ({
+                            id: field.fieldId,
+                            fieldName: field.fieldName,
+                            measurementName: field.measurementName,
+                            value: field.value,
+                            unit: field.unit,
+                            confidence: field.confidence,
+                            evidence: field.evidence,
+                            status: field.status
+                          }))}
+                          emptyMessage="Sem itens registrados para esta calibracao."
+                        />
+                      </div>
+                    ) : null}
+
+                    {item.certificateUrl ? (
+                      <div className="instrument-calibration-entry__actions">
+                        <a
+                          href={item.certificateUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="instrument-detail-link-chip"
+                        >
+                          Abrir certificado
+                        </a>
+                      </div>
+                    ) : null}
+                  </article>
+                ))}
+              </div>
+            )}
+          </article>
+        </section>
       ) : null}
     </section>
   );

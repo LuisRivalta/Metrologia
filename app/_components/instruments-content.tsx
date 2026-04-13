@@ -1,12 +1,11 @@
 "use client";
 
 import { type FormEvent, useEffect, useMemo, useState } from "react";
-import type { InstrumentDetailItem, InstrumentItem } from "@/lib/instruments";
-import type {
-  MeasurementFieldItem,
-  MeasurementFieldSource
-} from "@/lib/measurement-fields";
+import { fetchApi } from "@/lib/api/client";
+import type { InstrumentItem } from "@/lib/instruments";
+import type { MeasurementFieldItem } from "@/lib/measurement-fields";
 import type { MeasurementItem } from "@/lib/measurements";
+import { DefaultFieldPreviewTable } from "./default-field-preview-table";
 import { PageTransitionLink } from "./page-transition-link";
 
 type InstrumentFormState = {
@@ -21,8 +20,6 @@ type InstrumentFieldFormItem = {
   clientId: string;
   name: string;
   measurementId: string;
-  source: MeasurementFieldSource;
-  categoryFieldId: string;
 };
 
 type InstrumentValidationErrors = Partial<
@@ -43,7 +40,7 @@ type SortDirection = "asc" | "desc";
 
 type InstrumentApiResponse = {
   error?: string;
-  item?: InstrumentItem | InstrumentDetailItem;
+  item?: InstrumentItem;
   items?: InstrumentItem[];
   success?: boolean;
 };
@@ -95,19 +92,7 @@ function mapFieldToFormItem(field: MeasurementFieldItem): InstrumentFieldFormIte
   return {
     clientId: createClientId(),
     name: field.name,
-    measurementId: field.measurementId,
-    source: field.source,
-    categoryFieldId: field.categoryFieldId ? String(field.categoryFieldId) : ""
-  };
-}
-
-function createEmptyField(source: MeasurementFieldSource): InstrumentFieldFormItem {
-  return {
-    clientId: createClientId(),
-    name: "",
-    measurementId: "",
-    source,
-    categoryFieldId: ""
+    measurementId: field.measurementId
   };
 }
 
@@ -130,22 +115,20 @@ export function InstrumentsContent() {
   const [editingInstrumentId, setEditingInstrumentId] = useState<number | null>(null);
   const [formState, setFormState] = useState<InstrumentFormState>(emptyFormState);
   const [fieldRows, setFieldRows] = useState<InstrumentFieldFormItem[]>([]);
-  const [useNewCategory, setUseNewCategory] = useState(false);
   const [validationErrors, setValidationErrors] = useState<InstrumentValidationErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoadingInstrumentDetail, setIsLoadingInstrumentDetail] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
 
   const categoryOptions = useMemo(() => metadataCategories, [metadataCategories]);
+  const selectedCategory = useMemo(
+    () => metadataCategories.find((category) => category.slug === formState.category),
+    [formState.category, metadataCategories]
+  );
   const manufacturerOptions = useMemo(
     () => Array.from(new Set(rows.map((row) => row.manufacturer))).sort((a, b) => a.localeCompare(b, "pt-BR", { sensitivity: "base" })),
     [rows]
-  );
-  const selectedCategory = useMemo(
-    () => categoryOptions.find((category) => category.slug === formState.category),
-    [categoryOptions, formState.category]
   );
 
   const filteredRows = useMemo(() => {
@@ -178,10 +161,19 @@ export function InstrumentsContent() {
     void Promise.all([loadInstruments(), loadInstrumentMetadata()]);
   }, []);
 
+  useEffect(() => {
+    if (!selectedCategory) {
+      setFieldRows([]);
+      return;
+    }
+
+    setFieldRows(selectedCategory.fields.map(mapFieldToFormItem));
+  }, [selectedCategory]);
+
   async function loadInstruments() {
     setIsLoading(true);
     try {
-      const response = await fetch("/api/instrumentos", { method: "GET", cache: "no-store" });
+      const response = await fetchApi("/api/instrumentos", { method: "GET", cache: "no-store" });
       const payload = (await response.json()) as InstrumentApiResponse;
       if (!response.ok) {
         setRows([]);
@@ -201,7 +193,7 @@ export function InstrumentsContent() {
   async function loadInstrumentMetadata() {
     setIsLoadingMetadata(true);
     try {
-      const response = await fetch("/api/instrumentos/metadata", {
+      const response = await fetchApi("/api/instrumentos/metadata", {
         method: "GET",
         cache: "no-store"
       });
@@ -223,47 +215,6 @@ export function InstrumentsContent() {
     }
   }
 
-  async function loadInstrumentDetail(instrumentId: number) {
-    setIsLoadingInstrumentDetail(true);
-    try {
-      const response = await fetch(`/api/instrumentos?id=${instrumentId}`, {
-        method: "GET",
-        cache: "no-store"
-      });
-      const payload = (await response.json()) as InstrumentApiResponse;
-
-      if (!response.ok || !payload.item) {
-        setValidationErrors((current) => ({
-          ...current,
-          form: payload.error ?? "Nao foi possivel carregar os detalhes do instrumento."
-        }));
-        setFieldRows([]);
-        return;
-      }
-
-      const detail = payload.item as InstrumentDetailItem;
-
-      setFormState({
-        tag: detail.tag,
-        category: detail.categorySlug ?? "",
-        newCategoryName: "",
-        manufacturer: detail.manufacturer,
-        calibrationDate: detail.calibrationDateValue ?? ""
-      });
-      setFieldRows((detail.fields ?? []).map(mapFieldToFormItem));
-      setUseNewCategory(false);
-      setValidationErrors({});
-    } catch {
-      setValidationErrors((current) => ({
-        ...current,
-        form: "Nao foi possivel carregar os detalhes do instrumento."
-      }));
-      setFieldRows([]);
-    } finally {
-      setIsLoadingInstrumentDetail(false);
-    }
-  }
-
   function handleSort(nextKey: SortKey) {
     if (sortKey === nextKey) {
       setSortDirection((current) => (current === "asc" ? "desc" : "asc"));
@@ -276,18 +227,11 @@ export function InstrumentsContent() {
   function resetModalState() {
     setModalMode("create");
     setEditingInstrumentId(null);
-    setUseNewCategory(false);
     setValidationErrors({});
     setDeleteConfirmationText("");
     setIsDeleteConfirmOpen(false);
-    setIsLoadingInstrumentDetail(false);
     setFormState({ ...emptyFormState });
     setFieldRows([]);
-  }
-
-  function openCreateModal() {
-    resetModalState();
-    setIsModalOpen(true);
   }
 
   function openEditModal(row: InstrumentItem) {
@@ -298,11 +242,10 @@ export function InstrumentsContent() {
       tag: row.tag,
       category: row.categorySlug ?? "",
       newCategoryName: "",
-      manufacturer: row.manufacturer,
+      manufacturer: row.manufacturer === "Não informado" ? "" : row.manufacturer,
       calibrationDate: row.calibrationDateValue ?? ""
     });
     setIsModalOpen(true);
-    void loadInstrumentDetail(row.id);
   }
 
   function closeModal() {
@@ -312,99 +255,14 @@ export function InstrumentsContent() {
     resetModalState();
   }
 
-  function applyCategoryDefaults(categorySlug: string) {
-    const category = categoryOptions.find((item) => item.slug === categorySlug);
-    const defaults = category?.fields ?? [];
-    setFieldRows(defaults.map(mapFieldToFormItem));
-  }
-
-  function enableNewCategoryMode() {
-    setUseNewCategory(true);
-    setFormState((current) => ({
-      ...current,
-      category: "",
-      newCategoryName: ""
-    }));
-    setFieldRows([createEmptyField("category")]);
-    setValidationErrors((current) => ({
-      ...current,
-      category: undefined,
-      newCategoryName: undefined,
-      fields: undefined,
-      form: undefined
-    }));
-  }
-
-  function disableNewCategoryMode() {
-    setUseNewCategory(false);
-    setFormState((current) => ({
-      ...current,
-      category: "",
-      newCategoryName: ""
-    }));
-    setFieldRows([]);
-    setValidationErrors((current) => ({
-      ...current,
-      category: undefined,
-      newCategoryName: undefined,
-      fields: undefined,
-      form: undefined
-    }));
-  }
-
   function handleSelectCategory(categorySlug: string) {
-    setUseNewCategory(false);
     setFormState((current) => ({
       ...current,
-      category: categorySlug,
-      newCategoryName: ""
+      category: categorySlug
     }));
-    applyCategoryDefaults(categorySlug);
     setValidationErrors((current) => ({
       ...current,
       category: undefined,
-      newCategoryName: undefined,
-      fields: undefined,
-      form: undefined
-    }));
-  }
-
-  function handleAddField() {
-    const source: MeasurementFieldSource = useNewCategory ? "category" : "instrument";
-    setFieldRows((current) => [...current, createEmptyField(source)]);
-    setValidationErrors((current) => ({
-      ...current,
-      fields: undefined,
-      form: undefined
-    }));
-  }
-
-  function updateFieldRow(
-    clientId: string,
-    key: keyof Pick<InstrumentFieldFormItem, "name" | "measurementId">,
-    value: string
-  ) {
-    setFieldRows((current) =>
-      current.map((row) =>
-        row.clientId === clientId
-          ? {
-              ...row,
-              [key]: value
-            }
-          : row
-      )
-    );
-    setValidationErrors((current) => ({
-      ...current,
-      fields: undefined,
-      form: undefined
-    }));
-  }
-
-  function removeFieldRow(clientId: string) {
-    setFieldRows((current) => current.filter((row) => row.clientId !== clientId));
-    setValidationErrors((current) => ({
-      ...current,
       fields: undefined,
       form: undefined
     }));
@@ -413,17 +271,13 @@ export function InstrumentsContent() {
   function validateForm() {
     const nextErrors: InstrumentValidationErrors = {};
     if (!formState.tag.trim()) nextErrors.tag = "Tag obrigatoria.";
-    if (useNewCategory) {
-      if (!formState.newCategoryName.trim()) nextErrors.newCategoryName = "Nome da nova categoria obrigatorio.";
-    } else if (!formState.category) {
+    if (!formState.category) {
       nextErrors.category = "Categoria obrigatoria.";
     }
-    if (!formState.manufacturer.trim()) nextErrors.manufacturer = "Fabricante obrigatorio.";
     if (!formState.calibrationDate) nextErrors.calibrationDate = "Prazo de calibracao obrigatorio.";
-    if (fieldRows.length === 0) {
-      nextErrors.fields = useNewCategory
-        ? "Adicione pelo menos um campo padrao para a nova categoria."
-        : "Adicione pelo menos um campo de medicao.";
+    if (!selectedCategory || selectedCategory.fields.length === 0) {
+      nextErrors.fields =
+        "A categoria precisa ter pelo menos um item no template de calibracao antes de salvar este instrumento.";
     }
     setValidationErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
@@ -434,23 +288,15 @@ export function InstrumentsContent() {
     if (!validateForm()) return;
     setIsSubmitting(true);
     try {
-      const response = await fetch("/api/instrumentos", {
+      const response = await fetchApi("/api/instrumentos", {
         method: modalMode === "edit" ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: editingInstrumentId,
           tag: formState.tag.trim(),
           category: formState.category,
-          useNewCategory,
-          newCategoryName: formState.newCategoryName.trim(),
           manufacturer: formState.manufacturer.trim(),
-          calibrationDate: formState.calibrationDate,
-          fields: fieldRows.map((field) => ({
-            name: field.name,
-            measurementId: field.measurementId,
-            source: field.source,
-            categoryFieldId: field.categoryFieldId || null
-          }))
+          calibrationDate: formState.calibrationDate
         })
       });
       const payload = (await response.json()) as InstrumentApiResponse;
@@ -472,7 +318,7 @@ export function InstrumentsContent() {
     if (editingInstrumentId === null || deleteConfirmationText.trim() !== "CONFIRMAR") return;
     setIsDeleting(true);
     try {
-      const response = await fetch("/api/instrumentos", {
+      const response = await fetchApi("/api/instrumentos", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: editingInstrumentId })
@@ -509,10 +355,10 @@ export function InstrumentsContent() {
             <svg viewBox="0 0 24 24" fill="none"><path d="M5 7h14M8 12h8M10 17h4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
             Filtros
           </button>
-          <button type="button" className="primary-toolbar-button" onClick={openCreateModal}>
+          <PageTransitionLink href="/instrumentos/novo" className="primary-toolbar-button">
             <span className="primary-toolbar-button__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 7v10M7 12h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg></span>
             Adicionar Novo Instrumento
-          </button>
+          </PageTransitionLink>
         </div>
 
         {isFiltersOpen ? (
@@ -589,7 +435,7 @@ export function InstrumentsContent() {
                   </label>
 
                   <label className="instrument-modal__field">
-                    <span>Fabricante</span>
+                    <span>Fabricante (opcional)</span>
                     <input
                       type="text"
                       placeholder="Ex: Mitutoyo"
@@ -600,7 +446,7 @@ export function InstrumentsContent() {
                         setValidationErrors((current) => ({ ...current, manufacturer: undefined, form: undefined }));
                       }}
                     />
-                    {validationErrors.manufacturer ? <small className="instrument-modal__field-error">{validationErrors.manufacturer}</small> : null}
+                    {validationErrors.manufacturer ? <small className="instrument-modal__field-error">{validationErrors.manufacturer}</small> : <small className="instrument-modal__field-help">Se nao informar, o instrumento sera salvo como nao informado.</small>}
                   </label>
 
                   <label className="instrument-modal__field">
@@ -620,132 +466,45 @@ export function InstrumentsContent() {
                   <div className="instrument-modal__field instrument-modal__field--category-builder">
                     <div className="instrument-modal__field-head">
                       <span>Categoria</span>
-                      {!useNewCategory ? (
-                        <button
-                          type="button"
-                          className="instrument-modal__link-button"
-                          onClick={enableNewCategoryMode}
-                          disabled={isLoadingMetadata || isLoadingInstrumentDetail}
-                        >
-                          Cadastrar nova categoria
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          className="instrument-modal__link-button"
-                          onClick={disableNewCategoryMode}
-                          disabled={isLoadingInstrumentDetail}
-                        >
-                          Usar categoria existente
-                        </button>
-                      )}
+                      <PageTransitionLink href="/categorias" className="instrument-modal__link-button">
+                        Gerenciar categorias
+                      </PageTransitionLink>
                     </div>
 
-                    {!useNewCategory ? (
-                      <>
-                        <select
-                          className={validationErrors.category ? "is-invalid" : undefined}
-                          value={formState.category}
-                          onChange={(event) => handleSelectCategory(event.target.value)}
-                          disabled={isLoadingMetadata || isLoadingInstrumentDetail}
-                        >
-                          <option value="" disabled>{isLoadingMetadata ? "Carregando categorias..." : "Selecione uma categoria"}</option>
-                          {categoryOptions.map((option) => <option key={option.slug} value={option.slug}>{option.name}</option>)}
-                        </select>
-                        {validationErrors.category ? <small className="instrument-modal__field-error">{validationErrors.category}</small> : <small className="instrument-modal__field-help">Ao selecionar uma categoria, os campos padrao sao carregados abaixo.</small>}
-                      </>
-                    ) : (
-                      <>
-                        <input
-                          type="text"
-                          placeholder="Ex: Paquimetro"
-                          className={validationErrors.newCategoryName ? "is-invalid" : undefined}
-                          value={formState.newCategoryName}
-                          onChange={(event) => {
-                            setFormState((current) => ({ ...current, newCategoryName: event.target.value }));
-                            setValidationErrors((current) => ({ ...current, newCategoryName: undefined, form: undefined }));
-                          }}
-                        />
-                        {validationErrors.newCategoryName ? <small className="instrument-modal__field-error">{validationErrors.newCategoryName}</small> : <small className="instrument-modal__field-help">Os campos abaixo serao salvos como padrao da nova categoria.</small>}
-                      </>
-                    )}
+                    <select
+                      className={validationErrors.category ? "is-invalid" : undefined}
+                      value={formState.category}
+                      onChange={(event) => handleSelectCategory(event.target.value)}
+                      disabled={isLoadingMetadata}
+                    >
+                      <option value="" disabled>{isLoadingMetadata ? "Carregando categorias..." : "Selecione uma categoria"}</option>
+                      {categoryOptions.map((option) => <option key={option.slug} value={option.slug}>{option.name}</option>)}
+                    </select>
+                    {validationErrors.category ? <small className="instrument-modal__field-error">{validationErrors.category}</small> : <small className="instrument-modal__field-help">A categoria aplicada aqui usa o template de calibracao cadastrado na tela de Categorias.</small>}
                   </div>
                 </div>
 
                 <section className="instrument-fields-builder">
                   <div className="instrument-fields-builder__header">
                     <div>
-                      <h3>Campos de medicao</h3>
-                      <p>
-                        {useNewCategory
-                          ? "Defina os campos padrao da nova categoria e os valores que este instrumento vai herdar."
-                          : selectedCategory
-                            ? "Os campos padrao da categoria ja vieram carregados. Voce pode adicionar campos extras so para este instrumento."
-                            : "Selecione uma categoria para puxar os campos padrao ou crie uma nova categoria agora."}
-                      </p>
+                      <h3>Template de calibracao da categoria</h3>
+                      <p>Confira os itens herdados da categoria selecionada para este instrumento.</p>
                     </div>
-                    <button
-                      type="button"
-                      className="instrument-fields-builder__add"
-                      onClick={handleAddField}
-                      disabled={isLoadingInstrumentDetail || isLoadingMetadata || (!useNewCategory && !selectedCategory)}
-                    >
-                      Novo campo
-                    </button>
                   </div>
 
-                  {isLoadingInstrumentDetail ? (
-                    <div className="instrument-fields-builder__empty">Carregando campos do instrumento...</div>
-                  ) : fieldRows.length === 0 ? (
-                    <div className="instrument-fields-builder__empty">
-                      {useNewCategory
-                        ? "Adicione o primeiro campo padrao da nova categoria."
-                        : selectedCategory
-                          ? "Essa categoria ainda nao possui campos padrao. Adicione os campos que este instrumento precisa."
-                          : "Nenhum campo carregado ainda."}
-                    </div>
-                  ) : (
-                    <div className="instrument-fields-builder__list">
-                      {fieldRows.map((field, index) => {
-                        const isCategoryDefault = field.source === "category" && !useNewCategory;
-
-                        return (
-                          <div key={field.clientId} className={`instrument-fields-builder__row${isCategoryDefault ? " is-locked" : ""}`}>
-                            <div className="instrument-fields-builder__row-top">
-                              <span className={`instrument-fields-builder__badge instrument-fields-builder__badge--${field.source}`}>{field.source === "category" ? "Padrao" : "Extra"}</span>
-                              <strong>Campo {String(index + 1).padStart(2, "0")}</strong>
-                              {!isCategoryDefault ? <button type="button" className="instrument-fields-builder__remove" onClick={() => removeFieldRow(field.clientId)}>Remover</button> : null}
-                            </div>
-
-                            <div className="instrument-fields-builder__row-grid">
-                              <label className="instrument-modal__field">
-                                <span>Nome do campo</span>
-                                <input
-                                  type="text"
-                                  placeholder="Ex: Diametro interno"
-                                  value={field.name}
-                                  onChange={(event) => updateFieldRow(field.clientId, "name", event.target.value)}
-                                  disabled={isCategoryDefault}
-                                />
-                              </label>
-
-                              <label className="instrument-modal__field">
-                                <span>Tipo de medida</span>
-                                <select
-                                  value={field.measurementId}
-                                  onChange={(event) => updateFieldRow(field.clientId, "measurementId", event.target.value)}
-                                  disabled={isCategoryDefault || isLoadingMetadata}
-                                >
-                                  <option value="" disabled>Selecione a medida</option>
-                                  {measurements.map((measurement) => <option key={measurement.id} value={measurement.id}>{measurement.name}</option>)}
-                                </select>
-                              </label>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                  <DefaultFieldPreviewTable
+                    fields={fieldRows.map((field) => ({
+                      key: field.clientId,
+                      name: field.name,
+                      measurementId: field.measurementId
+                    }))}
+                    measurements={measurements}
+                    emptyMessage={
+                      selectedCategory
+                        ? "Essa categoria ainda nao possui um template de calibracao cadastrado."
+                        : "Selecione uma categoria para visualizar o template de calibracao."
+                    }
+                  />
 
                   {validationErrors.fields ? <p className="instrument-modal__field-error instrument-fields-builder__error">{validationErrors.fields}</p> : null}
                 </section>
@@ -753,9 +512,9 @@ export function InstrumentsContent() {
                 {validationErrors.form ? <p className="instrument-modal__field-error">{validationErrors.form}</p> : null}
               </div>
               <footer className="instrument-modal__footer">
-                {modalMode === "edit" ? <button type="button" className="instrument-modal__delete" onClick={() => setIsDeleteConfirmOpen(true)} disabled={isSubmitting || isDeleting || isLoadingInstrumentDetail}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4.5 7.5h15M9.5 3.75h5M9 10.5v5.25M15 10.5v5.25M7.5 7.5l.6 9a1.5 1.5 0 0 0 1.5 1.4h4.8a1.5 1.5 0 0 0 1.5-1.4l.6-9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>Apagar Instrumento</button> : null}
+                {modalMode === "edit" ? <button type="button" className="instrument-modal__delete" onClick={() => setIsDeleteConfirmOpen(true)} disabled={isSubmitting || isDeleting}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4.5 7.5h15M9.5 3.75h5M9 10.5v5.25M15 10.5v5.25M7.5 7.5l.6 9a1.5 1.5 0 0 0 1.5 1.4h4.8a1.5 1.5 0 0 0 1.5-1.4l.6-9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>Apagar Instrumento</button> : null}
                 <button type="button" className="instrument-modal__cancel" onClick={closeModal} disabled={isSubmitting || isDeleting}>Cancelar</button>
-                <button type="submit" className="instrument-modal__submit" disabled={isSubmitting || isDeleting || isLoadingMetadata || isLoadingInstrumentDetail}>{isSubmitting ? "Salvando..." : modalMode === "edit" ? "Salvar Alteracoes" : "Salvar Instrumento"}</button>
+                <button type="submit" className="instrument-modal__submit" disabled={isSubmitting || isDeleting || isLoadingMetadata}>{isSubmitting ? "Salvando..." : modalMode === "edit" ? "Salvar Alteracoes" : "Salvar Instrumento"}</button>
               </footer>
             </form>
             {isDeleteConfirmOpen ? (

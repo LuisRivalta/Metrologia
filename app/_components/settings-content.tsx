@@ -1,6 +1,7 @@
 "use client";
 
 import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { fetchApi } from "@/lib/api/client";
 import type { MeasurementItem } from "@/lib/measurements";
 import { PageTransitionLink } from "./page-transition-link";
 
@@ -74,7 +75,7 @@ export function SettingsContent() {
     setLoadError("");
 
     try {
-      const response = await fetch("/api/medidas", {
+      const response = await fetchApi("/api/medidas", {
         method: "GET",
         cache: "no-store"
       });
@@ -152,7 +153,7 @@ export function SettingsContent() {
     setValidationError("");
 
     try {
-      const response = await fetch("/api/medidas", {
+      const response = await fetchApi("/api/medidas", {
         method: modalMode === "edit" ? "PATCH" : "POST",
         headers: {
           "Content-Type": "application/json"
@@ -172,18 +173,8 @@ export function SettingsContent() {
         return;
       }
 
-      if (modalMode === "edit" && editingMeasurementId) {
-        setMeasurements((current) =>
-          current.map((measurement) =>
-            measurement.id === editingMeasurementId ? payload.item ?? measurement : measurement
-          )
-        );
-        setLoadError("");
-      } else {
-        setMeasurements((current) => [...current, payload.item as MeasurementItem]);
-        setLoadError("");
-      }
-
+      await loadMeasurements();
+      setLoadError("");
       closeModal();
     } catch {
       setValidationError("Nao foi possivel salvar a medida.");
@@ -201,7 +192,7 @@ export function SettingsContent() {
     setDeletingMeasurementId(measurementId);
 
     try {
-      const response = await fetch("/api/medidas", {
+      const response = await fetchApi("/api/medidas", {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json"

@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   mapCategoryMeasurementFieldRow,
-  type CategoryMeasurementFieldRow,
-  type MeasurementFieldItem
+  type CategoryMeasurementFieldRow
 } from "@/lib/measurement-fields";
 import { mapMeasurementRow, type MeasurementRow } from "@/lib/measurements";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -48,14 +47,16 @@ function mapCategoryFieldsByCategoryId(
   rows: CategoryMeasurementFieldRow[],
   measurementsById: Map<number, MeasurementRow>
 ) {
-  const nextMap = new Map<number, MeasurementFieldItem[]>();
+  const nextMap = new Map<number, ReturnType<typeof mapCategoryMeasurementFieldRow>[]>();
 
   for (const row of rows) {
-    if (!row.categoria_id) continue;
+    if (!row.categoria_id) {
+      continue;
+    }
 
-    const currentList = nextMap.get(row.categoria_id) ?? [];
-    currentList.push(mapCategoryMeasurementFieldRow(row, measurementsById));
-    nextMap.set(row.categoria_id, currentList);
+    const currentItems = nextMap.get(row.categoria_id) ?? [];
+    currentItems.push(mapCategoryMeasurementFieldRow(row, measurementsById));
+    nextMap.set(row.categoria_id, currentItems);
   }
 
   for (const [categoryId, fields] of nextMap.entries()) {
@@ -75,31 +76,28 @@ function mapCategoryFieldsByCategoryId(
 }
 
 export async function GET() {
-  const [categoryRowsResponse, measurementRowsResponse, categoryFieldRowsResponse] =
-    await Promise.all([
-      supabaseAdmin
-        .schema("calibracao")
-        .from("categorias_instrumentos")
-        .select("id, nome, slug")
-        .order("nome", { ascending: true }),
-      supabaseAdmin
-        .schema("calibracao")
-        .from("unidadas_medidas")
-        .select("id, created_at, tipo, tipo_desc")
-        .order("tipo", { ascending: true }),
-      supabaseAdmin
-        .schema("calibracao")
-        .from("categoria_campos_medicao")
-        .select("id, categoria_id, nome, slug, unidade_medida_id, tipo_valor, ordem, ativo")
-        .eq("ativo", true)
-        .order("ordem", { ascending: true })
-        .order("id", { ascending: true })
-    ]);
+  const [categoryRowsResponse, measurementRowsResponse, categoryFieldRowsResponse] = await Promise.all([
+    supabaseAdmin
+      .schema("calibracao")
+      .from("categorias_instrumentos")
+      .select("id, nome, slug")
+      .order("nome", { ascending: true }),
+    supabaseAdmin
+      .schema("calibracao")
+      .from("unidadas_medidas")
+      .select("id, created_at, tipo, tipo_desc")
+      .order("tipo", { ascending: true }),
+    supabaseAdmin
+      .schema("calibracao")
+      .from("categoria_campos_medicao")
+      .select("id, categoria_id, nome, slug, unidade_medida_id, tipo_valor, ordem, ativo")
+      .eq("ativo", true)
+      .order("ordem", { ascending: true })
+      .order("id", { ascending: true })
+  ]);
 
   const combinedError =
-    categoryRowsResponse.error ??
-    measurementRowsResponse.error ??
-    categoryFieldRowsResponse.error;
+    categoryRowsResponse.error ?? measurementRowsResponse.error ?? categoryFieldRowsResponse.error;
 
   if (combinedError) {
     if (isPermissionDenied(combinedError.message)) {
@@ -109,12 +107,9 @@ export async function GET() {
     return buildGenericError();
   }
 
-  const measurements = ((measurementRowsResponse.data ?? []) as MeasurementRow[]).map(
-    mapMeasurementRow
-  );
-  const measurementsById = mapMeasurementsById(
-    (measurementRowsResponse.data ?? []) as MeasurementRow[]
-  );
+  const measurementRows = (measurementRowsResponse.data ?? []) as MeasurementRow[];
+  const measurements = measurementRows.map(mapMeasurementRow);
+  const measurementsById = mapMeasurementsById(measurementRows);
   const categoryFieldsByCategoryId = mapCategoryFieldsByCategoryId(
     (categoryFieldRowsResponse.data ?? []) as CategoryMeasurementFieldRow[],
     measurementsById

@@ -99,9 +99,10 @@ export default function LoginPage() {
 
     setIsSubmitting(true);
     setIsRedirecting(false);
+    const normalizedEmail = email.trim().toLowerCase();
 
     const { data, error } = await supabaseBrowser.auth.signInWithPassword({
-      email,
+      email: normalizedEmail,
       password
     });
 

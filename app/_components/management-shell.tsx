@@ -34,7 +34,7 @@ const sidebarItems: SidebarItem[] = [
   },
   {
     key: "categorias",
-    label: "Adicionar Categoria",
+    label: "Categorias",
     href: "/categorias",
     iconSrc: "/sidebar-instruments.svg"
   },

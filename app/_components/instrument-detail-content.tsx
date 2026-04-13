@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { fetchApi } from "@/lib/api/client";
 import type { InstrumentDetailItem } from "@/lib/instruments";
 import { PageTransitionLink } from "./page-transition-link";
 
@@ -19,8 +20,16 @@ function getStatusLabel(tone: InstrumentDetailItem["tone"]) {
   return "No prazo";
 }
 
-function getFieldSourceLabel(source: "category" | "instrument") {
-  return source === "category" ? "Padrao da categoria" : "Campo extra";
+function getCalibrationAlertCopy(item: InstrumentDetailItem) {
+  if (item.tone === "danger") {
+    return "Esse instrumento ja esta vencido. Registre a nova calibracao para atualizar o prazo e anexar o certificado mais recente.";
+  }
+
+  if (item.tone === "warning") {
+    return "Esse instrumento esta perto de vencer. Registrar a nova calibracao agora evita perda de prazo e mantem o historico em dia.";
+  }
+
+  return "";
 }
 
 export function InstrumentDetailContent({
@@ -37,7 +46,7 @@ export function InstrumentDetailContent({
       setIsLoading(true);
 
       try {
-        const response = await fetch(`/api/instrumentos?id=${instrumentId}`, {
+        const response = await fetchApi(`/api/instrumentos?id=${instrumentId}`, {
           method: "GET",
           cache: "no-store"
         });
@@ -72,21 +81,10 @@ export function InstrumentDetailContent({
 
   const fieldSummary = useMemo(() => {
     if (!item) {
-      return {
-        total: 0,
-        categoryFields: 0,
-        instrumentFields: 0
-      };
+      return { total: 0 };
     }
 
-    const categoryFields = item.fields.filter((field) => field.source === "category").length;
-    const instrumentFields = item.fields.length - categoryFields;
-
-    return {
-      total: item.fields.length,
-      categoryFields,
-      instrumentFields
-    };
+    return { total: item.fields.length };
   }, [item]);
 
   return (
@@ -107,12 +105,21 @@ export function InstrumentDetailContent({
           Voltar para instrumentos
         </PageTransitionLink>
 
-        <PageTransitionLink
-          href={`/instrumentos/${instrumentId}/calibracoes`}
-          className="instrument-detail-link-chip"
-        >
-          Log de calibrações
-        </PageTransitionLink>
+        <div className="instrument-detail-nav__actions">
+          <PageTransitionLink
+            href={`/instrumentos/${instrumentId}/calibracoes/nova`}
+            className="instrument-detail-link-chip instrument-detail-link-chip--primary"
+          >
+            Registrar calibracao
+          </PageTransitionLink>
+
+          <PageTransitionLink
+            href={`/instrumentos/${instrumentId}/calibracoes`}
+            className="instrument-detail-link-chip"
+          >
+            Log de calibracoes
+          </PageTransitionLink>
+        </div>
       </div>
 
       {isLoading ? (
@@ -129,7 +136,7 @@ export function InstrumentDetailContent({
 
       {!isLoading && item ? (
         <>
-        <section className="inventory-table-card instrument-detail-hero">
+          <section className="inventory-table-card instrument-detail-hero">
             <div className="instrument-detail-hero__top">
               <div className="instrument-detail-hero__copy">
                 <p className="instrument-detail-hero__eyebrow">Detalhe do instrumento</p>
@@ -165,12 +172,32 @@ export function InstrumentDetailContent({
             </div>
           </section>
 
+          {item.tone !== "neutral" ? (
+            <section
+              className={`inventory-table-card instrument-detail-alert instrument-detail-alert--${item.tone}`}
+            >
+              <div>
+                <strong>
+                  {item.tone === "danger" ? "Instrumento vencido" : "Prazo proximo de vencimento"}
+                </strong>
+                <p>{getCalibrationAlertCopy(item)}</p>
+              </div>
+
+              <PageTransitionLink
+                href={`/instrumentos/${instrumentId}/calibracoes/nova`}
+                className="instrument-detail-link-chip instrument-detail-link-chip--alert-cta"
+              >
+                Registrar calibracao agora
+              </PageTransitionLink>
+            </section>
+          ) : null}
+
           <section className="instrument-detail-grid">
             <article className="inventory-table-card instrument-detail-card instrument-detail-card--full">
               <header className="instrument-detail-card__header">
                 <div>
                   <h3>Campos de medicao</h3>
-                  <p>Lista completa dos campos associados a este instrumento.</p>
+                  <p>Lista completa dos campos configurados manualmente para este instrumento.</p>
                 </div>
                 <span className="instrument-detail-card__count">{fieldSummary.total} campos</span>
               </header>
@@ -185,10 +212,8 @@ export function InstrumentDetailContent({
                     <article key={`${field.slug}-${index}`} className="instrument-detail-field">
                       <div className="instrument-detail-field__top">
                         <strong>{field.name}</strong>
-                        <span
-                          className={`instrument-detail-field__badge instrument-detail-field__badge--${field.source}`}
-                        >
-                          {getFieldSourceLabel(field.source)}
+                        <span className="instrument-detail-field__badge">
+                          Campo {String(index + 1).padStart(2, "0")}
                         </span>
                       </div>
 

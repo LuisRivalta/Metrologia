@@ -1,12 +1,17 @@
+import type { MeasurementFieldItem } from "@/lib/measurement-fields";
+
 export type CategoryRow = {
+  id: number;
   nome: string | null;
   slug: string | null;
 };
 
 export type CategoryItem = {
   id: string;
+  dbId: number;
   name: string;
   slug: string;
+  fields: MeasurementFieldItem[];
 };
 
 function normalizeCategoryName(value: string) {
@@ -22,13 +27,18 @@ export function serializeCategorySlug(value: string) {
     .replace(/^-+|-+$/g, "");
 }
 
-export function mapCategoryRow(row: CategoryRow): CategoryItem {
+export function mapCategoryRow(
+  row: CategoryRow,
+  fields: MeasurementFieldItem[] = []
+): CategoryItem {
   const name = normalizeCategoryName(row.nome ?? "");
   const slug = (row.slug ?? "").trim();
 
   return {
     id: slug,
+    dbId: row.id,
     name,
-    slug
+    slug,
+    fields
   };
 }

@@ -1,35 +1,28 @@
 import { formatMeasurementType, type MeasurementRow } from "@/lib/measurements";
 
-export type MeasurementFieldSource = "category" | "instrument";
-
-export type CategoryMeasurementFieldRow = {
+type BaseMeasurementFieldRow = {
   id: number;
-  categoria_id: number | null;
   nome: string | null;
   slug: string | null;
   unidade_medida_id: number | null;
   tipo_valor: string | null;
   ordem: number | null;
   ativo: boolean | null;
-  created_at?: string | null;
 };
 
 export type InstrumentMeasurementFieldRow = {
-  id: number;
+} & BaseMeasurementFieldRow & {
   instrumento_id: number | null;
   categoria_campo_medicao_id: number | null;
-  nome: string | null;
-  slug: string | null;
-  unidade_medida_id: number | null;
-  tipo_valor: string | null;
-  ordem: number | null;
-  ativo: boolean | null;
   created_at?: string | null;
+};
+
+export type CategoryMeasurementFieldRow = BaseMeasurementFieldRow & {
+  categoria_id: number | null;
 };
 
 export type MeasurementFieldItem = {
   dbId?: number;
-  categoryFieldId?: number | null;
   name: string;
   slug: string;
   measurementId: string;
@@ -37,14 +30,12 @@ export type MeasurementFieldItem = {
   measurementRawName: string;
   valueType: string;
   order: number;
-  source: MeasurementFieldSource;
 };
 
 export type MeasurementFieldDraft = {
+  dbId?: string | number;
   name?: string;
   measurementId?: string | number;
-  source?: MeasurementFieldSource;
-  categoryFieldId?: string | number | null;
 };
 
 function normalizeText(value: string | null | undefined) {
@@ -74,42 +65,34 @@ function getMeasurementInfo(
   };
 }
 
-export function mapCategoryMeasurementFieldRow(
-  row: CategoryMeasurementFieldRow,
+function mapMeasurementFieldRow(
+  row: BaseMeasurementFieldRow,
   measurementsById: Map<number, MeasurementRow>
 ): MeasurementFieldItem {
   const measurementInfo = getMeasurementInfo(row.unidade_medida_id, measurementsById);
 
   return {
     dbId: row.id,
-    categoryFieldId: row.id,
     name: normalizeText(row.nome),
     slug: normalizeText(row.slug) || serializeMeasurementFieldSlug(row.nome ?? ""),
     measurementId: measurementInfo.measurementId,
     measurementName: measurementInfo.measurementName,
     measurementRawName: measurementInfo.measurementRawName,
     valueType: normalizeText(row.tipo_valor) || "numero",
-    order: row.ordem ?? 0,
-    source: "category"
+    order: row.ordem ?? 0
   };
 }
 
 export function mapInstrumentMeasurementFieldRow(
   row: InstrumentMeasurementFieldRow,
   measurementsById: Map<number, MeasurementRow>
-): MeasurementFieldItem {
-  const measurementInfo = getMeasurementInfo(row.unidade_medida_id, measurementsById);
+) {
+  return mapMeasurementFieldRow(row, measurementsById);
+}
 
-  return {
-    dbId: row.id,
-    categoryFieldId: row.categoria_campo_medicao_id,
-    name: normalizeText(row.nome),
-    slug: normalizeText(row.slug) || serializeMeasurementFieldSlug(row.nome ?? ""),
-    measurementId: measurementInfo.measurementId,
-    measurementName: measurementInfo.measurementName,
-    measurementRawName: measurementInfo.measurementRawName,
-    valueType: normalizeText(row.tipo_valor) || "numero",
-    order: row.ordem ?? 0,
-    source: row.categoria_campo_medicao_id ? "category" : "instrument"
-  };
+export function mapCategoryMeasurementFieldRow(
+  row: CategoryMeasurementFieldRow,
+  measurementsById: Map<number, MeasurementRow>
+) {
+  return mapMeasurementFieldRow(row, measurementsById);
 }

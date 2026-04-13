@@ -47,7 +47,7 @@
 - Conectadas categorias reais e instrumentos reais ao sistema.
 - Criada a pagina individual de detalhe por instrumento.
 - Implementada a persistencia real de categorias, medidas e instrumentos.
-- Estruturados os campos padrao por categoria e os campos extras por instrumento.
+- Estruturados os campos de medicao por instrumento.
 - Melhorada a pagina de configuracoes com recurso de acessibilidade para fonte.
 - Criados os arquivos de documentacao do projeto.
 

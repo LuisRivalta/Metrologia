@@ -1835,6 +1835,24 @@ html.page-is-transitioning .page-entry-shell {
   gap: 10px;
 }
 
+.category-table__field-stack {
+  display: grid;
+  gap: 4px;
+}
+
+.category-table__field-stack strong {
+  color: #14325e;
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.category-table__field-stack span,
+.inventory-table__muted {
+  color: #627391;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
 .category-table__edit {
   width: 42px;
   height: 42px;
@@ -3625,6 +3643,94 @@ html.page-is-transitioning .page-entry-shell .inventory-content > :nth-child(5) 
   gap: 14px;
 }
 
+.instrument-fields-builder__compact-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.instrument-fields-builder__compact-copy {
+  margin: 0;
+  color: #66758f;
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+.instrument-fields-builder__table-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(10, 40, 86, 0.08);
+  color: #0a2856;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.instrument-fields-builder__table-wrap {
+  border: 1px solid rgba(16, 35, 78, 0.08);
+  border-radius: 16px;
+  background: #ffffff;
+  overflow: auto;
+  max-height: 420px;
+}
+
+.instrument-fields-builder__table {
+  width: 100%;
+  min-width: 560px;
+  border-collapse: collapse;
+}
+
+.instrument-fields-builder__table th,
+.instrument-fields-builder__table td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid rgba(16, 35, 78, 0.08);
+}
+
+.instrument-fields-builder__table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: rgba(243, 247, 255, 0.98);
+  color: #66758f;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.instrument-fields-builder__table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.instrument-fields-builder__table tbody tr:hover {
+  background: rgba(20, 79, 156, 0.04);
+}
+
+.instrument-fields-builder__table-index {
+  width: 68px;
+  color: #66758f;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.instrument-fields-builder__table-name {
+  color: #14325e;
+  font-size: 0.94rem;
+  font-weight: 700;
+}
+
+.instrument-fields-builder__table-measurement {
+  color: #485b7d;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
 .instrument-fields-builder__row {
   padding: 18px;
   border-radius: 18px;
@@ -3632,10 +3738,6 @@ html.page-is-transitioning .page-entry-shell .inventory-content > :nth-child(5) 
   background: #ffffff;
   display: grid;
   gap: 16px;
-}
-
-.instrument-fields-builder__row.is-locked {
-  background: linear-gradient(180deg, #f6f8ff 0%, #ffffff 100%);
 }
 
 .instrument-fields-builder__row-top {
@@ -3650,29 +3752,6 @@ html.page-is-transitioning .page-entry-shell .inventory-content > :nth-child(5) 
   font-size: 0.92rem;
 }
 
-.instrument-fields-builder__badge {
-  min-height: 30px;
-  padding: 0 12px;
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.76rem;
-  font-weight: 900;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.instrument-fields-builder__badge--category {
-  background: rgba(20, 79, 156, 0.12);
-  color: #144f9c;
-}
-
-.instrument-fields-builder__badge--instrument {
-  background: rgba(242, 173, 71, 0.16);
-  color: #a56208;
-}
-
 .instrument-fields-builder__remove {
   margin-left: auto;
 }
@@ -3683,8 +3762,72 @@ html.page-is-transitioning .page-entry-shell .inventory-content > :nth-child(5) 
   gap: 16px;
 }
 
+.instrument-fields-builder__row--compact {
+  gap: 0;
+}
+
+.instrument-fields-builder__row-summary {
+  display: grid;
+  gap: 4px;
+}
+
+.instrument-fields-builder__row-summary p {
+  margin: 0;
+  color: #14325e;
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.instrument-fields-builder__row-summary span {
+  color: #66758f;
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+.instrument-fields-builder__row-actions {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.instrument-fields-builder__edit {
+  min-height: 40px;
+  border: 0;
+  border-radius: 10px;
+  padding: 0 14px;
+  background: rgba(10, 40, 86, 0.08);
+  color: #0a2856;
+  font-size: 0.84rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.instrument-fields-builder__edit:hover {
+  background: rgba(10, 40, 86, 0.12);
+}
+
 .instrument-fields-builder__error {
   margin: -4px 0 0;
+}
+
+.field-editor-modal-backdrop {
+  z-index: 10;
+  background: rgba(7, 16, 32, 0.42);
+}
+
+.field-editor-modal {
+  width: min(100%, 480px);
+}
+
+.field-editor-modal__form {
+  display: grid;
+  gap: 18px;
+}
+
+.field-editor-modal__save {
+  min-width: 156px;
 }
 
 .instrument-modal__file {
@@ -3903,6 +4046,40 @@ html.page-is-transitioning .page-entry-shell .inventory-content > :nth-child(5) 
   color: #0c3e83;
 }
 
+.instrument-detail-nav__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.instrument-detail-link-chip--primary {
+  background: linear-gradient(180deg, #1b5fd2 0%, #103f8d 100%);
+  color: #ffffff;
+  box-shadow: 0 10px 22px rgba(20, 79, 156, 0.18);
+}
+
+.instrument-detail-link-chip--primary:hover {
+  background: linear-gradient(180deg, #2b6fe2 0%, #144b9f 100%);
+  color: #ffffff;
+}
+
+.instrument-detail-link-chip--alert-cta {
+  min-height: 42px;
+  padding: 0 18px;
+  background: linear-gradient(180deg, #de3f4c 0%, #a61528 100%);
+  color: #ffffff;
+  box-shadow: 0 14px 28px rgba(166, 21, 40, 0.24);
+  animation: calibration-alert-cta-pulse 1.8s ease-in-out infinite;
+}
+
+.instrument-detail-link-chip--alert-cta:hover {
+  background: linear-gradient(180deg, #ea4a57 0%, #bc1b31 100%);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
 .instrument-detail-back__icon {
   width: 18px;
   height: 18px;
@@ -4058,6 +4235,73 @@ html.page-is-transitioning .page-entry-shell .inventory-content > :nth-child(5) 
   line-height: 1.5;
 }
 
+.instrument-detail-alert {
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.instrument-detail-alert strong {
+  display: block;
+  color: #0d2149;
+  font-size: 1rem;
+}
+
+.instrument-detail-alert p {
+  margin: 8px 0 0;
+  color: #5f7191;
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.instrument-detail-alert--warning {
+  background:
+    radial-gradient(circle at top right, rgba(242, 173, 71, 0.18), transparent 34%),
+    linear-gradient(180deg, rgba(255, 248, 236, 0.98) 0%, rgba(255, 255, 255, 0.98) 100%);
+}
+
+.instrument-detail-alert--danger {
+  background:
+    radial-gradient(circle at top right, rgba(206, 72, 72, 0.16), transparent 34%),
+    linear-gradient(180deg, rgba(255, 242, 242, 0.98) 0%, rgba(255, 255, 255, 0.98) 100%);
+}
+
+.instrument-detail-alert--inline {
+  border-radius: 18px;
+}
+
+.instrument-detail-alert--inline:not(.instrument-detail-alert--warning):not(.instrument-detail-alert--danger) {
+  border-radius: 18px;
+  background: #eef3ff;
+}
+
+.instrument-detail-banner {
+  padding: 16px 18px;
+  color: #0d2149;
+  font-size: 0.94rem;
+  font-weight: 700;
+}
+
+.instrument-detail-banner--success {
+  background:
+    radial-gradient(circle at top right, rgba(20, 79, 156, 0.12), transparent 34%),
+    linear-gradient(180deg, rgba(236, 245, 255, 0.98) 0%, rgba(255, 255, 255, 0.98) 100%);
+}
+
+@keyframes calibration-alert-cta-pulse {
+  0%,
+  100% {
+    box-shadow: 0 14px 28px rgba(166, 21, 40, 0.24);
+  }
+
+  50% {
+    box-shadow: 0 18px 34px rgba(166, 21, 40, 0.36);
+  }
+}
+
 .instrument-detail-fields {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -4099,16 +4343,6 @@ html.page-is-transitioning .page-entry-shell .inventory-content > :nth-child(5) 
   font-weight: 900;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-}
-
-.instrument-detail-field__badge--category {
-  background: rgba(20, 79, 156, 0.12);
-  color: #144f9c;
-}
-
-.instrument-detail-field__badge--instrument {
-  background: rgba(242, 173, 71, 0.16);
-  color: #a56208;
 }
 
 .instrument-detail-field__meta {
@@ -4155,6 +4389,504 @@ html.page-is-transitioning .page-entry-shell .inventory-content > :nth-child(5) 
 
 .instrument-calibration-content {
   gap: 12px;
+}
+
+.instrument-calibration-create-content {
+  gap: 12px;
+}
+
+.instrument-calibration-create-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 320px) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.instrument-calibration-create-card {
+  padding: 18px 22px;
+}
+
+.instrument-calibration-create-card--aside {
+  display: grid;
+  gap: 16px;
+  position: sticky;
+  top: 16px;
+}
+
+.instrument-calibration-create-card__copy {
+  display: grid;
+  gap: 6px;
+}
+
+.instrument-calibration-create-card__copy h2 {
+  margin: 0;
+  color: #0a214f;
+  font-size: clamp(1.25rem, 0.45vw + 1.12rem, 1.54rem);
+  line-height: 1.05;
+}
+
+.instrument-calibration-create-card__copy > p:last-child {
+  margin: 0;
+  color: #66758f;
+  font-size: 0.9rem;
+}
+
+.instrument-calibration-create-card__header {
+  margin-bottom: 20px;
+}
+
+.instrument-calibration-create-summary {
+  display: grid;
+  gap: 8px;
+}
+
+.instrument-calibration-create-summary__item {
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: #eef3ff;
+  display: grid;
+  gap: 4px;
+}
+
+.instrument-calibration-create-summary__item span {
+  color: #627391;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.instrument-calibration-create-summary__item strong {
+  color: #0d2149;
+  font-size: 0.94rem;
+  line-height: 1.3;
+}
+
+.instrument-create-content {
+  gap: 12px;
+}
+
+.instrument-create-steps {
+  padding: 16px 18px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.instrument-create-step {
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(16, 35, 78, 0.08);
+  background: #f6f8ff;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.instrument-create-step.is-active {
+  border-color: rgba(20, 79, 156, 0.22);
+  background: linear-gradient(180deg, rgba(232, 240, 255, 0.92) 0%, rgba(246, 249, 255, 0.98) 100%);
+}
+
+.instrument-create-step.is-complete {
+  border-color: rgba(20, 79, 156, 0.12);
+}
+
+.instrument-create-step__number {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #173a77;
+  color: #ffffff;
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.instrument-create-step__copy {
+  display: grid;
+  gap: 2px;
+}
+
+.instrument-create-step__copy strong {
+  color: #0d2149;
+  font-size: 0.95rem;
+}
+
+.instrument-create-step__copy span {
+  color: #617391;
+  font-size: 0.82rem;
+}
+
+.instrument-create-card {
+  padding: 18px 22px;
+  display: grid;
+  gap: 18px;
+}
+
+.instrument-create-card__header {
+  margin-bottom: 2px;
+}
+
+.instrument-create-form {
+  display: grid;
+  gap: 18px;
+}
+
+.instrument-create-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.instrument-create-summary__item {
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: #eef3ff;
+  display: grid;
+  gap: 4px;
+}
+
+.instrument-create-summary__item span {
+  color: #627391;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.instrument-create-summary__item strong {
+  color: #0d2149;
+  font-size: 0.94rem;
+  line-height: 1.3;
+}
+
+.instrument-calibration-form {
+  display: grid;
+  gap: 18px;
+}
+
+.instrument-calibration-form__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 22px;
+}
+
+.instrument-calibration-form__textarea {
+  width: 100%;
+  min-height: 132px;
+  padding: 16px 20px;
+  border: 0;
+  border-radius: 12px;
+  background: #eef3ff;
+  color: #122447;
+  font: inherit;
+  line-height: 1.55;
+  resize: vertical;
+  outline: none;
+}
+
+.instrument-calibration-form__textarea::placeholder {
+  color: rgba(18, 36, 71, 0.54);
+}
+
+.instrument-calibration-upload {
+  padding: 18px;
+  border: 1px dashed rgba(20, 79, 156, 0.22);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at top right, rgba(20, 79, 156, 0.06), transparent 36%),
+    linear-gradient(180deg, rgba(243, 247, 255, 0.96) 0%, rgba(255, 255, 255, 0.98) 100%);
+  display: grid;
+  gap: 12px;
+}
+
+.instrument-calibration-upload.is-invalid {
+  border-color: rgba(185, 58, 58, 0.34);
+}
+
+.instrument-calibration-upload__copy {
+  display: grid;
+  gap: 6px;
+}
+
+.instrument-calibration-upload__copy strong {
+  color: #0d2149;
+  font-size: 0.96rem;
+}
+
+.instrument-calibration-upload__copy p,
+.instrument-calibration-upload__hint {
+  margin: 0;
+  color: #5f7191;
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.instrument-calibration-upload input[type="file"] {
+  width: 100%;
+  min-height: 52px;
+  padding: 12px 14px;
+  border: 1px solid rgba(16, 35, 78, 0.12);
+  border-radius: 14px;
+  background: #f8fbff;
+  color: #0d2149;
+  font: inherit;
+}
+
+.instrument-calibration-upload__file {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #eef3ff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.instrument-calibration-upload__file span {
+  color: #0d2149;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.instrument-calibration-upload__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.instrument-calibration-upload__file button,
+.instrument-calibration-upload__extract,
+.instrument-calibration-form__cancel,
+.instrument-calibration-form__submit {
+  min-height: 42px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.88rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.instrument-calibration-upload__file button {
+  background: rgba(20, 79, 156, 0.12);
+  color: #144f9c;
+}
+
+.instrument-calibration-upload__file button:hover {
+  background: rgba(20, 79, 156, 0.18);
+  color: #0c3e83;
+}
+
+.instrument-calibration-upload__extract {
+  background: linear-gradient(180deg, #123b7a 0%, #0a2856 100%);
+  color: #ffffff;
+  box-shadow: 0 10px 22px rgba(10, 40, 86, 0.18);
+}
+
+.instrument-calibration-upload__extract:hover {
+  background: linear-gradient(180deg, #184a93 0%, #10366f 100%);
+}
+
+.instrument-calibration-upload__extract:disabled {
+  cursor: wait;
+  opacity: 0.72;
+  filter: saturate(0.82);
+}
+
+.instrument-calibration-upload__success {
+  margin: 0;
+  color: #0c4f31;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.instrument-calibration-form__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.instrument-calibration-form__cancel {
+  background: rgba(10, 40, 86, 0.08);
+  color: #0a2856;
+}
+
+.instrument-calibration-form__cancel:hover {
+  background: rgba(10, 40, 86, 0.12);
+}
+
+.instrument-calibration-form__submit {
+  background: linear-gradient(180deg, #1b5fd2 0%, #103f8d 100%);
+  color: #ffffff;
+  box-shadow: 0 10px 22px rgba(20, 79, 156, 0.18);
+}
+
+.instrument-calibration-form__submit:hover {
+  background: linear-gradient(180deg, #2b6fe2 0%, #144b9f 100%);
+}
+
+.instrument-calibration-form__submit:disabled {
+  cursor: wait;
+  opacity: 0.72;
+  filter: saturate(0.82);
+}
+
+.instrument-calibration-review {
+  display: grid;
+  gap: 14px;
+}
+
+.instrument-calibration-review__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.instrument-calibration-review__header h3 {
+  margin: 0;
+  color: #0d2149;
+  font-size: 1rem;
+}
+
+.instrument-calibration-review__header p {
+  margin: 8px 0 0;
+  color: #5f7191;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.instrument-calibration-review__summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.instrument-calibration-review__summary span {
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #eef3ff;
+  color: #28416c;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.instrument-calibration-review__warnings {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(242, 173, 71, 0.12);
+  display: grid;
+  gap: 6px;
+}
+
+.instrument-calibration-review__warnings p {
+  margin: 0;
+  color: #8a5707;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.instrument-calibration-review__list {
+  display: grid;
+  gap: 10px;
+}
+
+.instrument-calibration-review__item {
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(16, 35, 78, 0.08);
+  background:
+    radial-gradient(circle at top right, rgba(20, 79, 156, 0.05), transparent 34%),
+    linear-gradient(180deg, rgba(243, 247, 255, 0.96) 0%, rgba(255, 255, 255, 0.98) 100%);
+  display: grid;
+  gap: 12px;
+}
+
+.instrument-calibration-review__item-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.instrument-calibration-review__item-top strong {
+  color: #0d2149;
+  font-size: 0.96rem;
+}
+
+.instrument-calibration-review__item-top p {
+  margin: 6px 0 0;
+  color: #627391;
+  font-size: 0.84rem;
+}
+
+.instrument-calibration-review__status {
+  display: grid;
+  gap: 6px;
+}
+
+.instrument-calibration-review__status span,
+.instrument-calibration-review__meta span {
+  color: #627391;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.instrument-calibration-review__status select {
+  min-height: 40px;
+  min-width: 170px;
+  padding: 0 12px;
+  border: 1px solid rgba(16, 35, 78, 0.12);
+  border-radius: 12px;
+  background: #f8fbff;
+  color: #0d2149;
+  font: inherit;
+}
+
+.instrument-calibration-review__meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.instrument-calibration-review__meta div {
+  min-height: 68px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #eef3ff;
+  display: grid;
+  gap: 4px;
+}
+
+.instrument-calibration-review__meta strong {
+  color: #0d2149;
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
+.instrument-calibration-review__evidence {
+  margin: 0;
+  color: #5f7191;
+  font-size: 0.88rem;
+  line-height: 1.55;
 }
 
 .instrument-calibration-card__header {
@@ -4345,6 +5077,160 @@ html.page-is-transitioning .page-entry-shell .inventory-content > :nth-child(5) 
   line-height: 1.55;
 }
 
+.instrument-calibration-entry__results {
+  display: grid;
+  gap: 10px;
+}
+
+.calibration-field-table__empty {
+  padding: 18px;
+  border-radius: 16px;
+  background: rgba(238, 243, 255, 0.9);
+  color: #5f7191;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.calibration-field-table__wrap {
+  border: 1px solid rgba(16, 35, 78, 0.08);
+  border-radius: 16px;
+  background: #ffffff;
+  overflow: auto;
+  max-height: 520px;
+}
+
+.calibration-field-table {
+  width: 100%;
+  min-width: 880px;
+  border-collapse: collapse;
+}
+
+.calibration-field-table th,
+.calibration-field-table td {
+  padding: 12px 14px;
+  text-align: left;
+  border-bottom: 1px solid rgba(16, 35, 78, 0.08);
+  vertical-align: top;
+}
+
+.calibration-field-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: rgba(243, 247, 255, 0.98);
+  color: #66758f;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.calibration-field-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.calibration-field-table tbody tr:hover {
+  background: rgba(20, 79, 156, 0.04);
+}
+
+.calibration-field-table__index {
+  width: 62px;
+  color: #66758f;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.calibration-field-table__field strong,
+.calibration-field-table__measurement strong,
+.calibration-field-table__value strong {
+  color: #14325e;
+  font-size: 0.92rem;
+  line-height: 1.35;
+}
+
+.calibration-field-table__measurement,
+.calibration-field-table__support {
+  display: grid;
+  gap: 4px;
+}
+
+.calibration-field-table__measurement span,
+.calibration-field-table__support span {
+  color: #66758f;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.calibration-field-table__support p {
+  margin: 0;
+  color: #5f7191;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.calibration-field-table__value input {
+  min-height: 42px;
+  width: 100%;
+  border: 1px solid rgba(16, 35, 78, 0.12);
+  border-radius: 12px;
+  background: #f8fbff;
+  color: #0d2149;
+  font: inherit;
+}
+
+.calibration-field-table__value input {
+  padding: 0 12px;
+}
+
+.calibration-field-table__status-pill {
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.calibration-field-table__status-pill--unknown {
+  background: rgba(10, 40, 86, 0.08);
+  color: #48607f;
+}
+
+.calibration-field-table__status-pill--conforming {
+  background: rgba(12, 79, 49, 0.12);
+  color: #0c4f31;
+}
+
+.calibration-field-table__status-pill--non_conforming {
+  background: rgba(186, 31, 51, 0.12);
+  color: #a11d32;
+}
+
+.calibration-field-table__status {
+  width: 150px;
+}
+
+.calibration-field-table__check {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  border-radius: 12px;
+  background: rgba(10, 40, 86, 0.06);
+  color: #14325e;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.calibration-field-table__check input {
+  width: 18px;
+  height: 18px;
+  accent-color: #144f9c;
+}
+
 .instrument-calibration-entry__actions {
   display: flex;
   justify-content: flex-end;
@@ -4354,8 +5240,18 @@ html.page-is-transitioning .page-entry-shell .inventory-content > :nth-child(5) 
   .dashboard-grid,
   .dashboard-lower-grid,
   .instrument-detail-hero,
-  .instrument-detail-grid {
+  .instrument-detail-grid,
+  .instrument-calibration-create-grid {
     grid-template-columns: 1fr;
+  }
+
+  .instrument-create-steps,
+  .instrument-create-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .instrument-calibration-create-card--aside {
+    position: static;
   }
 }
 
@@ -4393,6 +5289,18 @@ html.page-is-transitioning .page-entry-shell .inventory-content > :nth-child(5) 
   .instrument-calibration-filters__custom {
     align-items: stretch;
   }
+
+  .instrument-calibration-form__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .instrument-calibration-review__meta {
+    grid-template-columns: 1fr;
+  }
+
+  .calibration-field-table {
+    min-width: 760px;
+  }
 }
 
 @media (max-width: 640px) {
@@ -4418,6 +5326,40 @@ html.page-is-transitioning .page-entry-shell .inventory-content > :nth-child(5) 
 
   .instrument-calibration-entry__actions .instrument-detail-link-chip {
     width: 100%;
+  }
+
+  .instrument-detail-nav__actions,
+  .instrument-detail-alert,
+  .instrument-calibration-form__footer,
+  .instrument-calibration-upload__file,
+  .instrument-calibration-upload__actions {
+    width: 100%;
+  }
+
+  .instrument-detail-alert,
+  .instrument-calibration-form__footer,
+  .instrument-calibration-upload__file,
+  .instrument-calibration-upload__actions,
+  .instrument-calibration-review__item-top {
+    justify-content: stretch;
+  }
+
+  .instrument-detail-alert .instrument-detail-link-chip,
+  .instrument-calibration-form__cancel,
+  .instrument-calibration-form__submit,
+  .instrument-calibration-upload__file button,
+  .instrument-calibration-upload__extract,
+  .instrument-calibration-review__status,
+  .instrument-calibration-review__status select {
+    width: 100%;
+  }
+
+  .instrument-calibration-review__summary {
+    width: 100%;
+  }
+
+  .calibration-field-table {
+    min-width: 680px;
   }
 }
 
@@ -4555,6 +5497,10 @@ html.page-is-transitioning .page-entry-shell .inventory-content > :nth-child(5) 
   .instrument-fields-builder__header,
   .instrument-fields-builder__row-top {
     flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .instrument-fields-builder__compact-header {
     align-items: flex-start;
   }
 
@@ -4860,20 +5806,21 @@ html.page-is-transitioning .page-entry-shell .inventory-content > :nth-child(5) 
   }
 
 .instrument-modal.category-modal {
-  width: min(100%, 560px);
+  width: min(100%, 760px);
   height: auto;
-  max-height: none;
+  max-height: min(92vh, 760px);
 }
 
 .category-modal .instrument-modal__body {
-  flex: 0 0 auto;
-  padding-bottom: 28px;
+  flex: 1 1 auto;
+  padding-bottom: 24px;
 }
 
 .category-modal .instrument-modal__content {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
   justify-content: flex-start;
   gap: 24px;
+  min-height: 0;
 }
 
 .category-modal .instrument-modal__field--full {
@@ -4884,6 +5831,10 @@ html.page-is-transitioning .page-entry-shell .inventory-content > :nth-child(5) 
 
 .category-modal .instrument-modal__footer {
   margin-top: 0;
+  position: sticky;
+  bottom: 0;
+  padding-top: 18px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0), #ffffff 24px);
 }
 
 body,
@@ -5336,8 +6287,21 @@ html[data-theme="dark"] .category-index {
   color: #dce8ff;
 }
 
+html[data-theme="dark"] .category-table__field-stack strong {
+  color: #edf4ff;
+}
+
+html[data-theme="dark"] .category-table__field-stack span,
+html[data-theme="dark"] .inventory-table__muted {
+  color: #aac0e4;
+}
+
 html[data-theme="dark"] .category-table__edit {
   background: rgba(70, 110, 180, 0.16);
+}
+
+html[data-theme="dark"] .category-modal .instrument-modal__footer {
+  background: linear-gradient(180deg, rgba(9, 17, 31, 0), #09111f 24px);
 }
 
 html[data-theme="dark"] .category-table__edit:hover {
@@ -5563,21 +6527,40 @@ html[data-theme="dark"] .instrument-fields-builder__row-top strong {
   color: #eef5ff;
 }
 
+html[data-theme="dark"] .instrument-fields-builder__row-summary p {
+  color: #edf4ff;
+}
+
+html[data-theme="dark"] .instrument-fields-builder__compact-copy {
+  color: #96abd1;
+}
+
 html[data-theme="dark"] .instrument-fields-builder__header p,
 html[data-theme="dark"] .instrument-fields-builder__empty {
   color: #96abd1;
+}
+
+html[data-theme="dark"] .instrument-fields-builder__row-summary span {
+  color: #9bb0d5;
 }
 
 html[data-theme="dark"] .instrument-fields-builder__empty {
   background: #121f34;
 }
 
+html[data-theme="dark"] .instrument-fields-builder__edit,
 html[data-theme="dark"] .instrument-fields-builder__add,
 html[data-theme="dark"] .instrument-fields-builder__remove {
   background: rgba(74, 108, 170, 0.16);
   color: #dce7fb;
 }
 
+html[data-theme="dark"] .instrument-fields-builder__table-count {
+  background: rgba(74, 108, 170, 0.16);
+  color: #dce7fb;
+}
+
+html[data-theme="dark"] .instrument-fields-builder__edit:hover,
 html[data-theme="dark"] .instrument-fields-builder__add:hover,
 html[data-theme="dark"] .instrument-fields-builder__remove:hover {
   background: rgba(74, 108, 170, 0.24);
@@ -5589,18 +6572,35 @@ html[data-theme="dark"] .instrument-fields-builder__row {
   background: rgba(15, 26, 44, 0.9);
 }
 
-html[data-theme="dark"] .instrument-fields-builder__row.is-locked {
-  background: linear-gradient(180deg, rgba(20, 31, 50, 0.96) 0%, rgba(14, 23, 39, 0.98) 100%);
+html[data-theme="dark"] .instrument-fields-builder__table-wrap {
+  border-color: rgba(129, 151, 191, 0.12);
+  background: rgba(15, 26, 44, 0.9);
 }
 
-html[data-theme="dark"] .instrument-fields-builder__badge--category {
-  background: rgba(74, 108, 170, 0.18);
-  color: #9ec4ff;
+html[data-theme="dark"] .instrument-fields-builder__table th,
+html[data-theme="dark"] .instrument-fields-builder__table td {
+  border-bottom-color: rgba(129, 151, 191, 0.12);
 }
 
-html[data-theme="dark"] .instrument-fields-builder__badge--instrument {
-  background: rgba(177, 118, 26, 0.2);
-  color: #ffc46f;
+html[data-theme="dark"] .instrument-fields-builder__table th {
+  background: rgba(18, 31, 52, 0.98);
+  color: #96abd1;
+}
+
+html[data-theme="dark"] .instrument-fields-builder__table tbody tr:hover {
+  background: rgba(74, 108, 170, 0.12);
+}
+
+html[data-theme="dark"] .instrument-fields-builder__table-index {
+  color: #9bb0d5;
+}
+
+html[data-theme="dark"] .instrument-fields-builder__table-name {
+  color: #eef5ff;
+}
+
+html[data-theme="dark"] .instrument-fields-builder__table-measurement {
+  color: #c8d8f3;
 }
 
 html[data-theme="dark"] .instrument-modal__select-wrap svg,
@@ -5663,8 +6663,54 @@ html[data-theme="dark"] .instrument-detail-link-chip {
   color: #dce7fb;
 }
 
+html[data-theme="dark"] .instrument-create-step {
+  border-color: rgba(129, 151, 191, 0.12);
+  background: rgba(15, 26, 44, 0.9);
+}
+
+html[data-theme="dark"] .instrument-create-step.is-active {
+  border-color: rgba(94, 142, 217, 0.24);
+  background: linear-gradient(180deg, rgba(24, 38, 63, 0.98) 0%, rgba(14, 24, 40, 0.98) 100%);
+}
+
+html[data-theme="dark"] .instrument-create-step__copy strong,
+html[data-theme="dark"] .instrument-create-summary__item strong {
+  color: #edf4ff;
+}
+
+html[data-theme="dark"] .instrument-create-step__copy span,
+html[data-theme="dark"] .instrument-create-summary__item span {
+  color: #aac0e4;
+}
+
+html[data-theme="dark"] .instrument-create-summary__item {
+  background: rgba(24, 39, 67, 0.9);
+  border: 1px solid rgba(129, 151, 191, 0.12);
+}
+
 html[data-theme="dark"] .instrument-detail-link-chip:hover {
   background: rgba(74, 108, 170, 0.24);
+  color: #ffffff;
+}
+
+html[data-theme="dark"] .instrument-detail-link-chip--primary {
+  background: linear-gradient(180deg, #2f73ea 0%, #1c4d9f 100%);
+  color: #ffffff;
+  box-shadow: 0 10px 22px rgba(41, 108, 224, 0.24);
+}
+
+html[data-theme="dark"] .instrument-detail-link-chip--primary:hover {
+  background: linear-gradient(180deg, #4281ef 0%, #245ab7 100%);
+}
+
+html[data-theme="dark"] .instrument-detail-link-chip--alert-cta {
+  background: linear-gradient(180deg, #f25664 0%, #ba1f33 100%);
+  color: #ffffff;
+  box-shadow: 0 14px 28px rgba(186, 31, 51, 0.28);
+}
+
+html[data-theme="dark"] .instrument-detail-link-chip--alert-cta:hover {
+  background: linear-gradient(180deg, #ff6a77 0%, #cf2a41 100%);
   color: #ffffff;
 }
 
@@ -5703,6 +6749,148 @@ html[data-theme="dark"] .instrument-detail-card__count {
 
 html[data-theme="dark"] .instrument-detail-empty {
   background: #121f34;
+}
+
+html[data-theme="dark"] .instrument-detail-alert strong,
+html[data-theme="dark"] .instrument-detail-banner,
+html[data-theme="dark"] .instrument-calibration-create-card__copy h2,
+html[data-theme="dark"] .instrument-calibration-create-summary__item strong,
+html[data-theme="dark"] .instrument-calibration-upload__copy strong,
+html[data-theme="dark"] .instrument-calibration-upload__file span,
+html[data-theme="dark"] .instrument-calibration-review__header h3,
+html[data-theme="dark"] .instrument-calibration-review__item-top strong,
+html[data-theme="dark"] .instrument-calibration-review__meta strong {
+  color: #eef5ff;
+}
+
+html[data-theme="dark"] .instrument-detail-alert p,
+html[data-theme="dark"] .instrument-calibration-create-card__copy > p:last-child,
+html[data-theme="dark"] .instrument-calibration-upload__copy p,
+html[data-theme="dark"] .instrument-calibration-upload__hint,
+html[data-theme="dark"] .instrument-calibration-review__header p,
+html[data-theme="dark"] .instrument-calibration-review__item-top p,
+html[data-theme="dark"] .instrument-calibration-review__evidence {
+  color: #96abd1;
+}
+
+html[data-theme="dark"] .instrument-detail-alert--warning {
+  background:
+    radial-gradient(circle at top right, rgba(177, 118, 26, 0.18), transparent 36%),
+    linear-gradient(180deg, rgba(27, 22, 15, 0.96) 0%, rgba(13, 24, 41, 0.98) 100%);
+}
+
+html[data-theme="dark"] .instrument-detail-alert--inline:not(.instrument-detail-alert--warning):not(.instrument-detail-alert--danger) {
+  background: #121f34;
+}
+
+html[data-theme="dark"] .instrument-detail-alert--danger {
+  background:
+    radial-gradient(circle at top right, rgba(185, 58, 58, 0.18), transparent 36%),
+    linear-gradient(180deg, rgba(36, 18, 22, 0.96) 0%, rgba(13, 24, 41, 0.98) 100%);
+}
+
+html[data-theme="dark"] .instrument-detail-banner--success {
+  background:
+    radial-gradient(circle at top right, rgba(94, 142, 217, 0.14), transparent 36%),
+    linear-gradient(180deg, rgba(18, 31, 52, 0.96) 0%, rgba(13, 24, 41, 0.98) 100%);
+}
+
+html[data-theme="dark"] .instrument-calibration-create-summary__item {
+  background: #121f34;
+}
+
+html[data-theme="dark"] .instrument-calibration-create-summary__item span {
+  color: #a8c3f2;
+}
+
+html[data-theme="dark"] .instrument-calibration-form__textarea,
+html[data-theme="dark"] .instrument-calibration-upload input[type="file"] {
+  border-color: rgba(129, 151, 191, 0.12);
+  background: #121f34;
+  color: #eef5ff;
+}
+
+html[data-theme="dark"] .instrument-calibration-form__textarea::placeholder {
+  color: rgba(220, 231, 251, 0.54);
+}
+
+html[data-theme="dark"] .instrument-calibration-upload {
+  border-color: rgba(129, 151, 191, 0.18);
+  background:
+    radial-gradient(circle at top right, rgba(94, 142, 217, 0.14), transparent 36%),
+    linear-gradient(180deg, rgba(18, 31, 52, 0.96) 0%, rgba(13, 24, 41, 0.98) 100%);
+}
+
+html[data-theme="dark"] .instrument-calibration-upload__file {
+  background: #121f34;
+}
+
+html[data-theme="dark"] .instrument-calibration-upload__file button {
+  background: rgba(74, 108, 170, 0.18);
+  color: #dce7fb;
+}
+
+html[data-theme="dark"] .instrument-calibration-upload__extract {
+  background: linear-gradient(180deg, #184a93 0%, #10366f 100%);
+  color: #ffffff;
+  box-shadow: 0 10px 22px rgba(16, 54, 111, 0.28);
+}
+
+html[data-theme="dark"] .instrument-calibration-upload__file button:hover,
+html[data-theme="dark"] .instrument-calibration-form__cancel:hover {
+  background: rgba(74, 108, 170, 0.24);
+  color: #ffffff;
+}
+
+html[data-theme="dark"] .instrument-calibration-upload__extract:hover {
+  background: linear-gradient(180deg, #245ab7 0%, #184a93 100%);
+}
+
+html[data-theme="dark"] .instrument-calibration-upload__success {
+  color: #8ff0b8;
+}
+
+html[data-theme="dark"] .instrument-calibration-form__cancel {
+  background: rgba(74, 108, 170, 0.16);
+  color: #dce7fb;
+}
+
+html[data-theme="dark"] .instrument-calibration-form__submit {
+  background: linear-gradient(180deg, #2f73ea 0%, #1c4d9f 100%);
+  color: #ffffff;
+  box-shadow: 0 10px 22px rgba(41, 108, 224, 0.24);
+}
+
+html[data-theme="dark"] .instrument-calibration-review__summary span,
+html[data-theme="dark"] .instrument-calibration-review__meta div {
+  background: #121f34;
+}
+
+html[data-theme="dark"] .instrument-calibration-review__summary span,
+html[data-theme="dark"] .instrument-calibration-review__status span,
+html[data-theme="dark"] .instrument-calibration-review__meta span {
+  color: #a8c3f2;
+}
+
+html[data-theme="dark"] .instrument-calibration-review__warnings {
+  background: rgba(177, 118, 26, 0.18);
+}
+
+html[data-theme="dark"] .instrument-calibration-review__warnings p {
+  color: #ffd99f;
+}
+
+html[data-theme="dark"] .instrument-calibration-review__item {
+  border-color: rgba(129, 151, 191, 0.12);
+  background:
+    radial-gradient(circle at top right, rgba(94, 142, 217, 0.14), transparent 36%),
+    linear-gradient(180deg, rgba(18, 31, 52, 0.96) 0%, rgba(13, 24, 41, 0.98) 100%);
+}
+
+html[data-theme="dark"] .instrument-calibration-review__status select {
+  border-color: rgba(129, 151, 191, 0.12);
+  background: #121f34;
+  color: #eef5ff;
 }
 
 html[data-theme="dark"] .instrument-detail-field {
@@ -5772,18 +6960,71 @@ html[data-theme="dark"] .instrument-calibration-entry__meta {
   background: #121f34;
 }
 
+html[data-theme="dark"] .calibration-field-table__empty {
+  background: #121f34;
+  color: #96abd1;
+}
+
+html[data-theme="dark"] .calibration-field-table__wrap {
+  border-color: rgba(129, 151, 191, 0.12);
+  background: rgba(15, 26, 44, 0.9);
+}
+
+html[data-theme="dark"] .calibration-field-table th,
+html[data-theme="dark"] .calibration-field-table td {
+  border-bottom-color: rgba(129, 151, 191, 0.12);
+}
+
+html[data-theme="dark"] .calibration-field-table th {
+  background: rgba(18, 31, 52, 0.98);
+  color: #96abd1;
+}
+
+html[data-theme="dark"] .calibration-field-table tbody tr:hover {
+  background: rgba(74, 108, 170, 0.12);
+}
+
+html[data-theme="dark"] .calibration-field-table__index,
+html[data-theme="dark"] .calibration-field-table__measurement span,
+html[data-theme="dark"] .calibration-field-table__support span,
+html[data-theme="dark"] .calibration-field-table__support p {
+  color: #96abd1;
+}
+
+html[data-theme="dark"] .calibration-field-table__field strong,
+html[data-theme="dark"] .calibration-field-table__measurement strong,
+html[data-theme="dark"] .calibration-field-table__value strong {
+  color: #eef5ff;
+}
+
+html[data-theme="dark"] .calibration-field-table__value input {
+  border-color: rgba(129, 151, 191, 0.12);
+  background: #121f34;
+  color: #eef5ff;
+}
+
+html[data-theme="dark"] .calibration-field-table__check {
+  background: rgba(74, 108, 170, 0.12);
+  color: #dce7fb;
+}
+
+html[data-theme="dark"] .calibration-field-table__status-pill--unknown {
+  background: rgba(74, 108, 170, 0.16);
+  color: #dce7fb;
+}
+
+html[data-theme="dark"] .calibration-field-table__status-pill--conforming {
+  background: rgba(17, 111, 66, 0.22);
+  color: #9cf2c5;
+}
+
+html[data-theme="dark"] .calibration-field-table__status-pill--non_conforming {
+  background: rgba(185, 58, 58, 0.24);
+  color: #ffb0b8;
+}
+
 html[data-theme="dark"] .instrument-calibration-entry__meta span {
   color: #a8c3f2;
-}
-
-html[data-theme="dark"] .instrument-detail-field__badge--category {
-  background: rgba(74, 108, 170, 0.18);
-  color: #9ec4ff;
-}
-
-html[data-theme="dark"] .instrument-detail-field__badge--instrument {
-  background: rgba(177, 118, 26, 0.2);
-  color: #ffc46f;
 }
 
 html[data-theme="dark"] .instrument-detail-summary__row {

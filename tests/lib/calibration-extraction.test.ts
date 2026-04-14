@@ -3,7 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   buildCalibrationExtractionPrompt,
   buildCalibrationExtractionSchema,
-  normalizeCalibrationExtractionResult
+  normalizeCalibrationExtractionResult,
+  prepareCalibrationExtractionDocumentText
 } from "@/lib/calibration-extraction";
 
 const fields = [
@@ -102,5 +103,33 @@ describe("calibration-extraction", () => {
     expect(prompt).toContain("Instrumento: DI-048");
     expect(prompt).toContain("slug: diametro-interno");
     expect(prompt).toContain("slug: profundidade");
+  });
+
+  it("includes extracted document text in the prompt when available", () => {
+    const prompt = buildCalibrationExtractionPrompt({
+      instrumentTag: "DI-048",
+      category: "Paquimetro",
+      fields,
+      documentText: "Certificado\nResponsavel: Ana"
+    });
+
+    expect(prompt).toContain("Use apenas o texto extraido abaixo.");
+    expect(prompt).toContain("Texto extraido do certificado:");
+    expect(prompt).toContain("Responsavel: Ana");
+  });
+
+  it("normalizes and truncates extracted document text", () => {
+    const normalized = prepareCalibrationExtractionDocumentText(
+      `  Linha 1   \r\n\r\nLinha   2  \n${"A".repeat(18_500)}`
+    );
+
+    expect(normalized).toContain("Linha 1");
+    expect(normalized).toContain("Linha 2");
+    expect(normalized).toContain("[texto extraido truncado]");
+    expect(normalized?.length).toBeLessThanOrEqual(18_000 + 40);
+  });
+
+  it("ignores extracted document text when it is too short", () => {
+    expect(prepareCalibrationExtractionDocumentText("  abc  ")).toBeNull();
   });
 });

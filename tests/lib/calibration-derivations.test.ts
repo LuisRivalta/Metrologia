@@ -59,11 +59,45 @@ describe("calibration-derivations", () => {
     expect(rows[2].value).toBe("");
   });
 
+  it("auto calculates the paquimetro sum field for ressalto", () => {
+    const rows = applyCalibrationDerivedValues("Paquimetro", [
+      {
+        fieldSlug: serializeMeasurementFieldSlug("Maior erro ressalto"),
+        value: "0,020",
+        unit: "",
+        confidence: null,
+        evidence: ""
+      },
+      {
+        fieldSlug: serializeMeasurementFieldSlug("Incerteza de medicao ressalto"),
+        value: "0,005",
+        unit: "",
+        confidence: null,
+        evidence: ""
+      },
+      {
+        fieldSlug: serializeMeasurementFieldSlug("Incerteza + maior Erro ressalto"),
+        value: "",
+        unit: "",
+        confidence: null,
+        evidence: ""
+      }
+    ]);
+
+    expect(rows[2].value).toBe("0,025");
+  });
+
   it("identifies derived paquimetro fields", () => {
     expect(
       isAutoCalculatedCalibrationField(
         "Paquimetro",
         serializeMeasurementFieldSlug("Incerteza + maior Erro interno")
+      )
+    ).toBe(true);
+    expect(
+      isAutoCalculatedCalibrationField(
+        "Paquimetro",
+        serializeMeasurementFieldSlug("Incerteza + maior Erro ressalto")
       )
     ).toBe(true);
     expect(

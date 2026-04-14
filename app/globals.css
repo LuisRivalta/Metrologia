@@ -4320,39 +4320,30 @@ html.page-is-transitioning .page-entry-shell .inventory-content > :nth-child(5) 
 }
 
 .instrument-detail-field__top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
+  display: block;
 }
 
 .instrument-detail-field__top strong {
   color: #0d2149;
   font-size: 0.9rem;
+  line-height: 1.45;
 }
 
-.instrument-detail-field__badge {
-  min-height: 28px;
-  padding: 0 10px;
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.68rem;
-  font-weight: 900;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+.instrument-detail-field__name {
+  display: block;
+  font-size: 0.92rem;
+}
+
+.instrument-detail-field__value {
+  display: block;
+  color: #2d5ea9;
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.35;
 }
 
 .instrument-detail-field__meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  flex-wrap: wrap;
-  color: #5f7191;
-  font-size: 0.82rem;
+  display: block;
 }
 
 .instrument-detail-summary {
@@ -6773,6 +6764,10 @@ html[data-theme="dark"] .instrument-detail-empty,
 html[data-theme="dark"] .instrument-detail-field__meta,
 html[data-theme="dark"] .instrument-detail-summary__row span {
   color: #96abd1;
+}
+
+html[data-theme="dark"] .instrument-detail-field__value {
+  color: #8fb6ff;
 }
 
 html[data-theme="dark"] .instrument-detail-metric {

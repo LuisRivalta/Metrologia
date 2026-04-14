@@ -4,6 +4,7 @@ import {
   type MeasurementFieldItem
 } from "@/lib/measurement-fields";
 import {
+  mergeInstrumentFieldsWithLatestCalibration,
   mapInstrumentRow,
   type InstrumentCategoryRow,
   type InstrumentDbRow,
@@ -57,7 +58,7 @@ function buildInstrumentDetail(
 
   return {
     ...baseItem,
-    fields: sortFields(fields)
+    fields: mergeInstrumentFieldsWithLatestCalibration(sortFields(fields))
   };
 }
 

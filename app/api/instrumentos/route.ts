@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { serializeCategorySlug } from "@/lib/categories";
+import { parseCalibrationRecord } from "@/lib/calibration-records";
 import { isValidIsoDate } from "@/lib/date-utils";
 import {
   mapInstrumentMeasurementFieldRow,
@@ -10,6 +11,7 @@ import {
   type MeasurementFieldItem
 } from "@/lib/measurement-fields";
 import {
+  mergeInstrumentFieldsWithLatestCalibration,
   mapInstrumentRow,
   type InstrumentCategoryRow,
   type InstrumentDbRow
@@ -379,13 +381,17 @@ function buildInstrumentFieldsFromCategoryFields(categoryFields: CategoryMeasure
 function buildInstrumentDetail(
   row: InstrumentDbRow,
   categoriesById: Map<number, InstrumentCategoryRow>,
-  instrumentFieldsByInstrumentId: Map<number, MeasurementFieldItem[]>
+  instrumentFieldsByInstrumentId: Map<number, MeasurementFieldItem[]>,
+  latestFieldEntries: ReturnType<typeof parseCalibrationRecord>["fields"] = []
 ) {
   const baseItem = mapInstrumentRow(row, categoriesById);
 
   return {
     ...baseItem,
-    fields: instrumentFieldsByInstrumentId.get(row.id) ?? []
+    fields: mergeInstrumentFieldsWithLatestCalibration(
+      instrumentFieldsByInstrumentId.get(row.id) ?? [],
+      latestFieldEntries
+    )
   };
 }
 
@@ -501,17 +507,27 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Instrumento nao encontrado." }, { status: 404 });
     }
 
-    const [categoryRowsResponse, measurementRowsResponse, instrumentFieldRowsResponse] =
+    const [categoryRowsResponse, measurementRowsResponse, instrumentFieldRowsResponse, latestCalibrationResponse] =
       await Promise.all([
         loadCategories(),
         loadMeasurements(),
-        loadInstrumentMeasurementFields([instrumentId])
+        loadInstrumentMeasurementFields([instrumentId]),
+        supabaseAdmin
+          .schema("calibracao")
+          .from("calibracoes")
+          .select("id, observacoes")
+          .eq("instrumento_id", instrumentId)
+          .order("data_calibracao", { ascending: false })
+          .order("id", { ascending: false })
+          .limit(1)
+          .maybeSingle()
       ]);
 
     const combinedError =
       categoryRowsResponse.error ??
       measurementRowsResponse.error ??
-      instrumentFieldRowsResponse.error;
+      instrumentFieldRowsResponse.error ??
+      latestCalibrationResponse.error;
 
     if (combinedError) {
       if (isPermissionDenied(combinedError.message)) {
@@ -535,7 +551,8 @@ export async function GET(request: Request) {
     const item = buildInstrumentDetail(
       instrumentResponse.data as InstrumentDbRow,
       categoriesById,
-      instrumentFieldsByInstrumentId
+      instrumentFieldsByInstrumentId,
+      parseCalibrationRecord(latestCalibrationResponse.data?.observacoes).fields
     );
 
     return NextResponse.json({ item });

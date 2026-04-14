@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server";
+import path from "node:path";
+import {
+  buildPaquimetroFieldOverridesFromTablePages,
+  type CalibrationCertificateTablePage
+} from "@/lib/calibration-certificate-parsers";
 import {
   buildCalibrationExtractionPrompt,
   buildCalibrationExtractionSchema,
   defaultCalibrationExtractionModel,
-  normalizeCalibrationExtractionResult
+  normalizeCalibrationExtractionResult,
+  prepareCalibrationExtractionDocumentText
 } from "@/lib/calibration-extraction";
 import {
   MAX_CALIBRATION_CERTIFICATE_FILE_SIZE,
@@ -38,6 +44,14 @@ type OpenRouterSuccessPayload = {
     };
   }>;
 };
+
+type PdfParseInstance = {
+  getText: (params?: { lineEnforce?: boolean }) => Promise<{ text: string }>;
+  getTable: () => Promise<{ pages?: Array<{ num?: number; tables?: string[][][] }> }>;
+  destroy: () => Promise<void>;
+};
+
+type PdfParseConstructor = new (args: { data: Buffer }) => PdfParseInstance;
 
 const openRouterUrl = "https://openrouter.ai/api/v1/chat/completions";
 const defaultOpenRouterTimeoutMs = 25_000;
@@ -175,6 +189,65 @@ function encodePdfAsDataUrl(file: File, bytes: ArrayBuffer) {
   return `data:${mimeType};base64,${Buffer.from(bytes).toString("base64")}`;
 }
 
+function loadPdfParseConstructor(): PdfParseConstructor {
+  const modulePath = path.join(
+    process.cwd(),
+    "node_modules",
+    "pdf-parse",
+    "dist",
+    "pdf-parse",
+    "cjs",
+    "index.cjs"
+  );
+  const runtimeRequire = eval("require") as NodeRequire;
+  const loadedModule = runtimeRequire(modulePath) as { PDFParse?: PdfParseConstructor };
+
+  if (typeof loadedModule.PDFParse !== "function") {
+    throw new Error("Nao foi possivel carregar o parser de PDF.");
+  }
+
+  return loadedModule.PDFParse;
+}
+
+async function extractPdfDocumentData(fileBytes: ArrayBuffer) {
+  let parser: PdfParseInstance | null = null;
+  let documentText: string | null = null;
+  let tablePages: CalibrationCertificateTablePage[] = [];
+
+  try {
+    const PDFParse = loadPdfParseConstructor();
+
+    parser = new PDFParse({
+      data: Buffer.from(fileBytes)
+    });
+
+    const textResult = await parser.getText({
+      lineEnforce: true
+    });
+
+    documentText = prepareCalibrationExtractionDocumentText(textResult.text);
+
+    const tableResult = await parser.getTable();
+    tablePages = Array.isArray(tableResult?.pages)
+      ? tableResult.pages.map((page) => ({
+          num: page?.num ?? 0,
+          tables: Array.isArray(page?.tables) ? page.tables : []
+        }))
+      : [];
+  } catch {
+    // fallback to IA-only flow below
+  } finally {
+    if (parser) {
+      await parser.destroy().catch(() => undefined);
+    }
+  }
+
+  return {
+    documentText,
+    tablePages
+  };
+}
+
 function buildOpenRouterPrompt(
   basePrompt: string,
   schema: ReturnType<typeof buildCalibrationExtractionSchema>,
@@ -237,12 +310,41 @@ async function callOpenRouter(args: {
   prompt: string;
   schema: ReturnType<typeof buildCalibrationExtractionSchema>;
   model: string;
-  fileName: string;
-  fileDataUrl: string;
+  fileName?: string;
+  fileDataUrl?: string;
   useJsonSchema: boolean;
 }) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), getOpenRouterTimeoutMs(args.model));
+  const content: Array<
+    | {
+        type: "text";
+        text: string;
+      }
+    | {
+        type: "file";
+        file: {
+          filename: string;
+          file_data: string;
+        };
+      }
+  > = [
+    {
+      type: "text",
+      text: buildOpenRouterPrompt(args.prompt, args.schema, !args.useJsonSchema)
+    }
+  ];
+
+  if (args.fileName && args.fileDataUrl) {
+    content.push({
+      type: "file",
+      file: {
+        filename: args.fileName,
+        file_data: args.fileDataUrl
+      }
+    });
+  }
+
   const response = await fetch(openRouterUrl, {
     method: "POST",
     signal: controller.signal,
@@ -257,19 +359,7 @@ async function callOpenRouter(args: {
       messages: [
         {
           role: "user",
-          content: [
-            {
-              type: "text",
-              text: buildOpenRouterPrompt(args.prompt, args.schema, !args.useJsonSchema)
-            },
-            {
-              type: "file",
-              file: {
-                filename: args.fileName,
-                file_data: args.fileDataUrl
-              }
-            }
-          ]
+          content
         }
       ],
       response_format: args.useJsonSchema
@@ -382,14 +472,26 @@ export async function POST(request: Request) {
       fields: extractionFields
     });
     const fileBytes = await certificateFile.arrayBuffer();
-    const fileDataUrl = encodePdfAsDataUrl(certificateFile, fileBytes);
+    const extractedDocumentData = await extractPdfDocumentData(fileBytes);
+    const extractedDocumentText = extractedDocumentData.documentText;
+    const prompt = extractedDocumentText
+      ? buildCalibrationExtractionPrompt({
+          instrumentTag: extractionTarget.tag,
+          category: extractionTarget.category,
+          fields: extractionFields,
+          documentText: extractedDocumentText
+        })
+      : extractionPrompt;
+    const fileDataUrl = extractedDocumentText
+      ? undefined
+      : encodePdfAsDataUrl(certificateFile, fileBytes);
     const preferJsonSchema = shouldPreferJsonSchema(defaultCalibrationExtractionModel);
     let response = await callOpenRouter({
       apiKey,
-      prompt: extractionPrompt,
+      prompt,
       schema: extractionSchema,
       model: defaultCalibrationExtractionModel,
-      fileName: certificateFile.name,
+      fileName: extractedDocumentText ? undefined : certificateFile.name,
       fileDataUrl,
       useJsonSchema: preferJsonSchema
     });
@@ -401,10 +503,10 @@ export async function POST(request: Request) {
     ) {
       response = await callOpenRouter({
         apiKey,
-        prompt: extractionPrompt,
+        prompt,
         schema: extractionSchema,
         model: defaultCalibrationExtractionModel,
-        fileName: certificateFile.name,
+        fileName: extractedDocumentText ? undefined : certificateFile.name,
         fileDataUrl,
         useJsonSchema: false
       });
@@ -424,7 +526,33 @@ export async function POST(request: Request) {
     const parsedPayload = JSON.parse(response.text) as Parameters<
       typeof normalizeCalibrationExtractionResult
     >[0];
-    const extraction = normalizeCalibrationExtractionResult(parsedPayload, extractionFields);
+    const normalizedExtraction = normalizeCalibrationExtractionResult(parsedPayload, extractionFields);
+    const localFieldOverrides = buildPaquimetroFieldOverridesFromTablePages({
+      categoryIdentifier: extractionTarget.category,
+      documentText: extractedDocumentText,
+      tablePages: extractedDocumentData.tablePages,
+      fields: extractionFields
+    });
+    const overridesByFieldId = new Map(
+      localFieldOverrides.map((field) => [field.fieldId, field])
+    );
+    const extraction = {
+      ...normalizedExtraction,
+      fields: normalizedExtraction.fields.map((field) => {
+        const override = overridesByFieldId.get(field.fieldId);
+
+        return override
+          ? {
+              ...field,
+              value: override.value,
+              unit: override.unit,
+              confidence: override.confidence,
+              evidence: override.evidence,
+              conforme: override.conforme
+            }
+          : field;
+      })
+    };
 
     return NextResponse.json({
       instrument: {

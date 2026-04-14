@@ -87,6 +87,24 @@ export function InstrumentDetailContent({
     return { total: item.fields.length };
   }, [item]);
 
+  const sortedFields = useMemo(() => {
+    if (!item) {
+      return [];
+    }
+
+    return [...item.fields].sort((firstField, secondField) => {
+      const firstOrder = typeof firstField.order === "number" ? firstField.order : Number.MAX_SAFE_INTEGER;
+      const secondOrder =
+        typeof secondField.order === "number" ? secondField.order : Number.MAX_SAFE_INTEGER;
+
+      if (firstOrder !== secondOrder) {
+        return firstOrder - secondOrder;
+      }
+
+      return firstField.name.localeCompare(secondField.name);
+    });
+  }, [item]);
+
   return (
     <section className="inventory-content instrument-detail-content">
       <div className="instrument-detail-nav">
@@ -197,32 +215,33 @@ export function InstrumentDetailContent({
               <header className="instrument-detail-card__header">
                 <div>
                   <h3>Campos de medicao</h3>
-                  <p>Lista completa dos campos configurados manualmente para este instrumento.</p>
+                  <p>Ultimo valor registrado por campo na calibracao mais recente.</p>
                 </div>
                 <span className="instrument-detail-card__count">{fieldSummary.total} campos</span>
               </header>
 
-              {item.fields.length === 0 ? (
+              {sortedFields.length === 0 ? (
                 <div className="instrument-detail-empty">
                   Nenhum campo de medicao foi configurado para este instrumento.
                 </div>
               ) : (
                 <div className="instrument-detail-fields">
-                  {item.fields.map((field, index) => (
-                    <article key={`${field.slug}-${index}`} className="instrument-detail-field">
-                      <div className="instrument-detail-field__top">
-                        <strong>{field.name}</strong>
-                        <span className="instrument-detail-field__badge">
-                          Campo {String(index + 1).padStart(2, "0")}
-                        </span>
-                      </div>
+                  {sortedFields.map((field, index) => {
+                    const resolvedValue = field.hasLatestValue
+                      ? `${field.latestValue}${field.latestUnit}`
+                      : "Nao informado";
 
-                      <div className="instrument-detail-field__meta">
-                        <span>{field.measurementName || field.measurementRawName || "Sem medida"}</span>
-                        <span>Ordem {field.order + 1}</span>
-                      </div>
-                    </article>
-                  ))}
+                    return (
+                      <article key={`${field.slug}-${index}`} className="instrument-detail-field">
+                        <div className="instrument-detail-field__top">
+                          <strong className="instrument-detail-field__name">{field.name}</strong>
+                        </div>
+                        <div className="instrument-detail-field__meta">
+                          <span className="instrument-detail-field__value">{resolvedValue}</span>
+                        </div>
+                      </article>
+                    );
+                  })}
                 </div>
               )}
             </article>

@@ -34,6 +34,13 @@ const paquimetroDerivationRules: CalibrationDerivationRule[] = [
       serializeMeasurementFieldSlug("Maior erro profundidade"),
       serializeMeasurementFieldSlug("Incerteza de medicao profundidade")
     ]
+  },
+  {
+    targetSlug: serializeMeasurementFieldSlug("Incerteza + maior Erro ressalto"),
+    sourceSlugs: [
+      serializeMeasurementFieldSlug("Maior erro ressalto"),
+      serializeMeasurementFieldSlug("Incerteza de medicao ressalto")
+    ]
   }
 ];
 

@@ -3,6 +3,7 @@ import type { MeasurementFieldItem } from "@/lib/measurement-fields";
 export const defaultCalibrationExtractionModel =
   process.env.OPENROUTER_CALIBRATION_EXTRACTION_MODEL?.trim() ||
   "nvidia/nemotron-nano-12b-v2-vl:free";
+export const maxCalibrationExtractionDocumentTextLength = 18_000;
 
 export type CalibrationExtractionHeader = {
   responsible: string | null;
@@ -132,6 +133,7 @@ export function buildCalibrationExtractionPrompt(args: {
   instrumentTag: string;
   category: string;
   fields: MeasurementFieldItem[];
+  documentText?: string | null;
 }) {
   const fieldsBlock = args.fields
     .map(
@@ -139,6 +141,16 @@ export function buildCalibrationExtractionPrompt(args: {
         `- slug: ${field.slug}; nome: ${field.name}; medida esperada: ${field.measurementName || field.measurementRawName || "nao informada"}`
     )
     .join("\n");
+
+  const documentTextBlock = args.documentText
+    ? [
+        "",
+        "Texto extraido do certificado:",
+        '"""',
+        args.documentText,
+        '"""'
+      ].join("\n")
+    : "";
 
   return [
     "Extraia os dados do certificado de calibracao em PDF.",
@@ -148,12 +160,43 @@ export function buildCalibrationExtractionPrompt(args: {
     "Nao retorne numero do certificado nem laboratorio.",
     "Para cada campo esperado, procure a linha correspondente e indique se esta conforme quando isso aparecer no certificado.",
     "Use somente os field_slug fornecidos abaixo.",
+    args.documentText
+      ? "Use apenas o texto extraido abaixo. Ele pode conter quebras de linha imperfeitas, colunas quebradas e cabecalhos repetidos."
+      : "Use o PDF anexado como fonte principal.",
     "",
     `Instrumento: ${args.instrumentTag}`,
     `Categoria: ${args.category}`,
     "Campos esperados:",
-    fieldsBlock
+    fieldsBlock,
+    documentTextBlock
   ].join("\n");
+}
+
+export function prepareCalibrationExtractionDocumentText(
+  rawText: string | null | undefined,
+  maxLength = maxCalibrationExtractionDocumentTextLength
+) {
+  const normalizedText = (rawText ?? "")
+    .replace(/\r/g, "")
+    .split("\n")
+    .map((line) => line.trim().replace(/[ \t]+/g, " "))
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
+  if (!normalizedText) {
+    return null;
+  }
+
+  if (normalizedText.replace(/\s+/g, "").length < 120) {
+    return null;
+  }
+
+  if (normalizedText.length <= maxLength) {
+    return normalizedText;
+  }
+
+  return `${normalizedText.slice(0, maxLength).trimEnd()}\n\n[texto extraido truncado]`;
 }
 
 export function normalizeCalibrationExtractionResult(

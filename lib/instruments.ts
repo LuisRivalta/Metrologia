@@ -1,4 +1,5 @@
 import { parseValidIsoDate } from "@/lib/date-utils";
+import type { CalibrationStoredFieldEntry } from "@/lib/calibration-records";
 import type { MeasurementFieldItem } from "@/lib/measurement-fields";
 
 export type InstrumentTone = "neutral" | "warning" | "danger";
@@ -34,8 +35,14 @@ export type InstrumentItem = {
   diffInDays: number;
 };
 
+export type InstrumentDetailFieldItem = MeasurementFieldItem & {
+  latestValue: string;
+  latestUnit: string;
+  hasLatestValue: boolean;
+};
+
 export type InstrumentDetailItem = InstrumentItem & {
-  fields: MeasurementFieldItem[];
+  fields: InstrumentDetailFieldItem[];
 };
 
 const shortMonthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
@@ -234,4 +241,28 @@ export function mapInstrumentRow(
     tone: calibrationInfo.tone,
     diffInDays: calibrationInfo.diffInDays
   };
+}
+
+export function mergeInstrumentFieldsWithLatestCalibration(
+  fields: MeasurementFieldItem[],
+  latestFieldEntries: CalibrationStoredFieldEntry[] = []
+): InstrumentDetailFieldItem[] {
+  const latestEntriesByFieldId = new Map(latestFieldEntries.map((entry) => [entry.fieldId, entry]));
+  const latestEntriesBySlug = new Map(latestFieldEntries.map((entry) => [entry.fieldSlug, entry]));
+
+  return fields.map((field) => {
+    const latestEntry =
+      (typeof field.dbId === "number" ? latestEntriesByFieldId.get(field.dbId) : undefined) ??
+      latestEntriesBySlug.get(field.slug);
+
+    return {
+      ...field,
+      latestValue: normalizeText(latestEntry?.value),
+      latestUnit:
+        normalizeText(latestEntry?.unit) ||
+        normalizeText(field.measurementName) ||
+        normalizeText(field.measurementRawName),
+      hasLatestValue: Boolean(normalizeText(latestEntry?.value))
+    };
+  });
 }

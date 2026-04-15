@@ -73,6 +73,8 @@ type CalibrationFieldReviewItem = {
   fieldSlug: string;
   fieldName: string;
   measurementName: string;
+  groupName: string;
+  subgroupName: string;
   value: string;
   unit: string;
   confidence: number | null;
@@ -125,6 +127,8 @@ function createFieldReviewItems(item: InstrumentDetailItem | null): CalibrationF
       fieldSlug: field.slug,
       fieldName: field.name,
       measurementName: field.measurementName || field.measurementRawName || "",
+      groupName: field.groupName ?? "",
+      subgroupName: field.subgroupName ?? "",
       value: "",
       unit: "",
       confidence: null,
@@ -812,6 +816,8 @@ export function InstrumentCalibrationCreateContent({
                     id: field.fieldId,
                     fieldName: field.fieldName,
                     measurementName: field.measurementName,
+                    groupName: field.groupName,
+                    subgroupName: field.subgroupName,
                     autoCalculated: isAutoCalculatedCalibrationField(
                       getCalibrationCategoryIdentifier(instrument),
                       field.fieldSlug

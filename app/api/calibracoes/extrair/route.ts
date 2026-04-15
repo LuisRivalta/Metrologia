@@ -85,6 +85,8 @@ function parseManualExtractionFields(rawValue: string) {
       name?: unknown;
       measurementName?: unknown;
       measurementRawName?: unknown;
+      groupName?: unknown;
+      subgroupName?: unknown;
     }>;
 
     if (!Array.isArray(parsedValue) || parsedValue.length === 0) {
@@ -96,7 +98,15 @@ function parseManualExtractionFields(rawValue: string) {
 
     for (const [index, item] of parsedValue.entries()) {
       const name = normalizeText(typeof item.name === "string" ? item.name : "");
-      const slug = serializeMeasurementFieldSlug(name);
+      const groupName = normalizeText(typeof item.groupName === "string" ? item.groupName : "");
+      const subgroupName = normalizeText(
+        typeof item.subgroupName === "string" ? item.subgroupName : ""
+      );
+      const slug = serializeMeasurementFieldSlug({
+        name,
+        groupName,
+        subgroupName
+      });
       const measurementName = normalizeText(
         typeof item.measurementName === "string" ? item.measurementName : ""
       );
@@ -119,7 +129,9 @@ function parseManualExtractionFields(rawValue: string) {
         measurementName,
         measurementRawName,
         valueType: "numero",
-        order: index
+        order: index,
+        groupName: groupName || undefined,
+        subgroupName: subgroupName || undefined
       });
     }
 

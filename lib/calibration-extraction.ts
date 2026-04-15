@@ -138,7 +138,7 @@ export function buildCalibrationExtractionPrompt(args: {
   const fieldsBlock = args.fields
     .map(
       (field) =>
-        `- slug: ${field.slug}; nome: ${field.name}; medida esperada: ${field.measurementName || field.measurementRawName || "nao informada"}`
+        `- slug: ${field.slug}; nome: ${field.name}; grupo: ${field.groupName || "nenhum"}; subgrupo: ${field.subgroupName || "nenhum"}; medida esperada: ${field.measurementName || field.measurementRawName || "nao informada"}`
     )
     .join("\n");
 

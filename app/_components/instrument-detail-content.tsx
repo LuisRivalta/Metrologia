@@ -3,6 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { fetchApi } from "@/lib/api/client";
 import type { InstrumentDetailItem } from "@/lib/instruments";
+import {
+  groupMeasurementFieldsByLayout,
+  hasMeasurementFieldGrouping,
+  sortMeasurementFields
+} from "@/lib/measurement-fields";
 import { PageTransitionLink } from "./page-transition-link";
 
 type InstrumentDetailContentProps = {
@@ -30,6 +35,33 @@ function getCalibrationAlertCopy(item: InstrumentDetailItem) {
   }
 
   return "";
+}
+
+function normalizeLabel(value: string | null | undefined) {
+  return (value ?? "").trim().toLowerCase();
+}
+
+function areSameLabels(firstLabel: string | null | undefined, secondLabel: string | null | undefined) {
+  return Boolean(normalizeLabel(firstLabel) && normalizeLabel(firstLabel) === normalizeLabel(secondLabel));
+}
+
+function shouldShowSubgroupLabel(groupLabel: string | null, subgroupLabel: string | null) {
+  return Boolean(subgroupLabel && !areSameLabels(subgroupLabel, groupLabel));
+}
+
+function formatFieldValue(value: string, unit: string) {
+  const normalizedValue = value.trim();
+  const normalizedUnit = unit.trim();
+
+  if (!normalizedValue) {
+    return "Nao informado";
+  }
+
+  if (!normalizedUnit) {
+    return normalizedValue;
+  }
+
+  return `${normalizedValue} ${normalizedUnit}`;
 }
 
 export function InstrumentDetailContent({
@@ -92,18 +124,24 @@ export function InstrumentDetailContent({
       return [];
     }
 
-    return [...item.fields].sort((firstField, secondField) => {
-      const firstOrder = typeof firstField.order === "number" ? firstField.order : Number.MAX_SAFE_INTEGER;
-      const secondOrder =
-        typeof secondField.order === "number" ? secondField.order : Number.MAX_SAFE_INTEGER;
-
-      if (firstOrder !== secondOrder) {
-        return firstOrder - secondOrder;
-      }
-
-      return firstField.name.localeCompare(secondField.name);
-    });
+    return sortMeasurementFields(item.fields);
   }, [item]);
+
+  const groupedFields = useMemo(
+    () =>
+      groupMeasurementFieldsByLayout(
+        sortedFields.map((field) => ({
+          ...field,
+          slug: field.slug,
+          name: field.name
+        }))
+      ),
+    [sortedFields]
+  );
+  const shouldUseGroupedLayout = useMemo(
+    () => hasMeasurementFieldGrouping(sortedFields),
+    [sortedFields]
+  );
 
   return (
     <section className="inventory-content instrument-detail-content">
@@ -224,11 +262,80 @@ export function InstrumentDetailContent({
                 <div className="instrument-detail-empty">
                   Nenhum campo de medicao foi configurado para este instrumento.
                 </div>
+              ) : shouldUseGroupedLayout ? (
+                <div className="instrument-detail-grouped-sections">
+                  {groupedFields.map((group) => (
+                    <section key={group.key} className="instrument-detail-group">
+                      {(() => {
+                        const groupLabel = group.label || "Campos gerais";
+                        const groupedItems = group.subgroups.flatMap((subgroup) =>
+                          subgroup.fields.map((field) => ({
+                            field,
+                            subgroupLabel: shouldShowSubgroupLabel(group.label || null, subgroup.label)
+                              ? subgroup.label
+                              : null
+                          }))
+                        );
+                        const singleItem = groupedItems[0] ?? null;
+                        const showCompactSingleValue =
+                          groupedItems.length === 1 &&
+                          singleItem &&
+                          !singleItem.subgroupLabel &&
+                          areSameLabels(singleItem.field.name, groupLabel);
+
+                        return (
+                          <>
+                            <header className="instrument-detail-group__header">
+                              <h4>{groupLabel}</h4>
+                              <span>{groupedItems.length} {groupedItems.length === 1 ? "campo" : "campos"}</span>
+                            </header>
+
+                            {showCompactSingleValue && singleItem ? (
+                              <div className="instrument-detail-group__single">
+                                <strong>
+                                  {singleItem.field.hasLatestValue
+                                    ? formatFieldValue(
+                                        singleItem.field.latestValue,
+                                        singleItem.field.latestUnit
+                                      )
+                                    : "Nao informado"}
+                                </strong>
+                              </div>
+                            ) : (
+                              <div className="instrument-detail-group__grid">
+                                {groupedItems.map(({ field, subgroupLabel }) => {
+                                  const shouldShowFieldName =
+                                    !areSameLabels(field.name, groupLabel) &&
+                                    !areSameLabels(field.name, subgroupLabel);
+                                  const resolvedValue = field.hasLatestValue
+                                    ? formatFieldValue(field.latestValue, field.latestUnit)
+                                    : "Nao informado";
+
+                                  return (
+                                    <article key={field.slug} className="instrument-detail-group__field">
+                                      {subgroupLabel ? (
+                                        <span className="instrument-detail-group__subgroup">{subgroupLabel}</span>
+                                      ) : null}
+                                      {shouldShowFieldName ? (
+                                        <strong className="instrument-detail-group__name">{field.name}</strong>
+                                      ) : null}
+                                      <span className="instrument-detail-group__value">{resolvedValue}</span>
+                                    </article>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </section>
+                  ))}
+                </div>
               ) : (
                 <div className="instrument-detail-fields">
                   {sortedFields.map((field, index) => {
                     const resolvedValue = field.hasLatestValue
-                      ? `${field.latestValue}${field.latestUnit}`
+                      ? formatFieldValue(field.latestValue, field.latestUnit)
                       : "Nao informado";
 
                     return (

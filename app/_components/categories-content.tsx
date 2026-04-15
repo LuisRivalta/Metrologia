@@ -1,14 +1,25 @@
 "use client";
 
 import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { fetchApi } from "@/lib/api/client";
 import type { CategoryItem } from "@/lib/categories";
+import { serializeMeasurementFieldSlug } from "@/lib/measurement-fields";
 import type { MeasurementItem } from "@/lib/measurements";
 
 type CategoryModalMode = "create" | "edit";
 type CategoryFieldModalMode = "create" | "edit";
 
 type CategoryFieldFormItem = {
+  clientId: string;
+  dbId?: number;
+  name: string;
+  measurementId: string;
+  groupName: string;
+  subgroupName: string;
+};
+
+type CategoryFieldDraftRow = {
   clientId: string;
   dbId?: number;
   name: string;
@@ -44,6 +55,25 @@ function mapFieldToFormItem(field: CategoryItem["fields"][number]): CategoryFiel
     clientId: createClientId(),
     dbId: field.dbId,
     name: field.name,
+    measurementId: field.measurementId,
+    groupName: field.groupName ?? "",
+    subgroupName: field.subgroupName ?? ""
+  };
+}
+
+function createFieldDraftRow(): CategoryFieldDraftRow {
+  return {
+    clientId: createClientId(),
+    name: "",
+    measurementId: ""
+  };
+}
+
+function mapFieldToDraftRow(field: CategoryFieldFormItem): CategoryFieldDraftRow {
+  return {
+    clientId: field.clientId,
+    dbId: field.dbId,
+    name: field.name,
     measurementId: field.measurementId
   };
 }
@@ -64,9 +94,10 @@ export function CategoriesContent() {
   const [deletingCategoryId, setDeletingCategoryId] = useState<string | null>(null);
   const [isFieldModalOpen, setIsFieldModalOpen] = useState(false);
   const [fieldModalMode, setFieldModalMode] = useState<CategoryFieldModalMode>("create");
-  const [editingFieldClientId, setEditingFieldClientId] = useState<string | null>(null);
-  const [fieldDraftName, setFieldDraftName] = useState("");
-  const [fieldDraftMeasurementId, setFieldDraftMeasurementId] = useState("");
+  const [editingFieldClientIds, setEditingFieldClientIds] = useState<string[]>([]);
+  const [fieldDraftRows, setFieldDraftRows] = useState<CategoryFieldDraftRow[]>([]);
+  const [fieldDraftGroupName, setFieldDraftGroupName] = useState("");
+  const [fieldDraftSubgroupName, setFieldDraftSubgroupName] = useState("");
   const [fieldModalError, setFieldModalError] = useState("");
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [pendingDeleteCategory, setPendingDeleteCategory] = useState<CategoryItem | null>(null);
@@ -199,9 +230,10 @@ export function CategoriesContent() {
   function closeFieldModal() {
     setIsFieldModalOpen(false);
     setFieldModalMode("create");
-    setEditingFieldClientId(null);
-    setFieldDraftName("");
-    setFieldDraftMeasurementId("");
+    setEditingFieldClientIds([]);
+    setFieldDraftRows([]);
+    setFieldDraftGroupName("");
+    setFieldDraftSubgroupName("");
     setFieldModalError("");
   }
 
@@ -224,18 +256,29 @@ export function CategoriesContent() {
 
   function openCreateFieldModal() {
     setFieldModalMode("create");
-    setEditingFieldClientId(null);
-    setFieldDraftName("");
-    setFieldDraftMeasurementId("");
+    setEditingFieldClientIds([]);
+    setFieldDraftRows([createFieldDraftRow()]);
+    setFieldDraftGroupName("");
+    setFieldDraftSubgroupName("");
     setFieldModalError("");
     setIsFieldModalOpen(true);
   }
 
   function openEditFieldModal(field: CategoryFieldFormItem) {
+    const hasGrouping = Boolean(field.groupName.trim() || field.subgroupName.trim());
+    const selectedFields = hasGrouping
+      ? fieldRows.filter(
+          (row) =>
+            normalizeSearchValue(row.groupName) === normalizeSearchValue(field.groupName) &&
+            normalizeSearchValue(row.subgroupName) === normalizeSearchValue(field.subgroupName)
+        )
+      : [field];
+
     setFieldModalMode("edit");
-    setEditingFieldClientId(field.clientId);
-    setFieldDraftName(field.name);
-    setFieldDraftMeasurementId(field.measurementId);
+    setEditingFieldClientIds(selectedFields.map((item) => item.clientId));
+    setFieldDraftRows(selectedFields.map(mapFieldToDraftRow));
+    setFieldDraftGroupName(field.groupName);
+    setFieldDraftSubgroupName(field.subgroupName);
     setFieldModalError("");
     setIsFieldModalOpen(true);
   }
@@ -245,55 +288,136 @@ export function CategoriesContent() {
     setValidationError("");
   }
 
-  function saveFieldFromModal() {
-    const trimmedName = fieldDraftName.trim();
+  function addFieldDraftRow() {
+    setFieldDraftRows((current) => [...current, createFieldDraftRow()]);
+    setFieldModalError("");
+  }
 
-    if (!trimmedName) {
-      setFieldModalError("Nome do campo obrigatorio.");
-      return;
-    }
+  function updateFieldDraftRow(
+    clientId: string,
+    nextValue: Partial<Pick<CategoryFieldDraftRow, "name" | "measurementId">>
+  ) {
+    setFieldDraftRows((current) =>
+      current.map((row) =>
+        row.clientId === clientId
+          ? {
+              ...row,
+              ...nextValue
+            }
+          : row
+      )
+    );
+    setFieldModalError("");
+  }
 
-    if (!fieldDraftMeasurementId) {
-      setFieldModalError("Selecione a medida do campo.");
-      return;
-    }
-
-    const normalizedDraftName = normalizeSearchValue(trimmedName);
-    const hasDuplicate = fieldRows.some((field) => {
-      if (field.clientId === editingFieldClientId) {
-        return false;
+  function removeFieldDraftRow(clientId: string) {
+    setFieldDraftRows((current) => {
+      if (current.length <= 1) {
+        return current;
       }
 
-      return normalizeSearchValue(field.name) === normalizedDraftName;
+      return current.filter((row) => row.clientId !== clientId);
     });
+    setFieldModalError("");
+  }
 
-    if (hasDuplicate) {
-      setFieldModalError("Ja existe um campo com esse nome.");
+  function saveFieldFromModal() {
+    const trimmedGroupName = fieldDraftGroupName.trim();
+    const trimmedSubgroupName = fieldDraftSubgroupName.trim();
+    const sanitizedDraftRows: CategoryFieldDraftRow[] = [];
+    const seenDraftSlugs = new Set<string>();
+
+    if (fieldDraftRows.length === 0) {
+      setFieldModalError("Adicione pelo menos um campo neste bloco.");
       return;
     }
 
-    if (fieldModalMode === "edit" && editingFieldClientId) {
-      setFieldRows((current) =>
-        current.map((field) =>
-          field.clientId === editingFieldClientId
-            ? {
-                ...field,
-                dbId: field.dbId,
-                name: trimmedName,
-                measurementId: fieldDraftMeasurementId
-              }
-            : field
-        )
-      );
-    } else {
-      setFieldRows((current) => [
-        ...current,
-        {
-          clientId: createClientId(),
-          name: trimmedName,
-          measurementId: fieldDraftMeasurementId
+    for (const [index, draftRow] of fieldDraftRows.entries()) {
+      const trimmedName = draftRow.name.trim();
+
+      if (!trimmedName) {
+        setFieldModalError(`Preencha o nome do campo ${index + 1}.`);
+        return;
+      }
+
+      if (!draftRow.measurementId) {
+        setFieldModalError(`Selecione a medida do campo ${trimmedName}.`);
+        return;
+      }
+
+      const draftSlug = serializeMeasurementFieldSlug({
+        name: trimmedName,
+        groupName: trimmedGroupName,
+        subgroupName: trimmedSubgroupName
+      });
+
+      if (!draftSlug) {
+        setFieldModalError(`O campo ${trimmedName} possui um nome invalido.`);
+        return;
+      }
+
+      if (seenDraftSlugs.has(draftSlug)) {
+        setFieldModalError(`O campo ${trimmedName} esta duplicado neste bloco.`);
+        return;
+      }
+
+      const hasDuplicateOutsideBlock = fieldRows.some((field) => {
+        if (editingFieldClientIds.includes(field.clientId)) {
+          return false;
         }
-      ]);
+
+        return (
+          serializeMeasurementFieldSlug({
+            name: field.name,
+            groupName: field.groupName,
+            subgroupName: field.subgroupName
+          }) === draftSlug
+        );
+      });
+
+      if (hasDuplicateOutsideBlock) {
+        setFieldModalError(`Ja existe um campo chamado ${trimmedName} nesse mesmo contexto.`);
+        return;
+      }
+
+      seenDraftSlugs.add(draftSlug);
+      sanitizedDraftRows.push({
+        ...draftRow,
+        name: trimmedName,
+        measurementId: draftRow.measurementId
+      });
+    }
+
+    const nextFieldRows = sanitizedDraftRows.map((draftRow) => ({
+      clientId: draftRow.clientId,
+      dbId: draftRow.dbId,
+      name: draftRow.name,
+      measurementId: draftRow.measurementId,
+      groupName: trimmedGroupName,
+      subgroupName: trimmedSubgroupName
+    }));
+
+    if (fieldModalMode === "edit" && editingFieldClientIds.length > 0) {
+      setFieldRows((current) => {
+        const insertionIndex = current.findIndex((field) =>
+          editingFieldClientIds.includes(field.clientId)
+        );
+        const preservedFields = current.filter(
+          (field) => !editingFieldClientIds.includes(field.clientId)
+        );
+        const safeInsertionIndex =
+          insertionIndex >= 0
+            ? Math.min(insertionIndex, preservedFields.length)
+            : preservedFields.length;
+
+        return [
+          ...preservedFields.slice(0, safeInsertionIndex),
+          ...nextFieldRows,
+          ...preservedFields.slice(safeInsertionIndex)
+        ];
+      });
+    } else {
+      setFieldRows((current) => [...current, ...nextFieldRows]);
     }
 
     setValidationError("");
@@ -311,11 +435,15 @@ export function CategoriesContent() {
       return "Adicione pelo menos um item ao template de calibracao da categoria.";
     }
 
-    const seenNames = new Set<string>();
+    const seenSlugs = new Set<string>();
 
     for (const [index, field] of fieldRows.entries()) {
       const fieldName = field.name.trim();
-      const normalizedFieldName = normalizeSearchValue(fieldName);
+      const fieldSlug = serializeMeasurementFieldSlug({
+        name: fieldName,
+        groupName: field.groupName,
+        subgroupName: field.subgroupName
+      });
 
       if (!fieldName) {
         return `Preencha o nome do campo ${index + 1}.`;
@@ -325,11 +453,15 @@ export function CategoriesContent() {
         return `Selecione a medida do campo ${fieldName}.`;
       }
 
-      if (seenNames.has(normalizedFieldName)) {
-        return `O campo ${fieldName} esta duplicado.`;
+      if (!fieldSlug) {
+        return `O campo ${fieldName} possui um nome invalido.`;
       }
 
-      seenNames.add(normalizedFieldName);
+      if (seenSlugs.has(fieldSlug)) {
+        return `O campo ${fieldName} esta duplicado no mesmo grupo/subgrupo.`;
+      }
+
+      seenSlugs.add(fieldSlug);
     }
 
     return "";
@@ -360,7 +492,9 @@ export function CategoriesContent() {
           fields: fieldRows.map((field) => ({
             dbId: field.dbId,
             name: field.name.trim(),
-            measurementId: field.measurementId
+            measurementId: field.measurementId,
+            groupName: field.groupName.trim(),
+            subgroupName: field.subgroupName.trim()
           }))
         })
       });
@@ -662,6 +796,11 @@ export function CategoriesContent() {
                               <div className="instrument-fields-builder__row-summary">
                                 <strong>Item {String(index + 1).padStart(2, "0")}</strong>
                                 <p>{field.name}</p>
+                                {field.groupName || field.subgroupName ? (
+                                  <span className="instrument-fields-builder__row-context">
+                                    {[field.groupName, field.subgroupName].filter(Boolean).join(" / ")}
+                                  </span>
+                                ) : null}
                                 <span>{measurement?.name ?? "Medida nao informada"}</span>
                               </div>
 
@@ -696,80 +835,150 @@ export function CategoriesContent() {
               </div>
             </form>
 
-            {isFieldModalOpen ? (
-              <div
-                className="instrument-delete-confirm-backdrop field-editor-modal-backdrop"
-                role="presentation"
-                onClick={closeFieldModal}
-              >
-                <section
-                  className="instrument-delete-confirm field-editor-modal"
-                  role="dialog"
-                  aria-modal="true"
-                  aria-labelledby="field-editor-modal-title"
-                  onClick={(event) => event.stopPropagation()}
-                >
-                  <h3 id="field-editor-modal-title">
-                    {fieldModalMode === "edit" ? "Editar campo" : "Novo campo"}
-                  </h3>
-                  <p>Defina o nome do item e a medida que essa categoria deve usar no template de calibracao.</p>
+          </section>
+        </div>
+      ) : null}
 
-                  <div className="field-editor-modal__form">
+      {isFieldModalOpen && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              className="instrument-delete-confirm-backdrop field-editor-modal-backdrop"
+              role="presentation"
+              onClick={closeFieldModal}
+            >
+              <section
+                className="instrument-delete-confirm field-editor-modal"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="field-editor-modal-title"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <h3 id="field-editor-modal-title">
+                  {fieldModalMode === "edit" ? "Editar bloco de campos" : "Novo bloco de campos"}
+                </h3>
+
+                <div className="field-editor-modal__form">
+                  <div className="field-editor-modal__grid">
                     <label className="instrument-modal__field">
-                      <span>Nome do campo</span>
+                      <span>Grupo principal</span>
                       <input
                         type="text"
-                        placeholder="Ex: Diametro interno"
-                        value={fieldDraftName}
+                        value={fieldDraftGroupName}
                         onChange={(event) => {
-                          setFieldDraftName(event.target.value);
+                          setFieldDraftGroupName(event.target.value);
                           if (fieldModalError) {
                             setFieldModalError("");
                           }
                         }}
-                        autoFocus
                       />
                     </label>
 
                     <label className="instrument-modal__field">
-                      <span>Tipo de medida</span>
-                      <select
-                        value={fieldDraftMeasurementId}
+                      <span>Subgrupo</span>
+                      <input
+                        type="text"
+                        value={fieldDraftSubgroupName}
                         onChange={(event) => {
-                          setFieldDraftMeasurementId(event.target.value);
+                          setFieldDraftSubgroupName(event.target.value);
                           if (fieldModalError) {
                             setFieldModalError("");
                           }
                         }}
-                      >
-                        <option value="" disabled>Selecione a medida</option>
-                        {measurements.map((measurement) => (
-                          <option key={measurement.id} value={measurement.id}>
-                            {measurement.name}
-                          </option>
-                        ))}
-                      </select>
+                      />
                     </label>
                   </div>
 
-                  {fieldModalError ? (
-                    <p className="instrument-modal__field-error">{fieldModalError}</p>
-                  ) : null}
-
-                  <div className="instrument-delete-confirm__actions">
-                    <button type="button" onClick={closeFieldModal}>
-                      Cancelar
-                    </button>
-                    <button type="button" className="is-danger field-editor-modal__save" onClick={saveFieldFromModal}>
-                      {fieldModalMode === "edit" ? "Salvar campo" : "Adicionar campo"}
-                    </button>
+                  <div className="field-editor-modal__section">
+                    <div className="field-editor-modal__section-head">
+                      <strong>Campos deste bloco</strong>
+                      <button
+                        type="button"
+                        className="field-editor-modal__add-row"
+                        onClick={addFieldDraftRow}
+                      >
+                        Adicionar campo
+                      </button>
+                    </div>
                   </div>
-                </section>
-              </div>
-            ) : null}
-          </section>
-        </div>
-      ) : null}
+
+                  <div className="field-editor-modal__rows">
+                    {fieldDraftRows.map((draftRow, index) => (
+                      <div key={draftRow.clientId} className="field-editor-modal__row">
+                        <span className="field-editor-modal__row-index">
+                          Campo {String(index + 1).padStart(2, "0")}
+                        </span>
+
+                        <div className="field-editor-modal__row-grid">
+                          <label className="instrument-modal__field">
+                            <span>Campo</span>
+                            <input
+                              type="text"
+                              value={draftRow.name}
+                              onChange={(event) =>
+                                updateFieldDraftRow(draftRow.clientId, {
+                                  name: event.target.value
+                                })
+                              }
+                              autoFocus={index === 0}
+                            />
+                          </label>
+
+                          <label className="instrument-modal__field">
+                            <span>Tipo de medida</span>
+                            <select
+                              value={draftRow.measurementId}
+                              onChange={(event) =>
+                                updateFieldDraftRow(draftRow.clientId, {
+                                  measurementId: event.target.value
+                                })
+                              }
+                            >
+                              <option value="" disabled>Selecione a medida</option>
+                              {measurements.map((measurement) => (
+                                <option key={measurement.id} value={measurement.id}>
+                                  {measurement.name}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        </div>
+
+                        <div className="field-editor-modal__row-actions">
+                          <button
+                            type="button"
+                            className="field-editor-modal__remove-row"
+                            onClick={() => removeFieldDraftRow(draftRow.clientId)}
+                            disabled={fieldDraftRows.length <= 1}
+                          >
+                            Remover campo
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {fieldModalError ? (
+                  <p className="instrument-modal__field-error">{fieldModalError}</p>
+                ) : null}
+
+                <div className="instrument-delete-confirm__actions">
+                  <button type="button" onClick={closeFieldModal}>
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    className="is-danger field-editor-modal__save"
+                    onClick={saveFieldFromModal}
+                  >
+                    {fieldModalMode === "edit" ? "Salvar bloco" : "Adicionar bloco"}
+                  </button>
+                </div>
+              </section>
+            </div>,
+            document.body
+          )
+        : null}
 
       {isDeleteConfirmOpen && pendingDeleteCategory ? (
         <div

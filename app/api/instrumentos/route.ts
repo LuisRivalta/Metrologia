@@ -4,7 +4,9 @@ import { parseCalibrationRecord } from "@/lib/calibration-records";
 import { isValidIsoDate } from "@/lib/date-utils";
 import {
   mapInstrumentMeasurementFieldRow,
+  parseMeasurementFieldValueConfig,
   serializeMeasurementFieldSlug,
+  serializeMeasurementFieldValueConfig,
   type CategoryMeasurementFieldRow,
   type InstrumentMeasurementFieldRow,
   type MeasurementFieldDraft,
@@ -27,6 +29,9 @@ type SanitizedMeasurementFieldInput = {
   slug: string;
   measurementId: number;
   order: number;
+  groupName: string;
+  subgroupName: string;
+  valueType: string;
 };
 
 type InstrumentPayload = {
@@ -115,7 +120,13 @@ function sanitizeMeasurementFields(rawFields: MeasurementFieldDraft[] | undefine
 
   for (const [index, rawField] of fields.entries()) {
     const name = normalizeText(rawField.name);
-    const slug = serializeMeasurementFieldSlug(name);
+    const groupName = normalizeText(rawField.groupName);
+    const subgroupName = normalizeText(rawField.subgroupName);
+    const slug = serializeMeasurementFieldSlug({
+      name,
+      groupName,
+      subgroupName
+    });
     const measurementId = Number(rawField.measurementId);
 
     if (!name) {
@@ -140,7 +151,10 @@ function sanitizeMeasurementFields(rawFields: MeasurementFieldDraft[] | undefine
       name,
       slug,
       measurementId,
-      order: index
+      order: index,
+      groupName,
+      subgroupName,
+      valueType: "numero"
     });
   }
 
@@ -313,7 +327,11 @@ async function replaceInstrumentMeasurementFields(
     nome: field.name,
     slug: field.slug,
     unidade_medida_id: field.measurementId,
-    tipo_valor: "numero",
+    tipo_valor: serializeMeasurementFieldValueConfig({
+      type: field.valueType,
+      groupName: field.groupName,
+      subgroupName: field.subgroupName
+    }),
     ordem: index,
     ativo: true
   }));
@@ -345,7 +363,11 @@ async function replaceCategoryMeasurementFields(
     nome: field.name,
     slug: field.slug,
     unidade_medida_id: field.measurementId,
-    tipo_valor: "numero",
+    tipo_valor: serializeMeasurementFieldValueConfig({
+      type: field.valueType,
+      groupName: field.groupName,
+      subgroupName: field.subgroupName
+    }),
     ordem: index,
     ativo: true
   }));
@@ -368,13 +390,26 @@ function buildInstrumentFieldsFromCategoryFields(categoryFields: CategoryMeasure
   }
 
   return {
-    fields: categoryFields.map((field, index) => ({
-      categoryFieldId: field.id,
-      name: normalizeText(field.nome),
-      slug: normalizeText(field.slug) || serializeMeasurementFieldSlug(field.nome ?? ""),
-      measurementId: field.unidade_medida_id ?? 0,
-      order: field.ordem ?? index
-    }))
+    fields: categoryFields.map((field, index) => {
+      const valueConfig = parseMeasurementFieldValueConfig(field.tipo_valor);
+
+      return {
+        categoryFieldId: field.id,
+        name: normalizeText(field.nome),
+        slug:
+          normalizeText(field.slug) ||
+          serializeMeasurementFieldSlug({
+            name: field.nome ?? "",
+            groupName: valueConfig.groupName,
+            subgroupName: valueConfig.subgroupName
+          }),
+        measurementId: field.unidade_medida_id ?? 0,
+        order: field.ordem ?? index,
+        groupName: valueConfig.groupName,
+        subgroupName: valueConfig.subgroupName,
+        valueType: valueConfig.type || "numero"
+      };
+    })
   };
 }
 

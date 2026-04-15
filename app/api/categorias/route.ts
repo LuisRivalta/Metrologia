@@ -3,7 +3,9 @@ import { mapCategoryRow, serializeCategorySlug, type CategoryRow } from "@/lib/c
 import {
   mapCategoryMeasurementFieldRow,
   serializeMeasurementFieldSlug,
+  serializeMeasurementFieldValueConfig,
   type CategoryMeasurementFieldRow,
+  type InstrumentMeasurementFieldRow,
   type MeasurementFieldDraft,
   type MeasurementFieldItem
 } from "@/lib/measurement-fields";
@@ -18,6 +20,9 @@ type SanitizedMeasurementFieldInput = {
   slug: string;
   measurementId: number;
   order: number;
+  groupName: string;
+  subgroupName: string;
+  valueType: string;
 };
 
 type CategoryPayload = {
@@ -130,7 +135,13 @@ function sanitizeMeasurementFields(rawFields: MeasurementFieldDraft[] | undefine
   for (const [index, rawField] of fields.entries()) {
     const dbId = rawField.dbId === undefined ? null : Number(rawField.dbId);
     const name = normalizeText(rawField.name);
-    const slug = serializeMeasurementFieldSlug(name);
+    const groupName = normalizeText(rawField.groupName);
+    const subgroupName = normalizeText(rawField.subgroupName);
+    const slug = serializeMeasurementFieldSlug({
+      name,
+      groupName,
+      subgroupName
+    });
     const measurementId = Number(rawField.measurementId);
 
     if (!name) {
@@ -155,7 +166,10 @@ function sanitizeMeasurementFields(rawFields: MeasurementFieldDraft[] | undefine
       name,
       slug,
       measurementId,
-      order: index
+      order: index,
+      groupName,
+      subgroupName,
+      valueType: "numero"
     });
   }
 
@@ -222,15 +236,17 @@ async function replaceCategoryMeasurementFields(
   const idsToDelete = [...existingFieldIds].filter((fieldId) => !incomingFieldIds.has(fieldId));
 
   if (idsToDelete.length > 0) {
-    const deleteResponse = await supabaseAdmin
+    const deactivateResponse = await supabaseAdmin
       .schema("calibracao")
       .from("categoria_campos_medicao")
-      .delete()
+      .update({
+        ativo: false
+      })
       .eq("categoria_id", categoryId)
       .in("id", idsToDelete);
 
-    if (deleteResponse.error) {
-      return { error: deleteResponse.error };
+    if (deactivateResponse.error) {
+      return { error: deactivateResponse.error };
     }
   }
 
@@ -244,7 +260,11 @@ async function replaceCategoryMeasurementFields(
         nome: field.name,
         slug: field.slug,
         unidade_medida_id: field.measurementId,
-        tipo_valor: "numero",
+        tipo_valor: serializeMeasurementFieldValueConfig({
+          type: field.valueType,
+          groupName: field.groupName,
+          subgroupName: field.subgroupName
+        }),
         ordem: field.order,
         ativo: true
       })
@@ -259,14 +279,18 @@ async function replaceCategoryMeasurementFields(
   const insertPayload = fields
     .filter((field) => !field.dbId || !existingFieldIds.has(field.dbId))
     .map((field, index) => ({
-    categoria_id: categoryId,
-    nome: field.name,
-    slug: field.slug,
-    unidade_medida_id: field.measurementId,
-    tipo_valor: "numero",
-    ordem: field.order ?? index,
-    ativo: true
-  }));
+      categoria_id: categoryId,
+      nome: field.name,
+      slug: field.slug,
+      unidade_medida_id: field.measurementId,
+      tipo_valor: serializeMeasurementFieldValueConfig({
+        type: field.valueType,
+        groupName: field.groupName,
+        subgroupName: field.subgroupName
+      }),
+      ordem: field.order ?? index,
+      ativo: true
+    }));
 
   if (insertPayload.length > 0) {
     const insertResponse = await supabaseAdmin
@@ -276,6 +300,146 @@ async function replaceCategoryMeasurementFields(
 
     if (insertResponse.error) {
       return { error: insertResponse.error };
+    }
+  }
+
+  return { error: null };
+}
+
+async function syncCategoryFieldsToInstruments(
+  categoryId: number,
+  fields: SanitizedMeasurementFieldInput[]
+) {
+  const linkedInstrumentsResponse = await supabaseAdmin
+    .schema("calibracao")
+    .from("instrumentos")
+    .select("id")
+    .eq("categoria_id", categoryId);
+
+  if (linkedInstrumentsResponse.error) {
+    return { error: linkedInstrumentsResponse.error };
+  }
+
+  const instrumentIds = ((linkedInstrumentsResponse.data ?? []) as Array<{ id: number | null }>)
+    .map((instrument) => instrument.id)
+    .filter((instrumentId): instrumentId is number => Number.isFinite(instrumentId));
+
+  if (instrumentIds.length === 0) {
+    return { error: null };
+  }
+
+  const instrumentFieldsResponse = await supabaseAdmin
+    .schema("calibracao")
+    .from("instrumento_campos_medicao")
+    .select(
+      "id, instrumento_id, categoria_campo_medicao_id, nome, slug, unidade_medida_id, tipo_valor, ordem, ativo"
+    )
+    .in("instrumento_id", instrumentIds);
+
+  if (instrumentFieldsResponse.error) {
+    return { error: instrumentFieldsResponse.error };
+  }
+
+  const fieldsByInstrumentId = new Map<number, InstrumentMeasurementFieldRow[]>();
+
+  for (const row of (instrumentFieldsResponse.data ?? []) as InstrumentMeasurementFieldRow[]) {
+    if (!row.instrumento_id) {
+      continue;
+    }
+
+    const currentFields = fieldsByInstrumentId.get(row.instrumento_id) ?? [];
+    currentFields.push(row);
+    fieldsByInstrumentId.set(row.instrumento_id, currentFields);
+  }
+
+  for (const instrumentId of instrumentIds) {
+    const currentFields = fieldsByInstrumentId.get(instrumentId) ?? [];
+    const currentFieldsByCategoryFieldId = new Map(
+      currentFields
+        .filter(
+          (
+            field
+          ): field is InstrumentMeasurementFieldRow & {
+            id: number;
+            categoria_campo_medicao_id: number;
+          } =>
+            Number.isFinite(field.id) && Number.isFinite(field.categoria_campo_medicao_id)
+        )
+        .map((field) => [field.categoria_campo_medicao_id, field])
+    );
+    const desiredCategoryFieldIds = new Set(
+      fields
+        .map((field) => field.dbId)
+        .filter((fieldId): fieldId is number => Number.isFinite(fieldId))
+    );
+
+    for (const field of fields) {
+      if (!field.dbId) {
+        continue;
+      }
+
+      const payload = {
+        nome: field.name,
+        slug: field.slug,
+        unidade_medida_id: field.measurementId,
+        tipo_valor: serializeMeasurementFieldValueConfig({
+          type: field.valueType,
+          groupName: field.groupName,
+          subgroupName: field.subgroupName
+        }),
+        ordem: field.order,
+        ativo: true
+      };
+      const currentField = currentFieldsByCategoryFieldId.get(field.dbId);
+
+      if (currentField) {
+        const updateResponse = await supabaseAdmin
+          .schema("calibracao")
+          .from("instrumento_campos_medicao")
+          .update(payload)
+          .eq("id", currentField.id);
+
+        if (updateResponse.error) {
+          return { error: updateResponse.error };
+        }
+
+        continue;
+      }
+
+      const insertResponse = await supabaseAdmin
+        .schema("calibracao")
+        .from("instrumento_campos_medicao")
+        .insert({
+          instrumento_id: instrumentId,
+          categoria_campo_medicao_id: field.dbId,
+          ...payload
+        });
+
+      if (insertResponse.error) {
+        return { error: insertResponse.error };
+      }
+    }
+
+    const categoryFieldIdsToDeactivate = currentFields
+      .filter(
+        (field): field is InstrumentMeasurementFieldRow & { id: number; categoria_campo_medicao_id: number } =>
+          Number.isFinite(field.id) && Number.isFinite(field.categoria_campo_medicao_id)
+      )
+      .filter((field) => !desiredCategoryFieldIds.has(field.categoria_campo_medicao_id))
+      .map((field) => field.id);
+
+    if (categoryFieldIdsToDeactivate.length > 0) {
+      const deactivateResponse = await supabaseAdmin
+        .schema("calibracao")
+        .from("instrumento_campos_medicao")
+        .update({
+          ativo: false
+        })
+        .in("id", categoryFieldIdsToDeactivate);
+
+      if (deactivateResponse.error) {
+        return { error: deactivateResponse.error };
+      }
     }
   }
 
@@ -498,6 +662,30 @@ export async function PATCH(request: Request) {
 
   if (loadedCategory.error || !loadedCategory.item) {
     if (loadedCategory.error && isPermissionDenied(loadedCategory.error.message)) {
+      return buildSchemaPermissionError();
+    }
+
+    return buildGenericError();
+  }
+
+  const syncResponse = await syncCategoryFieldsToInstruments(
+    updateCategoryResponse.data.id,
+    loadedCategory.item.fields
+      .filter((field): field is MeasurementFieldItem & { dbId: number } => typeof field.dbId === "number")
+      .map((field) => ({
+        dbId: field.dbId,
+        name: field.name,
+        slug: field.slug,
+        measurementId: Number(field.measurementId),
+        order: field.order,
+        groupName: field.groupName ?? "",
+        subgroupName: field.subgroupName ?? "",
+        valueType: field.valueType || "numero"
+      }))
+  );
+
+  if (syncResponse.error) {
+    if (isPermissionDenied(syncResponse.error.message)) {
       return buildSchemaPermissionError();
     }
 

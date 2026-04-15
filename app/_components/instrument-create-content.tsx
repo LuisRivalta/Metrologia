@@ -31,6 +31,8 @@ type InstrumentFieldFormItem = {
   clientId: string;
   name: string;
   measurementId: string;
+  groupName: string;
+  subgroupName: string;
 };
 
 type InstrumentMetadataCategory = {
@@ -98,6 +100,8 @@ type FieldReviewItem = {
   fieldSlug: string;
   fieldName: string;
   measurementName: string;
+  groupName: string;
+  subgroupName: string;
   value: string;
   unit: string;
   confidence: number | null;
@@ -161,7 +165,9 @@ function mapCategoryFieldToFormItem(field: MeasurementFieldItem): InstrumentFiel
   return {
     clientId: createClientId(),
     name: field.name,
-    measurementId: field.measurementId
+    measurementId: field.measurementId,
+    groupName: field.groupName ?? "",
+    subgroupName: field.subgroupName ?? ""
   };
 }
 
@@ -185,7 +191,13 @@ function buildReviewItems(
 
   return fieldRows.flatMap((field) => {
     const name = field.name.trim();
-    const slug = serializeMeasurementFieldSlug(name);
+    const groupName = field.groupName.trim();
+    const subgroupName = field.subgroupName.trim();
+    const slug = serializeMeasurementFieldSlug({
+      name,
+      groupName,
+      subgroupName
+    });
 
     if (!name || !slug) {
       return [];
@@ -198,6 +210,8 @@ function buildReviewItems(
       fieldSlug: slug,
       fieldName: name,
       measurementName: measurement?.name ?? currentItem?.measurementName ?? "",
+      groupName,
+      subgroupName,
       value: currentItem?.value ?? "",
       unit: currentItem?.unit ?? "",
       confidence: currentItem?.confidence ?? null,
@@ -388,6 +402,8 @@ export function InstrumentCreateContent() {
 
             return {
               name: field.name.trim(),
+              groupName: field.groupName.trim(),
+              subgroupName: field.subgroupName.trim(),
               measurementName: measurement?.name ?? "",
               measurementRawName: measurement?.rawName ?? measurement?.name ?? ""
             };
@@ -692,7 +708,9 @@ export function InstrumentCreateContent() {
                     fields={fieldRows.map((field) => ({
                       key: field.clientId,
                       name: field.name,
-                      measurementId: field.measurementId
+                      measurementId: field.measurementId,
+                      groupName: field.groupName,
+                      subgroupName: field.subgroupName
                     }))}
                     measurements={measurements}
                     emptyMessage={
@@ -743,6 +761,8 @@ export function InstrumentCreateContent() {
                     id: field.fieldSlug,
                     fieldName: field.fieldName,
                     measurementName: field.measurementName,
+                    groupName: field.groupName,
+                    subgroupName: field.subgroupName,
                     autoCalculated: isAutoCalculatedCalibrationField(
                       getCategoryCalculationIdentifier(selectedCategory?.slug, selectedCategory?.name),
                       field.fieldSlug

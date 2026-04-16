@@ -43,12 +43,13 @@ export default function ShinyText({
   const elapsedRef = useRef(0);
   const lastTimeRef = useRef<number | null>(null);
   const directionRef = useRef(direction === "left" ? 1 : -1);
+  const isDocumentVisibleRef = useRef(true);
 
   const animationDuration = speed * 1000;
   const delayDuration = delay * 1000;
 
   useAnimationFrame((time) => {
-    if (disabled || isPaused) {
+    if (disabled || isPaused || !isDocumentVisibleRef.current) {
       lastTimeRef.current = null;
       return;
     }
@@ -97,6 +98,22 @@ export default function ShinyText({
     elapsedRef.current = 0;
     progress.set(0);
   }, [direction, progress]);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      isDocumentVisibleRef.current = document.visibilityState === "visible";
+      if (!isDocumentVisibleRef.current) {
+        lastTimeRef.current = null;
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    handleVisibilityChange();
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
 
   const maskProgress = useTransform(progress, (p) => 150 - p * 2);
   const maskPosition = useMotionTemplate`${maskProgress}% center`;

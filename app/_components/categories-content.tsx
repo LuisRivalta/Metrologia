@@ -4,7 +4,11 @@ import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { fetchApi } from "@/lib/api/client";
 import type { CategoryItem } from "@/lib/categories";
-import { serializeMeasurementFieldSlug } from "@/lib/measurement-fields";
+import {
+  groupMeasurementFieldsByLayout,
+  hasMeasurementFieldGrouping,
+  serializeMeasurementFieldSlug
+} from "@/lib/measurement-fields";
 import type { MeasurementItem } from "@/lib/measurements";
 
 type CategoryModalMode = "create" | "edit";
@@ -24,6 +28,12 @@ type CategoryFieldDraftRow = {
   dbId?: number;
   name: string;
   measurementId: string;
+};
+
+type CategoryFieldDraftSubgroup = {
+  clientId: string;
+  name: string;
+  rows: CategoryFieldDraftRow[];
 };
 
 type CategoryApiResponse = {
@@ -69,6 +79,14 @@ function createFieldDraftRow(): CategoryFieldDraftRow {
   };
 }
 
+function createFieldDraftSubgroup(name = ""): CategoryFieldDraftSubgroup {
+  return {
+    clientId: createClientId(),
+    name,
+    rows: [createFieldDraftRow()]
+  };
+}
+
 function mapFieldToDraftRow(field: CategoryFieldFormItem): CategoryFieldDraftRow {
   return {
     clientId: field.clientId,
@@ -76,6 +94,47 @@ function mapFieldToDraftRow(field: CategoryFieldFormItem): CategoryFieldDraftRow
     name: field.name,
     measurementId: field.measurementId
   };
+}
+
+function mapFieldsToDraftSubgroups(fields: CategoryFieldFormItem[]) {
+  if (fields.length === 0) {
+    return [createFieldDraftSubgroup()];
+  }
+
+  const subgroups = new Map<string, CategoryFieldDraftSubgroup>();
+
+  for (const field of fields) {
+    const subgroupName = field.subgroupName ?? "";
+    const subgroupKey = normalizeSearchValue(subgroupName) || "__blank__";
+    const currentSubgroup = subgroups.get(subgroupKey) ?? {
+      clientId: createClientId(),
+      name: subgroupName,
+      rows: []
+    };
+
+    currentSubgroup.rows.push(mapFieldToDraftRow(field));
+    subgroups.set(subgroupKey, currentSubgroup);
+  }
+
+  return [...subgroups.values()];
+}
+
+function getSubgroupGridClassName(count: number) {
+  return count <= 1
+    ? "template-preview__subgroups template-preview__subgroups--single"
+    : "template-preview__subgroups";
+}
+
+function getFieldGridClassName(count: number) {
+  if (count <= 1) {
+    return "template-preview__fields template-preview__fields--single";
+  }
+
+  if (count === 2) {
+    return "template-preview__fields template-preview__fields--double";
+  }
+
+  return "template-preview__fields template-preview__fields--triple";
 }
 
 export function CategoriesContent() {
@@ -95,9 +154,8 @@ export function CategoriesContent() {
   const [isFieldModalOpen, setIsFieldModalOpen] = useState(false);
   const [fieldModalMode, setFieldModalMode] = useState<CategoryFieldModalMode>("create");
   const [editingFieldClientIds, setEditingFieldClientIds] = useState<string[]>([]);
-  const [fieldDraftRows, setFieldDraftRows] = useState<CategoryFieldDraftRow[]>([]);
+  const [fieldDraftSubgroups, setFieldDraftSubgroups] = useState<CategoryFieldDraftSubgroup[]>([]);
   const [fieldDraftGroupName, setFieldDraftGroupName] = useState("");
-  const [fieldDraftSubgroupName, setFieldDraftSubgroupName] = useState("");
   const [fieldModalError, setFieldModalError] = useState("");
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [pendingDeleteCategory, setPendingDeleteCategory] = useState<CategoryItem | null>(null);
@@ -122,6 +180,28 @@ export function CategoriesContent() {
       normalizeSearchValue(category.name).includes(normalizedSearchTerm)
     );
   }, [searchTerm, sortedCategories]);
+
+  const measurementsById = useMemo(
+    () => new Map(measurements.map((measurement) => [measurement.id, measurement])),
+    [measurements]
+  );
+
+  const shouldUseGroupedFieldLayout = useMemo(
+    () => hasMeasurementFieldGrouping(fieldRows),
+    [fieldRows]
+  );
+
+  const groupedFieldRows = useMemo(
+    () =>
+      groupMeasurementFieldsByLayout(
+        fieldRows.map((field, index) => ({
+          ...field,
+          slug: field.clientId,
+          order: index
+        }))
+      ),
+    [fieldRows]
+  );
 
   useEffect(() => {
     void loadCategories();
@@ -231,9 +311,8 @@ export function CategoriesContent() {
     setIsFieldModalOpen(false);
     setFieldModalMode("create");
     setEditingFieldClientIds([]);
-    setFieldDraftRows([]);
+    setFieldDraftSubgroups([]);
     setFieldDraftGroupName("");
-    setFieldDraftSubgroupName("");
     setFieldModalError("");
   }
 
@@ -257,28 +336,31 @@ export function CategoriesContent() {
   function openCreateFieldModal() {
     setFieldModalMode("create");
     setEditingFieldClientIds([]);
-    setFieldDraftRows([createFieldDraftRow()]);
+    setFieldDraftSubgroups([createFieldDraftSubgroup()]);
     setFieldDraftGroupName("");
-    setFieldDraftSubgroupName("");
     setFieldModalError("");
     setIsFieldModalOpen(true);
   }
 
   function openEditFieldModal(field: CategoryFieldFormItem) {
-    const hasGrouping = Boolean(field.groupName.trim() || field.subgroupName.trim());
-    const selectedFields = hasGrouping
+    const trimmedGroupName = field.groupName.trim();
+    const trimmedSubgroupName = field.subgroupName.trim();
+    const selectedFields = trimmedGroupName
       ? fieldRows.filter(
-          (row) =>
-            normalizeSearchValue(row.groupName) === normalizeSearchValue(field.groupName) &&
-            normalizeSearchValue(row.subgroupName) === normalizeSearchValue(field.subgroupName)
+          (row) => normalizeSearchValue(row.groupName) === normalizeSearchValue(trimmedGroupName)
         )
-      : [field];
+      : trimmedSubgroupName
+        ? fieldRows.filter(
+            (row) =>
+              normalizeSearchValue(row.groupName) === normalizeSearchValue(field.groupName) &&
+              normalizeSearchValue(row.subgroupName) === normalizeSearchValue(trimmedSubgroupName)
+          )
+        : [field];
 
     setFieldModalMode("edit");
     setEditingFieldClientIds(selectedFields.map((item) => item.clientId));
-    setFieldDraftRows(selectedFields.map(mapFieldToDraftRow));
+    setFieldDraftSubgroups(mapFieldsToDraftSubgroups(selectedFields));
     setFieldDraftGroupName(field.groupName);
-    setFieldDraftSubgroupName(field.subgroupName);
     setFieldModalError("");
     setIsFieldModalOpen(true);
   }
@@ -288,104 +370,181 @@ export function CategoriesContent() {
     setValidationError("");
   }
 
-  function addFieldDraftRow() {
-    setFieldDraftRows((current) => [...current, createFieldDraftRow()]);
+  function addFieldDraftSubgroup() {
+    setFieldDraftSubgroups((current) => [...current, createFieldDraftSubgroup()]);
     setFieldModalError("");
   }
 
-  function updateFieldDraftRow(
-    clientId: string,
-    nextValue: Partial<Pick<CategoryFieldDraftRow, "name" | "measurementId">>
+  function updateFieldDraftSubgroup(
+    subgroupClientId: string,
+    nextValue: Partial<Pick<CategoryFieldDraftSubgroup, "name">>
   ) {
-    setFieldDraftRows((current) =>
-      current.map((row) =>
-        row.clientId === clientId
+    setFieldDraftSubgroups((current) =>
+      current.map((subgroup) =>
+        subgroup.clientId === subgroupClientId
           ? {
-              ...row,
+              ...subgroup,
               ...nextValue
             }
-          : row
+          : subgroup
       )
     );
     setFieldModalError("");
   }
 
-  function removeFieldDraftRow(clientId: string) {
-    setFieldDraftRows((current) => {
+  function removeFieldDraftSubgroup(subgroupClientId: string) {
+    setFieldDraftSubgroups((current) => {
       if (current.length <= 1) {
         return current;
       }
 
-      return current.filter((row) => row.clientId !== clientId);
+      return current.filter((subgroup) => subgroup.clientId !== subgroupClientId);
     });
+    setFieldModalError("");
+  }
+
+  function addFieldDraftRow(subgroupClientId: string) {
+    setFieldDraftSubgroups((current) =>
+      current.map((subgroup) =>
+        subgroup.clientId === subgroupClientId
+          ? {
+              ...subgroup,
+              rows: [...subgroup.rows, createFieldDraftRow()]
+            }
+          : subgroup
+      )
+    );
+    setFieldModalError("");
+  }
+
+  function updateFieldDraftRow(
+    subgroupClientId: string,
+    clientId: string,
+    nextValue: Partial<Pick<CategoryFieldDraftRow, "name" | "measurementId">>
+  ) {
+    setFieldDraftSubgroups((current) =>
+      current.map((subgroup) =>
+        subgroup.clientId === subgroupClientId
+          ? {
+              ...subgroup,
+              rows: subgroup.rows.map((row) =>
+                row.clientId === clientId
+                  ? {
+                      ...row,
+                      ...nextValue
+                    }
+                  : row
+              )
+            }
+          : subgroup
+      )
+    );
+    setFieldModalError("");
+  }
+
+  function removeFieldDraftRow(subgroupClientId: string, clientId: string) {
+    setFieldDraftSubgroups((current) =>
+      current.map((subgroup) => {
+        if (subgroup.clientId !== subgroupClientId || subgroup.rows.length <= 1) {
+          return subgroup;
+        }
+
+        return {
+          ...subgroup,
+          rows: subgroup.rows.filter((row) => row.clientId !== clientId)
+        };
+      })
+    );
     setFieldModalError("");
   }
 
   function saveFieldFromModal() {
     const trimmedGroupName = fieldDraftGroupName.trim();
-    const trimmedSubgroupName = fieldDraftSubgroupName.trim();
-    const sanitizedDraftRows: CategoryFieldDraftRow[] = [];
+    const sanitizedDraftRows: Array<CategoryFieldDraftRow & { subgroupName: string }> = [];
     const seenDraftSlugs = new Set<string>();
+    const seenSubgroupKeys = new Set<string>();
 
-    if (fieldDraftRows.length === 0) {
-      setFieldModalError("Adicione pelo menos um campo neste bloco.");
+    if (fieldDraftSubgroups.length === 0) {
+      setFieldModalError("Adicione pelo menos um subgrupo neste bloco.");
       return;
     }
 
-    for (const [index, draftRow] of fieldDraftRows.entries()) {
-      const trimmedName = draftRow.name.trim();
+    for (const [subgroupIndex, subgroup] of fieldDraftSubgroups.entries()) {
+      const trimmedSubgroupName = subgroup.name.trim();
+      const subgroupKey = normalizeSearchValue(trimmedSubgroupName) || "__blank__";
+      const subgroupLabel =
+        trimmedSubgroupName || `subgrupo ${String(subgroupIndex + 1).padStart(2, "0")}`;
 
-      if (!trimmedName) {
-        setFieldModalError(`Preencha o nome do campo ${index + 1}.`);
+      if (seenSubgroupKeys.has(subgroupKey)) {
+        setFieldModalError(`O ${subgroupLabel} esta duplicado neste bloco.`);
         return;
       }
 
-      if (!draftRow.measurementId) {
-        setFieldModalError(`Selecione a medida do campo ${trimmedName}.`);
+      seenSubgroupKeys.add(subgroupKey);
+
+      if (subgroup.rows.length === 0) {
+        setFieldModalError(`Adicione pelo menos um campo no ${subgroupLabel}.`);
         return;
       }
 
-      const draftSlug = serializeMeasurementFieldSlug({
-        name: trimmedName,
-        groupName: trimmedGroupName,
-        subgroupName: trimmedSubgroupName
-      });
+      for (const [rowIndex, draftRow] of subgroup.rows.entries()) {
+        const trimmedName = draftRow.name.trim();
 
-      if (!draftSlug) {
-        setFieldModalError(`O campo ${trimmedName} possui um nome invalido.`);
-        return;
-      }
-
-      if (seenDraftSlugs.has(draftSlug)) {
-        setFieldModalError(`O campo ${trimmedName} esta duplicado neste bloco.`);
-        return;
-      }
-
-      const hasDuplicateOutsideBlock = fieldRows.some((field) => {
-        if (editingFieldClientIds.includes(field.clientId)) {
-          return false;
+        if (!trimmedName) {
+          setFieldModalError(
+            `Preencha o nome do campo ${rowIndex + 1} no ${subgroupLabel}.`
+          );
+          return;
         }
 
-        return (
-          serializeMeasurementFieldSlug({
-            name: field.name,
-            groupName: field.groupName,
-            subgroupName: field.subgroupName
-          }) === draftSlug
-        );
-      });
+        if (!draftRow.measurementId) {
+          setFieldModalError(`Selecione a medida do campo ${trimmedName}.`);
+          return;
+        }
 
-      if (hasDuplicateOutsideBlock) {
-        setFieldModalError(`Ja existe um campo chamado ${trimmedName} nesse mesmo contexto.`);
-        return;
+        const draftSlug = serializeMeasurementFieldSlug({
+          name: trimmedName,
+          groupName: trimmedGroupName,
+          subgroupName: trimmedSubgroupName
+        });
+
+        if (!draftSlug) {
+          setFieldModalError(`O campo ${trimmedName} possui um nome invalido.`);
+          return;
+        }
+
+        if (seenDraftSlugs.has(draftSlug)) {
+          setFieldModalError(`O campo ${trimmedName} esta duplicado neste bloco.`);
+          return;
+        }
+
+        const hasDuplicateOutsideBlock = fieldRows.some((field) => {
+          if (editingFieldClientIds.includes(field.clientId)) {
+            return false;
+          }
+
+          return (
+            serializeMeasurementFieldSlug({
+              name: field.name,
+              groupName: field.groupName,
+              subgroupName: field.subgroupName
+            }) === draftSlug
+          );
+        });
+
+        if (hasDuplicateOutsideBlock) {
+          setFieldModalError(`Ja existe um campo chamado ${trimmedName} nesse mesmo contexto.`);
+          return;
+        }
+
+        seenDraftSlugs.add(draftSlug);
+        sanitizedDraftRows.push({
+          ...draftRow,
+          name: trimmedName,
+          measurementId: draftRow.measurementId,
+          subgroupName: trimmedSubgroupName
+        });
       }
-
-      seenDraftSlugs.add(draftSlug);
-      sanitizedDraftRows.push({
-        ...draftRow,
-        name: trimmedName,
-        measurementId: draftRow.measurementId
-      });
     }
 
     const nextFieldRows = sanitizedDraftRows.map((draftRow) => ({
@@ -394,7 +553,7 @@ export function CategoriesContent() {
       name: draftRow.name,
       measurementId: draftRow.measurementId,
       groupName: trimmedGroupName,
-      subgroupName: trimmedSubgroupName
+      subgroupName: draftRow.subgroupName
     }));
 
     if (fieldModalMode === "edit" && editingFieldClientIds.length > 0) {
@@ -783,12 +942,90 @@ export function CategoriesContent() {
                     <div className="instrument-fields-builder__empty">
                       Adicione o primeiro item deste template de calibracao.
                     </div>
+                  ) : shouldUseGroupedFieldLayout ? (
+                    <div className="template-preview">
+                      {groupedFieldRows.map((group) => {
+                        const firstField = group.subgroups[0]?.fields[0];
+
+                        return (
+                          <section key={group.key} className="template-preview__group">
+                            <header className="template-preview__group-header">
+                              <h4>{group.label || "Campos gerais"}</h4>
+                              <span>
+                                {group.subgroups.reduce(
+                                  (total, subgroup) => total + subgroup.fields.length,
+                                  0
+                                )}{" "}
+                                campos
+                              </span>
+                            </header>
+
+                            <div className={getSubgroupGridClassName(group.subgroups.length)}>
+                              {group.subgroups.map((subgroup) => (
+                                <article key={subgroup.key} className="template-preview__subgroup">
+                                  <div className="template-preview__subgroup-header">
+                                    <strong>{subgroup.label || "Campos gerais"}</strong>
+                                  </div>
+
+                                  <div className={getFieldGridClassName(subgroup.fields.length)}>
+                                    {subgroup.fields.map((field) => {
+                                      const measurement = measurementsById.get(field.measurementId);
+
+                                      return (
+                                        <article
+                                          key={field.clientId}
+                                          className="template-preview__field template-preview__field--editable"
+                                        >
+                                          <strong className="template-preview__field-name">
+                                            {field.name}
+                                          </strong>
+                                          <span className="template-preview__field-measurement">
+                                            {measurement?.name ?? "Medida nao informada"}
+                                          </span>
+
+                                          <div className="template-preview__field-actions">
+                                            <button
+                                              type="button"
+                                              className="instrument-fields-builder__edit"
+                                              onClick={() => openEditFieldModal(field)}
+                                            >
+                                              Editar
+                                            </button>
+                                            <button
+                                              type="button"
+                                              className="instrument-fields-builder__remove"
+                                              onClick={() => removeFieldRow(field.clientId)}
+                                            >
+                                              Remover
+                                            </button>
+                                          </div>
+                                        </article>
+                                      );
+                                    })}
+                                  </div>
+                                </article>
+                              ))}
+                            </div>
+
+                            {firstField ? (
+                              <div className="template-preview__group-actions">
+                                <button
+                                  type="button"
+                                  className="instrument-fields-builder__edit"
+                                  onClick={() => openEditFieldModal(firstField)}
+                                >
+                                  Editar bloco
+                                </button>
+                              </div>
+                            ) : null}
+                          </section>
+                        );
+                      })}
+                    </div>
                   ) : (
                     <div className="instrument-fields-builder__list">
                       {fieldRows.map((field, index) => {
-                        const measurement = measurements.find(
-                          (item) => item.id === field.measurementId
-                        );
+                        const measurement = measurementsById.get(field.measurementId);
 
                         return (
                           <div key={field.clientId} className="instrument-fields-builder__row instrument-fields-builder__row--compact">
@@ -842,7 +1079,7 @@ export function CategoriesContent() {
       {isFieldModalOpen && typeof document !== "undefined"
         ? createPortal(
             <div
-              className="instrument-delete-confirm-backdrop field-editor-modal-backdrop"
+              className="field-editor-modal-backdrop"
               role="presentation"
               onClick={closeFieldModal}
             >
@@ -858,7 +1095,7 @@ export function CategoriesContent() {
                 </h3>
 
                 <div className="field-editor-modal__form">
-                  <div className="field-editor-modal__grid">
+                  <div className="field-editor-modal__grid field-editor-modal__grid--single">
                     <label className="instrument-modal__field">
                       <span>Grupo principal</span>
                       <input
@@ -872,88 +1109,120 @@ export function CategoriesContent() {
                         }}
                       />
                     </label>
-
-                    <label className="instrument-modal__field">
-                      <span>Subgrupo</span>
-                      <input
-                        type="text"
-                        value={fieldDraftSubgroupName}
-                        onChange={(event) => {
-                          setFieldDraftSubgroupName(event.target.value);
-                          if (fieldModalError) {
-                            setFieldModalError("");
-                          }
-                        }}
-                      />
-                    </label>
                   </div>
 
                   <div className="field-editor-modal__section">
                     <div className="field-editor-modal__section-head">
-                      <strong>Campos deste bloco</strong>
+                      <strong>Subgrupos deste bloco</strong>
                       <button
                         type="button"
                         className="field-editor-modal__add-row"
-                        onClick={addFieldDraftRow}
+                        onClick={addFieldDraftSubgroup}
                       >
-                        Adicionar campo
+                        Adicionar subgrupo
                       </button>
                     </div>
                   </div>
 
-                  <div className="field-editor-modal__rows">
-                    {fieldDraftRows.map((draftRow, index) => (
-                      <div key={draftRow.clientId} className="field-editor-modal__row">
-                        <span className="field-editor-modal__row-index">
-                          Campo {String(index + 1).padStart(2, "0")}
-                        </span>
-
-                        <div className="field-editor-modal__row-grid">
+                  <div className="field-editor-modal__subgroups">
+                    {fieldDraftSubgroups.map((subgroup, subgroupIndex) => (
+                      <section key={subgroup.clientId} className="field-editor-modal__subgroup">
+                        <div className="field-editor-modal__subgroup-head">
                           <label className="instrument-modal__field">
-                            <span>Campo</span>
+                            <span>Subgrupo {String(subgroupIndex + 1).padStart(2, "0")}</span>
                             <input
                               type="text"
-                              value={draftRow.name}
+                              value={subgroup.name}
+                              placeholder="Opcional"
                               onChange={(event) =>
-                                updateFieldDraftRow(draftRow.clientId, {
+                                updateFieldDraftSubgroup(subgroup.clientId, {
                                   name: event.target.value
                                 })
                               }
-                              autoFocus={index === 0}
                             />
                           </label>
 
-                          <label className="instrument-modal__field">
-                            <span>Tipo de medida</span>
-                            <select
-                              value={draftRow.measurementId}
-                              onChange={(event) =>
-                                updateFieldDraftRow(draftRow.clientId, {
-                                  measurementId: event.target.value
-                                })
-                              }
-                            >
-                              <option value="" disabled>Selecione a medida</option>
-                              {measurements.map((measurement) => (
-                                <option key={measurement.id} value={measurement.id}>
-                                  {measurement.name}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                        </div>
-
-                        <div className="field-editor-modal__row-actions">
                           <button
                             type="button"
-                            className="field-editor-modal__remove-row"
-                            onClick={() => removeFieldDraftRow(draftRow.clientId)}
-                            disabled={fieldDraftRows.length <= 1}
+                            className="field-editor-modal__remove-subgroup"
+                            onClick={() => removeFieldDraftSubgroup(subgroup.clientId)}
+                            disabled={fieldDraftSubgroups.length <= 1}
                           >
-                            Remover campo
+                            Remover subgrupo
                           </button>
                         </div>
-                      </div>
+
+                        <div className="field-editor-modal__section">
+                          <div className="field-editor-modal__section-head">
+                            <strong>Campos deste subgrupo</strong>
+                            <button
+                              type="button"
+                              className="field-editor-modal__add-row"
+                              onClick={() => addFieldDraftRow(subgroup.clientId)}
+                            >
+                              Adicionar campo
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="field-editor-modal__rows">
+                          {subgroup.rows.map((draftRow, rowIndex) => (
+                            <div key={draftRow.clientId} className="field-editor-modal__row">
+                              <span className="field-editor-modal__row-index">
+                                Campo {String(rowIndex + 1).padStart(2, "0")}
+                              </span>
+
+                              <div className="field-editor-modal__row-grid">
+                                <label className="instrument-modal__field">
+                                  <span>Campo</span>
+                                  <input
+                                    type="text"
+                                    value={draftRow.name}
+                                    onChange={(event) =>
+                                      updateFieldDraftRow(subgroup.clientId, draftRow.clientId, {
+                                        name: event.target.value
+                                      })
+                                    }
+                                    autoFocus={subgroupIndex === 0 && rowIndex === 0}
+                                  />
+                                </label>
+
+                                <label className="instrument-modal__field">
+                                  <span>Tipo de medida</span>
+                                  <select
+                                    value={draftRow.measurementId}
+                                    onChange={(event) =>
+                                      updateFieldDraftRow(subgroup.clientId, draftRow.clientId, {
+                                        measurementId: event.target.value
+                                      })
+                                    }
+                                  >
+                                    <option value="" disabled>Selecione a medida</option>
+                                    {measurements.map((measurement) => (
+                                      <option key={measurement.id} value={measurement.id}>
+                                        {measurement.name}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </label>
+                              </div>
+
+                              <div className="field-editor-modal__row-actions">
+                                <button
+                                  type="button"
+                                  className="field-editor-modal__remove-row"
+                                  onClick={() =>
+                                    removeFieldDraftRow(subgroup.clientId, draftRow.clientId)
+                                  }
+                                  disabled={subgroup.rows.length <= 1}
+                                >
+                                  Remover campo
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </section>
                     ))}
                   </div>
                 </div>

@@ -35,6 +35,12 @@ function getStatusLabel(status: CalibrationFieldReviewStatus) {
   return "Nao identificado";
 }
 
+function getSubgroupGridClassName(count: number) {
+  return count <= 1
+    ? "calibration-group-layout__subgroups calibration-group-layout__subgroups--single"
+    : "calibration-group-layout__subgroups";
+}
+
 export function CalibrationFieldReviewTable({
   rows,
   emptyMessage,
@@ -132,104 +138,102 @@ export function CalibrationFieldReviewTable({
   );
 
   return (
-    <div className="measurement-layout measurement-layout--review">
+    <div className="calibration-group-layout">
       {groupedRows.map((group) => (
-        <section key={group.key} className="measurement-layout__group">
-          <header className="measurement-layout__group-header">
+        <section key={group.key} className="calibration-group-layout__group">
+          <header className="calibration-group-layout__group-header">
             <h4>{group.label || "Campos gerais"}</h4>
             <span>{group.subgroups.reduce((total, subgroup) => total + subgroup.fields.length, 0)} campos</span>
           </header>
 
-          <div className="measurement-layout__subgroups">
+          <div className={getSubgroupGridClassName(group.subgroups.length)}>
             {group.subgroups.map((subgroup) => (
-              <article key={subgroup.key} className="measurement-layout__subgroup">
-                {subgroup.label ? (
-                  <div className="measurement-layout__subgroup-header">
-                    <strong>{subgroup.label}</strong>
-                  </div>
-                ) : null}
+              <article key={subgroup.key} className="calibration-group-layout__subgroup">
+                <div className="calibration-group-layout__subgroup-header">
+                  <strong>{subgroup.label || "Campos gerais"}</strong>
+                  <span className="calibration-group-layout__subgroup-count">
+                    {subgroup.fields.length} {subgroup.fields.length === 1 ? "campo" : "campos"}
+                  </span>
+                </div>
 
-                <div className="measurement-layout__table-wrap">
-                  <table className="measurement-layout__table measurement-layout__table--review">
-                    <thead>
-                      <tr>
-                        <th className="measurement-layout__row-head">Campo</th>
-                        {subgroup.fields.map((field) => (
-                          <th key={field.id}>{field.fieldName}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <th className="measurement-layout__row-head">Medida</th>
-                        {subgroup.fields.map((field) => (
-                          <td key={field.id}>
-                            <strong className="measurement-layout__cell-value">
+                <div className="calibration-group-layout__fields">
+                  {subgroup.fields.map((field) => (
+                    <article key={field.id} className="calibration-group-layout__field">
+                      <div className="calibration-group-layout__field-head">
+                        <div className="calibration-group-layout__field-copy">
+                          <strong className="calibration-group-layout__field-name">
+                            {field.fieldName}
+                          </strong>
+                          <div className="calibration-group-layout__field-meta">
+                            <span className="calibration-group-layout__field-measurement">
                               {field.measurementName || "Nao informada"}
-                            </strong>
+                            </span>
                             {field.unit ? (
-                              <span className="measurement-layout__cell-support">Leitura IA: {field.unit}</span>
+                              <span className="calibration-group-layout__field-support">
+                                Leitura IA: {field.unit}
+                              </span>
                             ) : null}
-                          </td>
-                        ))}
-                      </tr>
-                      <tr>
-                        <th className="measurement-layout__row-head">Valor</th>
-                        {subgroup.fields.map((field) => (
-                          <td key={field.id}>
-                            {editable && !field.autoCalculated ? (
-                              <input
-                                className="measurement-layout__input"
-                                type="text"
-                                value={field.value}
-                                placeholder="Ex: 0,005"
-                                onChange={(event) => onValueChange?.(field.id, event.target.value)}
-                              />
+                          </div>
+                        </div>
+
+                        {showStatusColumn ? (
+                          <div className="calibration-group-layout__field-status">
+                            {editable ? (
+                              <label className="calibration-field-table__check">
+                                <input
+                                  type="checkbox"
+                                  checked={field.status === "conforming"}
+                                  onChange={(event) =>
+                                    onStatusChange?.(
+                                      field.id,
+                                      event.target.checked ? "conforming" : "unknown"
+                                    )
+                                  }
+                                />
+                                <span>Verificado</span>
+                              </label>
                             ) : (
-                              <div className="measurement-layout__cell-stack">
-                                <strong className="measurement-layout__cell-value">
-                                  {field.value || (field.autoCalculated ? "Calculado automaticamente" : "Nao informado")}
-                                </strong>
-                                {field.autoCalculated ? (
-                                  <span className="measurement-layout__cell-support">Soma automatica</span>
-                                ) : null}
-                              </div>
+                              <span
+                                className={`calibration-field-table__status-pill calibration-field-table__status-pill--${field.status}`}
+                              >
+                                {getStatusLabel(field.status)}
+                              </span>
                             )}
-                          </td>
-                        ))}
-                      </tr>
-                      {showStatusColumn ? (
-                        <tr>
-                          <th className="measurement-layout__row-head">Conforme</th>
-                          {subgroup.fields.map((field) => (
-                            <td key={field.id}>
-                              {editable ? (
-                                <label className="calibration-field-table__check">
-                                  <input
-                                    type="checkbox"
-                                    checked={field.status === "conforming"}
-                                    onChange={(event) =>
-                                      onStatusChange?.(
-                                        field.id,
-                                        event.target.checked ? "conforming" : "unknown"
-                                      )
-                                    }
-                                  />
-                                  <span>Verificado</span>
-                                </label>
-                              ) : (
-                                <span
-                                  className={`calibration-field-table__status-pill calibration-field-table__status-pill--${field.status}`}
-                                >
-                                  {getStatusLabel(field.status)}
-                                </span>
-                              )}
-                            </td>
-                          ))}
-                        </tr>
-                      ) : null}
-                    </tbody>
-                  </table>
+                          </div>
+                        ) : null}
+                      </div>
+
+                      <div className="calibration-group-layout__field-entry">
+                        <span className="calibration-group-layout__field-entry-label">
+                          {editable && !field.autoCalculated ? "Valor medido" : "Valor"}
+                        </span>
+
+                        <div className="calibration-group-layout__field-value">
+                          {editable && !field.autoCalculated ? (
+                            <input
+                              className="calibration-group-layout__input"
+                              type="text"
+                              value={field.value}
+                              placeholder="Ex: 0,005"
+                              onChange={(event) => onValueChange?.(field.id, event.target.value)}
+                            />
+                          ) : (
+                            <div className="calibration-group-layout__value-static">
+                              <strong>
+                                {field.value ||
+                                  (field.autoCalculated
+                                    ? "Calculado automaticamente"
+                                    : "Nao informado")}
+                              </strong>
+                              {field.autoCalculated ? (
+                                <span>Soma automatica</span>
+                              ) : null}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </article>
+                  ))}
                 </div>
               </article>
             ))}

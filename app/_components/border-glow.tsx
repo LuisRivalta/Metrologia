@@ -129,6 +129,8 @@ export default function BorderGlow({
   fillOpacity = 0.5
 }: BorderGlowProps) {
   const cardRef = useRef<HTMLDivElement>(null);
+  const pointerFrameRef = useRef<number | null>(null);
+  const pointerPositionRef = useRef<{ clientX: number; clientY: number } | null>(null);
 
   const getCenterOfElement = useCallback((element: HTMLElement) => {
     const { width, height } = element.getBoundingClientRect();
@@ -176,25 +178,49 @@ export default function BorderGlow({
     [getCenterOfElement]
   );
 
+  const flushPointerUpdate = useCallback(() => {
+    pointerFrameRef.current = null;
+
+    const card = cardRef.current;
+    const pointer = pointerPositionRef.current;
+    if (!card || !pointer) {
+      return;
+    }
+
+    const rect = card.getBoundingClientRect();
+    const x = pointer.clientX - rect.left;
+    const y = pointer.clientY - rect.top;
+
+    const edge = getEdgeProximity(card, x, y);
+    const angle = getCursorAngle(card, x, y);
+
+    card.style.setProperty("--edge-proximity", `${(edge * 100).toFixed(3)}`);
+    card.style.setProperty("--cursor-angle", `${angle.toFixed(3)}deg`);
+  }, [getCursorAngle, getEdgeProximity]);
+
   const handlePointerMove = useCallback(
     (event: PointerEvent<HTMLDivElement>) => {
-      const card = cardRef.current;
-      if (!card) {
+      pointerPositionRef.current = {
+        clientX: event.clientX,
+        clientY: event.clientY
+      };
+
+      if (pointerFrameRef.current !== null) {
         return;
       }
 
-      const rect = card.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-
-      const edge = getEdgeProximity(card, x, y);
-      const angle = getCursorAngle(card, x, y);
-
-      card.style.setProperty("--edge-proximity", `${(edge * 100).toFixed(3)}`);
-      card.style.setProperty("--cursor-angle", `${angle.toFixed(3)}deg`);
+      pointerFrameRef.current = requestAnimationFrame(flushPointerUpdate);
     },
-    [getCursorAngle, getEdgeProximity]
+    [flushPointerUpdate]
   );
+
+  useEffect(() => {
+    return () => {
+      if (pointerFrameRef.current !== null) {
+        cancelAnimationFrame(pointerFrameRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!animated || !cardRef.current) {

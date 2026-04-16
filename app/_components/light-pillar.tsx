@@ -33,7 +33,7 @@ export default function LightPillar({
   bottomColor = "#FF9FFC",
   intensity = 1,
   rotationSpeed = 0.3,
-  interactive = false, 
+  interactive = false,
   className = "",
   glowAmount = 0.001,
   pillarWidth = 10,
@@ -53,7 +53,10 @@ export default function LightPillar({
   const mouseRef = useRef(new THREE.Vector2(0, 0));
   const timeRef = useRef(0);
   const rotationSpeedRef = useRef(rotationSpeed);
+  const isDocumentVisibleRef = useRef(true);
+  const isInViewportRef = useRef(true);
   const [webGLSupported, setWebGLSupported] = useState(true);
+  const [isReadyToRender, setIsReadyToRender] = useState(false);
 
   useEffect(() => {
     const canvas = document.createElement("canvas");
@@ -64,7 +67,44 @@ export default function LightPillar({
   }, []);
 
   useEffect(() => {
-    if (!containerRef.current || !webGLSupported) {
+    if (!webGLSupported) {
+      return;
+    }
+
+    const browserWindow = window as Window &
+      typeof globalThis & {
+        requestIdleCallback?: (
+          callback: IdleRequestCallback,
+          options?: IdleRequestOptions
+        ) => number;
+        cancelIdleCallback?: (handle: number) => void;
+      };
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    let idleId: number | null = null;
+
+    const enableRendering = () => {
+      setIsReadyToRender(true);
+    };
+
+    if (typeof browserWindow.requestIdleCallback === "function") {
+      idleId = browserWindow.requestIdleCallback(enableRendering, { timeout: 250 });
+    } else {
+      timeoutId = globalThis.setTimeout(enableRendering, 120);
+    }
+
+    return () => {
+      if (idleId !== null && typeof browserWindow.cancelIdleCallback === "function") {
+        browserWindow.cancelIdleCallback(idleId);
+      }
+
+      if (timeoutId !== null) {
+        globalThis.clearTimeout(timeoutId);
+      }
+    };
+  }, [webGLSupported]);
+
+  useEffect(() => {
+    if (!containerRef.current || !webGLSupported || !isReadyToRender) {
       return;
     }
 
@@ -97,23 +137,23 @@ export default function LightPillar({
       }
     > = {
       low: {
-        iterations: 24,
+        iterations: 20,
         waveIterations: 1,
         pixelRatio: 0.5,
         precision: "mediump",
         stepMultiplier: 1.5
       },
       medium: {
-        iterations: 40,
+        iterations: 32,
         waveIterations: 2,
-        pixelRatio: 0.65,
+        pixelRatio: 0.6,
         precision: "mediump",
         stepMultiplier: 1.2
       },
       high: {
-        iterations: 80,
-        waveIterations: 4,
-        pixelRatio: Math.min(window.devicePixelRatio, 2),
+        iterations: 56,
+        waveIterations: 3,
+        pixelRatio: Math.min(window.devicePixelRatio, 1.25),
         precision: "highp",
         stepMultiplier: 1
       }
@@ -305,11 +345,18 @@ export default function LightPillar({
     }
 
     let lastTime = performance.now();
-    const targetFPS = effectiveQuality === "low" ? 30 : 60;
+    const targetFPS =
+      effectiveQuality === "low" ? 24 : effectiveQuality === "medium" ? 36 : 48;
     const frameTime = 1000 / targetFPS;
 
     const animate = (currentTime: number) => {
       if (!materialRef.current || !rendererRef.current || !sceneRef.current || !cameraRef.current) {
+        return;
+      }
+
+      if (!isDocumentVisibleRef.current || !isInViewportRef.current) {
+        lastTime = currentTime;
+        rafRef.current = requestAnimationFrame(animate);
         return;
       }
 
@@ -328,6 +375,28 @@ export default function LightPillar({
     };
 
     rafRef.current = requestAnimationFrame(animate);
+
+    const handleVisibilityChange = () => {
+      isDocumentVisibleRef.current = document.visibilityState === "visible";
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    handleVisibilityChange();
+
+    const intersectionObserver =
+      "IntersectionObserver" in window
+        ? new IntersectionObserver(
+            (entries) => {
+              const entry = entries[0];
+              isInViewportRef.current = entry?.isIntersecting ?? true;
+            },
+            {
+              threshold: 0.01
+            }
+          )
+        : null;
+
+    intersectionObserver?.observe(container);
 
     let resizeTimeout: number | null = null;
     const handleResize = () => {
@@ -350,6 +419,8 @@ export default function LightPillar({
     window.addEventListener("resize", handleResize, { passive: true });
 
     return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      intersectionObserver?.disconnect();
       window.removeEventListener("resize", handleResize);
 
       if (interactive) {
@@ -386,7 +457,20 @@ export default function LightPillar({
       geometryRef.current = null;
       rafRef.current = null;
     };
-  }, [webGLSupported, quality, interactive, topColor, bottomColor, intensity, glowAmount, pillarWidth, pillarHeight, noiseIntensity, pillarRotation]);
+  }, [
+    webGLSupported,
+    isReadyToRender,
+    quality,
+    interactive,
+    topColor,
+    bottomColor,
+    intensity,
+    glowAmount,
+    pillarWidth,
+    pillarHeight,
+    noiseIntensity,
+    pillarRotation
+  ]);
 
   useEffect(() => {
     rotationSpeedRef.current = rotationSpeed;

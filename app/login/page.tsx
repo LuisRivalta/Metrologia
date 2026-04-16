@@ -25,7 +25,30 @@ export default function LoginPage() {
 
   useEffect(() => {
     let isMounted = true;
-    void router.prefetch("/dashboard");
+    const browserWindow = window as Window &
+      typeof globalThis & {
+        requestIdleCallback?: (
+          callback: IdleRequestCallback,
+          options?: IdleRequestOptions
+        ) => number;
+        cancelIdleCallback?: (handle: number) => void;
+      };
+    let prefetchTimeoutId: ReturnType<typeof setTimeout> | null = null;
+    let idleId: number | null = null;
+
+    const prefetchDashboard = () => {
+      if (!isMounted) {
+        return;
+      }
+
+      void router.prefetch("/dashboard");
+    };
+
+    if (typeof browserWindow.requestIdleCallback === "function") {
+      idleId = browserWindow.requestIdleCallback(prefetchDashboard, { timeout: 1200 });
+    } else {
+      prefetchTimeoutId = globalThis.setTimeout(prefetchDashboard, 350);
+    }
 
     async function checkSession() {
       const {
@@ -42,6 +65,14 @@ export default function LoginPage() {
 
     return () => {
       isMounted = false;
+
+      if (idleId !== null && typeof browserWindow.cancelIdleCallback === "function") {
+        browserWindow.cancelIdleCallback(idleId);
+      }
+
+      if (prefetchTimeoutId !== null) {
+        globalThis.clearTimeout(prefetchTimeoutId);
+      }
     };
   }, [router]);
 

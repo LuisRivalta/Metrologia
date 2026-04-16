@@ -12,18 +12,57 @@ type DefaultFieldPreviewItem = {
   measurementId: string;
   groupName?: string;
   subgroupName?: string;
+  currentValue?: string;
+  currentValueUnit?: string;
 };
 
 type DefaultFieldPreviewTableProps = {
   fields: DefaultFieldPreviewItem[];
   measurements: MeasurementItem[];
   emptyMessage: string;
+  showCurrentValue?: boolean;
+  showCompactCopy?: boolean;
 };
+
+function normalizeText(value: string | null | undefined) {
+  return (value ?? "").trim().replace(/\s+/g, " ");
+}
+
+function formatCurrentValue(field: Pick<DefaultFieldPreviewItem, "currentValue" | "currentValueUnit">) {
+  const value = normalizeText(field.currentValue);
+  const unit = normalizeText(field.currentValueUnit);
+
+  if (!value) {
+    return "Sem valor";
+  }
+
+  return unit ? `${value} ${unit}` : value;
+}
+
+function getSubgroupGridClassName(count: number) {
+  return count <= 1
+    ? "template-preview__subgroups template-preview__subgroups--single"
+    : "template-preview__subgroups";
+}
+
+function getFieldGridClassName(count: number) {
+  if (count <= 1) {
+    return "template-preview__fields template-preview__fields--single";
+  }
+
+  if (count === 2) {
+    return "template-preview__fields template-preview__fields--double";
+  }
+
+  return "template-preview__fields template-preview__fields--triple";
+}
 
 export function DefaultFieldPreviewTable({
   fields,
   measurements,
-  emptyMessage
+  emptyMessage,
+  showCurrentValue = false,
+  showCompactCopy = true
 }: DefaultFieldPreviewTableProps) {
   if (fields.length === 0) {
     return <div className="instrument-fields-builder__empty">{emptyMessage}</div>;
@@ -44,9 +83,11 @@ export function DefaultFieldPreviewTable({
       <>
         <div className="instrument-fields-builder__compact-header">
           <span className="instrument-fields-builder__table-count">{fields.length} itens</span>
-          <p className="instrument-fields-builder__compact-copy">
-            Visualizacao compacta do template para revisar a categoria com mais agilidade.
-          </p>
+          {showCompactCopy ? (
+            <p className="instrument-fields-builder__compact-copy">
+              Visualizacao compacta do template para revisar a categoria com mais agilidade.
+            </p>
+          ) : null}
         </div>
 
         <div className="instrument-fields-builder__table-wrap">
@@ -56,6 +97,7 @@ export function DefaultFieldPreviewTable({
                 <th>#</th>
                 <th>Nome do campo</th>
                 <th>Tipo de medida</th>
+                {showCurrentValue ? <th>Valor atual</th> : null}
               </tr>
             </thead>
             <tbody>
@@ -71,6 +113,11 @@ export function DefaultFieldPreviewTable({
                     <td className="instrument-fields-builder__table-measurement">
                       {measurement?.name ?? "Nao informada"}
                     </td>
+                    {showCurrentValue ? (
+                      <td className="instrument-fields-builder__table-value">
+                        {formatCurrentValue(field)}
+                      </td>
+                    ) : null}
                   </tr>
                 );
               })}
@@ -82,58 +129,51 @@ export function DefaultFieldPreviewTable({
   }
 
   return (
-    <div className="measurement-layout">
+    <div className="template-preview">
       <div className="instrument-fields-builder__compact-header">
         <span className="instrument-fields-builder__table-count">{fields.length} itens</span>
-        <p className="instrument-fields-builder__compact-copy">
-          Template agrupado para equipamentos com muitos campos e blocos tecnicos.
-        </p>
+        {showCompactCopy ? (
+          <p className="instrument-fields-builder__compact-copy">
+            Template agrupado para equipamentos com muitos campos e blocos tecnicos.
+          </p>
+        ) : null}
       </div>
 
       {groupedFields.map((group) => {
         const groupLabel = group.label || "Campos gerais";
 
         return (
-          <section key={group.key} className="measurement-layout__group">
-            <header className="measurement-layout__group-header">
+          <section key={group.key} className="template-preview__group">
+            <header className="template-preview__group-header">
               <h4>{groupLabel}</h4>
               <span>{group.subgroups.reduce((total, subgroup) => total + subgroup.fields.length, 0)} campos</span>
             </header>
 
-            <div className="measurement-layout__subgroups">
+            <div className={getSubgroupGridClassName(group.subgroups.length)}>
               {group.subgroups.map((subgroup) => (
-                <article key={subgroup.key} className="measurement-layout__subgroup">
-                  {subgroup.label ? (
-                    <div className="measurement-layout__subgroup-header">
-                      <strong>{subgroup.label}</strong>
-                    </div>
-                  ) : null}
+                <article key={subgroup.key} className="template-preview__subgroup">
+                  <div className="template-preview__subgroup-header">
+                    <strong>{subgroup.label || "Campos gerais"}</strong>
+                  </div>
 
-                  <div className="measurement-layout__table-wrap">
-                    <table className="measurement-layout__table">
-                      <thead>
-                        <tr>
-                          {subgroup.fields.map((field) => (
-                            <th key={field.key}>{field.name}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          {subgroup.fields.map((field) => {
-                            const measurement = measurementsById.get(field.measurementId);
+                  <div className={getFieldGridClassName(subgroup.fields.length)}>
+                    {subgroup.fields.map((field) => {
+                      const measurement = measurementsById.get(field.measurementId);
 
-                            return (
-                              <td key={field.key}>
-                                <span className="measurement-layout__cell-value">
-                                  {measurement?.name ?? "Nao informada"}
-                                </span>
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      </tbody>
-                    </table>
+                      return (
+                        <article key={field.key} className="template-preview__field">
+                          <strong className="template-preview__field-name">{field.name}</strong>
+                          <span className="template-preview__field-measurement">
+                            {measurement?.name ?? "Nao informada"}
+                          </span>
+                          {showCurrentValue ? (
+                            <span className="template-preview__field-value">
+                              {formatCurrentValue(field)}
+                            </span>
+                          ) : null}
+                        </article>
+                      );
+                    })}
                   </div>
                 </article>
               ))}

@@ -175,16 +175,20 @@ function getCalibrationStatusLabel(tone: InstrumentDetailItem["tone"]) {
   return "No prazo";
 }
 
-function getCalibrationAlertCopy(item: InstrumentDetailItem) {
-  if (item.tone === "danger") {
-    return "Esse instrumento ja esta vencido. Registre a nova calibracao para atualizar o prazo e manter o historico auditavel.";
+function formatCalibrationSummaryDate(value: string | null | undefined) {
+  const normalizedValue = value?.trim() ?? "";
+
+  if (!normalizedValue) {
+    return "Sem prazo";
   }
 
-  if (item.tone === "warning") {
-    return "Esse instrumento esta perto de vencer. Registrar a nova calibracao agora evita perda de prazo e mantem o certificado vinculado ao historico.";
+  const match = normalizedValue.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) {
+    return normalizedValue;
   }
 
-  return "Use esta tela para substituir o ciclo atual por um novo certificado e manter a rastreabilidade do instrumento.";
+  const [, year, month, day] = match;
+  return `${day}/${month}/${year.slice(-2)}`;
 }
 
 function isPdfFile(file: File) {
@@ -528,57 +532,34 @@ export function InstrumentCalibrationCreateContent({
 
       {!isLoading && instrument ? (
         <section className="instrument-calibration-create-grid">
-          <article className="inventory-table-card instrument-calibration-create-card instrument-calibration-create-card--aside">
-            <div className="instrument-calibration-create-card__copy">
-              <p className="instrument-detail-hero__eyebrow">Novo registro de calibracao</p>
-              <div className="instrument-calibration-card__heading">
-                <h2>{instrument.tag}</h2>
-              </div>
-              <p>{instrument.category}</p>
-            </div>
+          <article className="inventory-table-card instrument-calibration-create-card instrument-calibration-create-card--single">
+            <section className="instrument-calibration-create-overview">
+              <div className="instrument-calibration-create-overview-top">
+                <div className="instrument-calibration-create-card__copy">
+                  <div className="instrument-calibration-card__heading">
+                    <h2>{instrument.tag}</h2>
+                  </div>
+                  <p>{instrument.category}</p>
+                </div>
 
-            <div className="instrument-calibration-create-summary">
-              <div className="instrument-calibration-create-summary__item">
-                <span>Fabricante</span>
-                <strong>{instrument.manufacturer}</strong>
-              </div>
-              <div className="instrument-calibration-create-summary__item">
-                <span>Status atual</span>
-                <strong>{getCalibrationStatusLabel(instrument.tone)}</strong>
-              </div>
-              <div className="instrument-calibration-create-summary__item">
-                <span>Prazo atual</span>
-                <strong>{instrument.calibration}</strong>
-              </div>
-              <div className="instrument-calibration-create-summary__item">
-                <span>Itens do template</span>
-                <strong>{instrument.fields.length}</strong>
-              </div>
-            </div>
-
-            <section
-              className={`instrument-detail-alert instrument-detail-alert--${instrument.tone} instrument-detail-alert--inline`}
-            >
-              <div>
-                <strong>
-                  {instrument.tone === "danger"
-                    ? "Instrumento vencido"
-                    : instrument.tone === "warning"
-                      ? "Prazo proximo"
-                      : "Pronto para novo ciclo"}
-                </strong>
-                <p>{getCalibrationAlertCopy(instrument)}</p>
+                <div className="instrument-calibration-create-summary">
+                  <div className="instrument-calibration-create-summary__item">
+                    <span>Fabricante</span>
+                    <strong>{instrument.manufacturer}</strong>
+                  </div>
+                  <div
+                    className={`instrument-calibration-create-summary__item instrument-calibration-create-summary__item--status instrument-calibration-create-summary__item--${instrument.tone}`}
+                  >
+                    <span>Status atual</span>
+                    <strong>{getCalibrationStatusLabel(instrument.tone)}</strong>
+                  </div>
+                  <div className="instrument-calibration-create-summary__item">
+                    <span>Prazo atual</span>
+                    <strong>{formatCalibrationSummaryDate(instrument.calibrationDateValue)}</strong>
+                  </div>
+                </div>
               </div>
             </section>
-          </article>
-
-          <article className="inventory-table-card instrument-calibration-create-card instrument-calibration-create-card--form">
-            <header className="instrument-detail-card__header instrument-calibration-create-card__header">
-              <div>
-                <h3>Registrar calibracao</h3>
-                <p>Envie o certificado em PDF e atualize o prazo do instrumento.</p>
-              </div>
-            </header>
 
             <form className="instrument-calibration-form" onSubmit={handleSubmit}>
               <div className="instrument-calibration-form__grid">
@@ -616,7 +597,6 @@ export function InstrumentCalibrationCreateContent({
                   <span>Responsavel</span>
                   <input
                     type="text"
-                    placeholder="Ex: Luis Fernandes"
                     className={validationErrors.responsible ? "is-invalid" : undefined}
                     value={formState.responsible}
                     onChange={(event) => {
@@ -711,11 +691,7 @@ export function InstrumentCalibrationCreateContent({
                     <small className="instrument-modal__field-error">
                       {validationErrors.validityDate}
                     </small>
-                  ) : (
-                    <small className="instrument-modal__field-help">
-                      Essa data atualiza o prazo visivel na ficha do instrumento e no dashboard.
-                    </small>
-                  )}
+                  ) : null}
                 </label>
               </div>
 

@@ -268,58 +268,88 @@ export function InstrumentDetailContent({
                     <section key={group.key} className="instrument-detail-group">
                       {(() => {
                         const groupLabel = group.label || "Campos gerais";
-                        const groupedItems = group.subgroups.flatMap((subgroup) =>
-                          subgroup.fields.map((field) => ({
-                            field,
-                            subgroupLabel: shouldShowSubgroupLabel(group.label || null, subgroup.label)
-                              ? subgroup.label
-                              : null
-                          }))
+                        const totalFields = group.subgroups.reduce(
+                          (total, subgroup) => total + subgroup.fields.length,
+                          0
                         );
-                        const singleItem = groupedItems[0] ?? null;
+                        const singleSubgroup = group.subgroups[0] ?? null;
+                        const singleItem = singleSubgroup?.fields[0] ?? null;
+                        const singleSubgroupLabel =
+                          singleSubgroup &&
+                          shouldShowSubgroupLabel(group.label || null, singleSubgroup.label)
+                            ? singleSubgroup.label
+                            : null;
                         const showCompactSingleValue =
-                          groupedItems.length === 1 &&
+                          totalFields === 1 &&
                           singleItem &&
-                          !singleItem.subgroupLabel &&
-                          areSameLabels(singleItem.field.name, groupLabel);
+                          !singleSubgroupLabel &&
+                          areSameLabels(singleItem.name, groupLabel);
 
                         return (
                           <>
                             <header className="instrument-detail-group__header">
                               <h4>{groupLabel}</h4>
-                              <span>{groupedItems.length} {groupedItems.length === 1 ? "campo" : "campos"}</span>
+                              <span>{totalFields} {totalFields === 1 ? "campo" : "campos"}</span>
                             </header>
 
                             {showCompactSingleValue && singleItem ? (
                               <div className="instrument-detail-group__single">
                                 <strong>
-                                  {singleItem.field.hasLatestValue
+                                  {singleItem.hasLatestValue
                                     ? formatFieldValue(
-                                        singleItem.field.latestValue,
-                                        singleItem.field.latestUnit
+                                        singleItem.latestValue,
+                                        singleItem.latestUnit
                                       )
                                     : "Nao informado"}
                                 </strong>
                               </div>
                             ) : (
-                              <div className="instrument-detail-group__grid">
-                                {groupedItems.map(({ field, subgroupLabel }) => {
-                                  const shouldShowFieldName =
-                                    !areSameLabels(field.name, groupLabel) &&
-                                    !areSameLabels(field.name, subgroupLabel);
-                                  const resolvedValue = field.hasLatestValue
-                                    ? formatFieldValue(field.latestValue, field.latestUnit)
-                                    : "Nao informado";
+                              <div className="instrument-detail-group__subgroups">
+                                {group.subgroups.map((subgroup) => {
+                                  const subgroupLabel = shouldShowSubgroupLabel(
+                                    group.label || null,
+                                    subgroup.label
+                                  )
+                                    ? subgroup.label
+                                    : null;
 
                                   return (
-                                    <article key={field.slug} className="instrument-detail-group__field">
-                                      {subgroupLabel ? (
-                                        <span className="instrument-detail-group__subgroup">{subgroupLabel}</span>
-                                      ) : null}
-                                      {shouldShowFieldName ? (
-                                        <strong className="instrument-detail-group__name">{field.name}</strong>
-                                      ) : null}
-                                      <span className="instrument-detail-group__value">{resolvedValue}</span>
+                                    <article
+                                      key={subgroup.key}
+                                      className="instrument-detail-group__subgroup-card"
+                                    >
+                                      <div className="instrument-detail-group__subgroup-head">
+                                        <strong>
+                                          {subgroupLabel || "Campos gerais"}
+                                        </strong>
+                                      </div>
+
+                                      <div className="instrument-detail-group__fields">
+                                        {subgroup.fields.map((field) => {
+                                          const shouldShowFieldName =
+                                            !areSameLabels(field.name, groupLabel) &&
+                                            !areSameLabels(field.name, subgroupLabel);
+                                          const resolvedValue = field.hasLatestValue
+                                            ? formatFieldValue(field.latestValue, field.latestUnit)
+                                            : "Nao informado";
+
+                                          return (
+                                            <article
+                                              key={field.slug}
+                                              className="instrument-detail-group__field"
+                                            >
+                                              {shouldShowFieldName ? (
+                                                <strong className="instrument-detail-group__name">
+                                                  {field.name}
+                                                </strong>
+                                              ) : null}
+                                              <span className="instrument-detail-group__value">
+                                                {resolvedValue}
+                                              </span>
+                                            </article>
+                                          );
+                                        })}
+                                      </div>
                                     </article>
                                   );
                                 })}

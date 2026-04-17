@@ -1,97 +1,179 @@
 # Contexto do Projeto
 
-## Nome
-- Metrologia PRO
+## Resumo executivo
+- Nome: `Metrologia PRO`
+- Dominio: controle interno de instrumentos e calibracoes
+- Objetivo: substituir controles manuais e planilhas por uma aplicacao auditavel com historico tecnico, prazos e apoio de IA para leitura de certificados
+- Stack central: `Next.js App Router`, `React 19`, `TypeScript`, `Supabase`, `Vitest`
 
-## Descricao curta
-- Plataforma web para cadastro de instrumentos, templates por categoria, controle de prazos de calibracao, historico de certificados e apoio operacional ao time de metrologia.
+## O que o sistema faz hoje
+- Login com `Supabase Auth`
+- Dashboard com metricas reais do parque de instrumentos
+- Gestao de categorias
+- Gestao de unidades de medida
+- Gestao de instrumentos
+- Detalhe de instrumento com ultimo valor por campo
+- Log historico de calibracoes por instrumento
+- Cadastro de nova calibracao com upload de PDF
+- Cadastro de novo instrumento com calibracao inicial
+- Extracao assistida por IA de certificados em PDF
+- Calculos derivados locais para `Paquimetro`
 
-## Objetivo
-- Centralizar informacoes tecnicas antes dispersas em planilhas e controles manuais.
-- Dar rastreabilidade ao ciclo de calibracao.
-- Reduzir risco de vencimento sem acompanhamento.
-- Facilitar revisao tecnica, historico e preparacao para auditorias.
+## Arquitetura real
 
-## Decisoes de produto vigentes
-- Categoria define o template de calibracao.
-- Instrumento herda esse template no cadastro.
-- O cadastro de novo instrumento acontece em 2 etapas:
-  - dados do instrumento
-  - certificado e calibracao inicial
-- O cadastro de nova calibracao de um instrumento existente usa tela propria.
-- O nome do PDF identifica a calibracao no log.
-- `Fabricante` e opcional.
-- A IA faz pre-preenchimento, nao aprovacao automatica.
-- Campos derivados devem ser calculados pelo sistema, nao pela IA.
+### Frontend
+- `app/layout.tsx`: layout raiz, `AuthSessionSync`, inicializacao de tema e escala de fonte
+- `app/login/page.tsx`: login visual com `LightPillar`, `BorderGlow` e `ShinyText`
+- `app/dashboard/page.tsx`: dashboard server-side
+- `app/categorias/page.tsx`: CRUD de categorias e template de campos
+- `app/instrumentos/page.tsx`: lista, filtros, modal de edicao e exclusao
+- `app/instrumentos/novo/page.tsx`: fluxo novo recomendado para cadastrar instrumento com calibracao inicial
+- `app/instrumentos/[id]/page.tsx`: detalhe do instrumento
+- `app/instrumentos/[id]/calibracoes/page.tsx`: log de calibracoes
+- `app/instrumentos/[id]/calibracoes/nova/page.tsx`: nova calibracao
+- `app/configuracoes/page.tsx`: hub de configuracoes
+- `app/configuracoes/medidas/page.tsx`: CRUD de medidas
+- `app/inventario/page.tsx`: hoje apenas redireciona para `/instrumentos`
 
-## Exemplo de regra derivada ja implementada
-- Categoria `Paquimetro`:
-  - `Incerteza + maior Erro externo` = `Maior erro externo` + `Incerteza de medicao externo`
-  - `Incerteza + maior Erro interno` = `Incerteza de medicao interno` + `Maior erro interno`
-  - `Incerteza + maior Erro profundidade` = `Maior erro profundidade` + `Incerteza de medicao profundidade`
+### Backend
+- APIs internas em `app/api/**`
+- Regras e mapeadores em `lib/**`
+- A maioria das consultas usa `supabaseAdmin` com `SUPABASE_SERVICE_ROLE_KEY`
+- APIs e paginas protegidas via `middleware.ts`
 
-## Regras de negocio
-- O schema principal de dados e `calibracao`.
-- Categorias e medidas sao mantidas no banco real.
-- Instrumentos sao vinculados a categorias.
-- Calibracoes ficam vinculadas ao instrumento.
-- Resultados revisados da calibracao ficam serializados no registro e, quando aplicavel, tambem em `calibracao_resultados`.
-- Exclusoes sensiveis devem passar por confirmacao explicita.
-- Categoria nao pode ser excluida se ainda houver instrumentos vinculados.
-- A IA nunca deve inventar valores ausentes do certificado.
-- Quando existir calculo tecnico derivado, a fonte de verdade e o codigo da aplicacao.
+## Autenticacao e acesso
+- O frontend usa `supabaseBrowser`
+- O `fetchApi` injeta `Authorization: Bearer <access_token>` automaticamente
+- O `middleware.ts` valida sessao por bearer token ou cookies locais:
+  - `metrologia-access-token`
+  - `metrologia-refresh-token`
+- Rotas protegidas:
+  - paginas: `/dashboard`, `/instrumentos`, `/categorias`, `/configuracoes`, `/inventario`
+  - APIs: `/api/calibracoes`, `/api/categorias`, `/api/centro-custo`, `/api/instrumentos`, `/api/medidas`
 
-## Arquitetura
-- `Next.js App Router`
-- `React`
-- `TypeScript`
-- `Supabase`
-- `Vitest`
+## Schemas e tabelas relevantes
 
-## Estrutura de pastas
-- `app/`: paginas, layouts e rotas API.
-- `app/_components/`: componentes de UI e fluxos.
-- `app/api/`: endpoints internos.
-- `lib/`: regras de negocio, mapeadores, serializacao, integracoes e helpers.
-- `tests/lib/`: testes unitarios da camada de regra.
+### Schema `calibracao`
+- `categorias_instrumentos`
+- `categoria_campos_medicao`
+- `unidadas_medidas`
+- `instrumentos`
+- `instrumento_campos_medicao`
+- `calibracoes`
+- `calibracao_resultados`
 
-## Integracoes
-- `Supabase Auth`
-- `Supabase PostgREST`
-- `OpenRouter` para extracao assistida por IA de PDFs
+### Schema `datasul`
+- `centro_custo`
+- usado apenas em `GET /api/centro-custo`
 
-## Banco de dados
-- Tabelas principais consumidas hoje:
-  - `calibracao.categorias_instrumentos`
-  - `calibracao.unidadas_medidas`
-  - `calibracao.instrumentos`
-  - `calibracao.instrumento_campos_medicao`
-  - `calibracao.calibracoes`
-  - `calibracao.calibracao_resultados`
+## Regras de negocio que ja existem
+- Categoria define o template de calibracao
+- Instrumento herda os campos ativos da categoria
+- Ao editar categoria, os campos dos instrumentos vinculados sao sincronizados
+- `fabricante` e opcional
+- O fluxo novo de instrumento e em 2 etapas
+- O PDF do certificado e obrigatorio no cadastro de calibracao
+- O nome do PDF vira fallback de identificacao no log
+- A IA nao deve inventar valores ausentes
+- Campos derivados devem ser calculados localmente
+- Exclusoes sensiveis exigem confirmacao explicita na UI
+- Categoria nao pode ser excluida se houver instrumentos vinculados
 
-## Estado atual do sistema
-- Implementado:
-  - autenticacao com Supabase
-  - dashboard
-  - gestao de categorias
-  - gestao de medidas
-  - gestao de instrumentos
-  - detalhe de instrumento
-  - log de calibracoes
-  - cadastro de nova calibracao
-  - cadastro de novo instrumento com calibracao inicial
-  - upload de certificado em PDF
-  - extracao assistida por IA
-  - calculos automaticos por categoria
-  - TDD com cobertura
-- Em evolucao:
-  - ampliar regras derivadas por categoria
-  - melhorar a qualidade e a velocidade da IA para PDFs
-  - aumentar a cobertura dos testes em `lib/`
-  - organizar templates de categoria mais proximos da estrutura das planilhas reais
+## Regras derivadas implementadas hoje
+- Categoria `Paquimetro`
+- Campos auto calculados:
+  - `Incerteza + maior Erro externo`
+  - `Incerteza + maior Erro interno`
+  - `Incerteza + maior Erro profundidade`
+  - `Incerteza + maior Erro ressalto`
+- Fonte: `lib/calibration-derivations.ts`
 
-## Convencoes
-- Regras de negocio devem preferencialmente morar em `lib/`.
-- Componentes devem ficar mais finos, consumindo helpers testaveis.
-- Toda correcao de bug relevante deve voltar com teste.
-- Quando uma categoria tiver comportamento proprio, a regra deve ser isolada e testada.
+## Como a calibracao e armazenada
+- `calibracoes` guarda cabecalho da calibracao
+- `observacoes` pode conter:
+  - notas livres
+  - payload estruturado entre os marcadores:
+    - `[[METROLOGIA_CALIBRATION_DATA]]`
+    - `[[/METROLOGIA_CALIBRATION_DATA]]`
+- `calibracao_resultados` guarda apenas a conformidade por campo quando houver revisao marcada
+- O certificado PDF vai para `Supabase Storage`
+
+## Extracao assistida por IA
+- Provider: `OpenRouter`
+- Modelo default: `nvidia/nemotron-nano-12b-v2-vl:free`
+- Fluxo:
+  1. valida PDF e tamanho
+  2. tenta ler texto e tabelas com `pdf-parse`
+  3. se houver texto suficiente, monta prompt com texto
+  4. se nao houver, envia o PDF como `data:` URL para o modelo
+  5. normaliza o JSON de retorno
+  6. aplica overrides locais para certificados conhecidos de `Paquimetro`
+- Observacao importante: a IA ajuda no preenchimento; os calculos confiaveis continuam no codigo
+
+## Endpoints internos
+
+### Categorias
+- `GET /api/categorias`
+- `POST /api/categorias`
+- `PATCH /api/categorias`
+- `DELETE /api/categorias`
+
+### Medidas
+- `GET /api/medidas`
+- `POST /api/medidas`
+- `PATCH /api/medidas`
+- `DELETE /api/medidas`
+
+### Instrumentos
+- `GET /api/instrumentos`
+- `GET /api/instrumentos?id=<id>`
+- `POST /api/instrumentos`
+- `PATCH /api/instrumentos`
+- `DELETE /api/instrumentos`
+- `GET /api/instrumentos/metadata`
+
+### Calibracoes
+- `GET /api/calibracoes?instrumentId=<id>&period=1y`
+- `GET /api/calibracoes?instrumentId=<id>&dateFrom=YYYY-MM-DD&dateTo=YYYY-MM-DD`
+- `POST /api/calibracoes`
+- `POST /api/calibracoes/extrair`
+
+### Centro de custo
+- `GET /api/centro-custo?code=<codigo>`
+
+## Arquivos centrais por responsabilidade
+- `lib/measurements.ts`: normalizacao e serializacao de unidades de medida
+- `lib/measurement-fields.ts`: slug, agrupamento e layout de campos
+- `lib/instruments.ts`: mapeamento de instrumento, tags, prazo e merge com ultima calibracao
+- `lib/calibrations.ts`: filtros, status e historico
+- `lib/calibration-records.ts`: serializacao estruturada dentro de `observacoes`
+- `lib/calibration-extraction.ts`: prompt, schema e normalizacao de extracao
+- `lib/calibration-certificate-parsers.ts`: parser local de certificados conhecidos
+- `lib/calibration-certificates.ts`: validacao e path de storage
+- `lib/dashboard-metrics.ts`: metricas do dashboard
+
+## Decisoes operacionais importantes
+- A rota `/instrumentos/novo` e o fluxo mais completo para cadastro
+- A lista `/instrumentos` ainda oferece criacao/edicao rapida por modal, mas sem calibracao inicial
+- O backend de `instrumentos` aceita `fields`, porem o frontend atual quase sempre parte do template da categoria
+- `laboratory` e `certificate` continuam aceitos no endpoint de calibracao, mesmo que a UI atual nao exponha esses campos
+- `buildInstrumentDisplayTag` existe como fallback, mas o sistema usa a `tag` salva sempre que ela nao parecer um UUID
+
+## Convencoes para evolucao
+- Regras de negocio devem preferir `lib/`
+- Componentes devem ficar o mais finos possivel
+- Toda correcao relevante de regra deve vir com teste
+- Se uma categoria tiver comportamento proprio, a regra deve ficar isolada e testada
+- Antes de mexer em fluxos de calibracao, sempre conferir:
+  - `lib/calibration-derivations.ts`
+  - `lib/calibration-records.ts`
+  - `app/api/calibracoes/route.ts`
+  - `app/api/calibracoes/extrair/route.ts`
+
+## Pontos que outra IA precisa saber antes de editar
+- Nem toda regra esta no componente; muita coisa relevante esta em `lib/`
+- O projeto usa `schema("calibracao")` em quase todas as consultas
+- `observacoes` nao e texto puro em todos os casos; pode conter JSON embutido
+- Os campos de categoria e instrumento usam `slug` derivado de `name + groupName + subgroupName`
+- Alterar a categoria impacta templates de instrumentos ja existentes
+- `Paquimetro` tem comportamento especial e nao pode ser tratado como categoria comum

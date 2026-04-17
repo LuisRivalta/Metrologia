@@ -1,5 +1,29 @@
 # Logs do Projeto
 
+## 2026-04-17
+
+### O que foi feito
+- Reescrita da documentacao principal com base no codigo atual do projeto.
+- Atualizados `README.md`, `CONTEXT.md`, `PRD_Metrologia.md` e `TDD.md`.
+- Criado `HANDOFF_IA.md` para onboarding tecnico de outra IA.
+- Consolidado no texto o fluxo real de autenticacao, APIs internas, storage e extracao por IA.
+- Registradas as regras operacionais mais importantes do dominio e os pontos de atencao para futuras alteracoes.
+
+### Escopo documentado
+- arquitetura do app
+- paginas e rotas principais
+- endpoints internos
+- schemas e tabelas usados
+- fluxo de cadastro de instrumento
+- fluxo de cadastro de calibracao
+- extracao assistida por IA
+- regras derivadas de `Paquimetro`
+- estrategia de testes
+
+### Validacao
+- `npm run test`
+- `npm run build`
+
 ## 2026-04-13
 
 ### O que foi feito
@@ -18,29 +42,24 @@
 - Executado um ciclo TDD real em `lib/calibrations.ts`.
 
 ### Alteracoes
-- Atualizados [instrument-create-content.tsx](/c:/Metrologia/app/_components/instrument-create-content.tsx) e [instrument-calibration-create-content.tsx](/c:/Metrologia/app/_components/instrument-calibration-create-content.tsx).
-- Atualizado o log em [instrument-calibrations-content.tsx](/c:/Metrologia/app/_components/instrument-calibrations-content.tsx).
-- Atualizada a rota de extracao em [route.ts](/c:/Metrologia/app/api/calibracoes/extrair/route.ts).
-- Atualizada a serializacao do historico em [calibrations.ts](/c:/Metrologia/lib/calibrations.ts).
-- Criado o helper de regras derivadas em [calibration-derivations.ts](/c:/Metrologia/lib/calibration-derivations.ts).
-- Atualizados [README.md](/c:/Metrologia/README.md), [CONTEXT.md](/c:/Metrologia/CONTEXT.md), [PRD_Metrologia.md](/c:/Metrologia/PRD_Metrologia.md) e [TDD.md](/c:/Metrologia/TDD.md).
+- Atualizados `app/_components/instrument-create-content.tsx` e `app/_components/instrument-calibration-create-content.tsx`.
+- Atualizado o log em `app/_components/instrument-calibrations-content.tsx`.
+- Atualizada a rota de extracao em `app/api/calibracoes/extrair/route.ts`.
+- Atualizada a serializacao do historico em `lib/calibrations.ts`.
+- Criado o helper de regras derivadas em `lib/calibration-derivations.ts`.
+- Atualizados os principais arquivos de documentacao.
 
 ### Problemas encontrados
-- Parser `cloudflare-ai` da OpenRouter falhando com `Failed to parse PI-361_temp.pdf`.
+- Parser `cloudflare-ai` da OpenRouter falhando com `Failed to parse ...`.
 - Modelo `nvidia/nemotron-nano-12b-v2-vl:free` demorando demais com PDF em alguns cenarios.
 - Campos derivados de paquimetro exigiam conta automatica, mas a regra ainda nao existia no sistema.
-- Parte da documentacao estava desatualizada ou com encoding quebrado.
+- Parte da documentacao estava desatualizada.
 
 ### Solucoes aplicadas
 - Remocao do parser forcado de PDF e uso do caminho nativo do modelo.
 - Inclusao de timeout no backend para extracao com modelos `:free`.
 - Calculo automatico de campos derivados por categoria no proprio sistema.
-- Reescrita da documentacao principal com o estado real do produto.
-
-### Validacao
-- `npm run test`
-- `npm run test:coverage`
-- `npm run build`
+- Reorganizacao da documentacao principal.
 
 ## 2026-04-07
 

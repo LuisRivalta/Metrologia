@@ -1,118 +1,124 @@
 # PRD: Metrologia PRO
 
-**Versao:** 1.1  
-**Data de referencia:** 13 de abril de 2026  
-**Responsavel:** Time interno de Metrologia e apoio de Engenharia de Software
+**Versao:** 1.2  
+**Data de referencia:** 17 de abril de 2026  
+**Responsavel:** Time interno de Metrologia com apoio de Engenharia de Software
 
----
-
-## 1. Visao Geral
+## 1. Visao geral
 
 ### Objetivo principal
 Substituir o controle manual em planilhas por um sistema web auditavel, centralizado e orientado ao ciclo real de calibracao dos instrumentos.
 
-### Problema atual
-- Controle descentralizado em planilhas e arquivos espalhados.
-- Alto risco de perda de prazo.
-- Dificuldade de rastrear certificados e historico.
-- Baixa padronizacao entre categorias de instrumentos.
-- Trabalho manual excessivo na leitura e digitacao dos certificados.
+### Problema que o produto resolve
+- Controle descentralizado em planilhas e arquivos soltos
+- Risco de perda de prazo de calibracao
+- Dificuldade de rastrear certificados e historico tecnico
+- Baixa padronizacao entre categorias
+- Muito trabalho manual para ler e digitar certificados
 
 ### Solucao proposta
-Uma plataforma web dedicada ao time de metrologia, funcionando como fonte unica da verdade para:
+Uma plataforma web para o time de metrologia funcionar como fonte unica da verdade para:
 - inventario tecnico
-- categorias e templates
-- cronograma de calibracoes
+- categorias e templates de calibracao
+- prazos e vencimentos
 - historico de certificados
-- apoio a revisao tecnica
+- apoio tecnico de revisao com IA
 
----
+## 2. Usuarios e contexto
+- Usuario principal: time interno de metrologia
+- Contexto de uso: operacao interna, rastreabilidade, auditoria e manutencao do parque
+- Prioridade: confiabilidade operacional acima de automacao cega
 
-## 2. Escopo Funcional
+## 3. Escopo funcional atual
 
-### 2.1 Cadastro e Inventario
-- Cadastro de categorias.
-- Cadastro de unidades de medida.
-- Cadastro de instrumentos.
-- Detalhe individual por instrumento.
+### 3.1 Autenticacao e acesso
+- Login com `Supabase Auth`
+- Protecao de paginas internas e endpoints operacionais
 
-### 2.2 Templates por categoria
-- Cada categoria define um template de calibracao.
-- O instrumento herda esse template no momento do cadastro.
-- O template representa os itens que devem aparecer na tabela de calibracao.
-- Em categorias mais complexas, o template pode ter muitos itens e deve continuar legivel.
+### 3.2 Dashboard
+- Indicadores reais de instrumentos
+- Alertas de itens perto do vencimento ou vencidos
+- Distribuicao por status de prazo
 
-### 2.3 Fluxo de novo instrumento
-- Etapa 1: dados do instrumento.
-- Etapa 2: certificado e calibracao inicial.
-- O usuario pode subir o PDF ja no cadastro do instrumento.
-- A IA tenta pre-preencher a tabela.
-- O usuario revisa e confirma antes de salvar.
+### 3.3 Categorias
+- CRUD de categorias
+- Cada categoria define um template de calibracao
+- O template suporta grupo e subgrupo
+- Alteracoes no template podem ser sincronizadas para instrumentos vinculados
 
-### 2.4 Fluxo de nova calibracao
-- Tela dedicada para registrar uma nova calibracao de instrumento ja existente.
-- Upload de PDF.
-- Pre-preenchimento assistido por IA.
-- Revisao manual da tabela.
-- Registro no log historico.
+### 3.4 Medidas
+- CRUD de unidades de medida
+- Conversao entre representacao amigavel da UI e formato tecnico do banco
 
-### 2.5 Log de calibracoes
-- Lista historica por instrumento.
-- Exibicao do nome do arquivo PDF como identificacao da calibracao.
-- Acesso ao certificado vinculado.
-- Exibicao dos valores registrados na calibracao.
+### 3.5 Instrumentos
+- CRUD de instrumentos
+- Vinculo obrigatorio com categoria
+- Campo `fabricante` opcional
+- Detalhe individual com ultimo valor por campo
 
-### 2.6 IA e automacao
-- A IA le o PDF e tenta extrair:
-  - datas
-  - responsavel
-  - observacoes
-  - valores dos itens do template
-- A IA nao deve aprovar automaticamente a calibracao.
-- Campos derivados devem ser calculados pelo sistema.
+### 3.6 Cadastro de novo instrumento
+- Fluxo recomendado em 2 etapas:
+  - dados do instrumento
+  - certificado e calibracao inicial
+- A categoria define automaticamente o template inicial
+- O usuario pode enviar o PDF ja no cadastro
 
-### 2.7 Calculos por categoria
-- O sistema precisa suportar regras derivadas por categoria.
-- Exemplo ja implementado:
-  - categoria `Paquimetro`
-  - soma automatica de campos como `Incerteza + maior Erro ...`
+### 3.7 Nova calibracao
+- Tela dedicada para registrar nova calibracao de instrumento existente
+- Upload obrigatorio do certificado em PDF
+- Revisao manual dos dados antes de salvar
 
----
+### 3.8 Log de calibracoes
+- Historico por instrumento
+- Filtro por periodo ou intervalo de datas
+- Exibicao do nome do PDF como identificacao quando necessario
+- Acesso ao certificado armazenado
+- Exibicao dos valores registrados naquela calibracao
 
-## 3. Requisitos Funcionais
+### 3.9 IA e automacao
+- Extracao assistida por IA a partir do PDF
+- Pre-preenchimento de datas, responsavel, observacoes e valores dos campos
+- Sem aprovacao automatica
+- Combinacao de parser local + modelo da OpenRouter
+
+### 3.10 Regras derivadas
+- Suporte a regras automaticas por categoria
+- Ja implementado para `Paquimetro`
+
+## 4. Requisitos funcionais
 
 ### RF-01
 O sistema deve permitir cadastrar, editar e excluir categorias.
 
 ### RF-02
-O sistema deve impedir a exclusao de uma categoria se existirem instrumentos vinculados a ela.
+O sistema deve impedir a exclusao de categoria com instrumentos vinculados.
 
 ### RF-03
 O sistema deve permitir cadastrar, editar e excluir unidades de medida.
 
 ### RF-04
-O sistema deve permitir cadastrar instrumentos vinculados a uma categoria.
+O sistema deve permitir cadastrar, editar e excluir instrumentos.
 
 ### RF-05
 O campo `fabricante` deve ser opcional.
 
 ### RF-06
-Cada categoria deve possuir um template de calibracao reutilizavel.
+Cada categoria deve possuir template reutilizavel de calibracao.
 
 ### RF-07
-O cadastro de instrumento deve acontecer em duas etapas.
+O cadastro de novo instrumento deve suportar fluxo em 2 etapas.
 
 ### RF-08
-O sistema deve permitir registrar uma calibracao inicial no cadastro do instrumento.
+O sistema deve permitir registrar calibracao inicial no cadastro do instrumento.
 
 ### RF-09
-O sistema deve permitir registrar novas calibracoes para um instrumento existente.
+O sistema deve permitir registrar novas calibracoes para instrumento existente.
 
 ### RF-10
-O sistema deve permitir upload de certificado em PDF.
+O sistema deve aceitar upload de certificado em PDF.
 
 ### RF-11
-O nome do PDF deve ser usado como identificacao principal no log quando nao houver titulo manual.
+O nome do PDF deve servir como identificacao padrao da calibracao quando necessario.
 
 ### RF-12
 O sistema deve permitir extracao assistida por IA dos dados do certificado.
@@ -121,84 +127,80 @@ O sistema deve permitir extracao assistida por IA dos dados do certificado.
 O usuario deve revisar manualmente os dados sugeridos pela IA antes de salvar.
 
 ### RF-14
-O sistema deve suportar calculos automaticos por categoria para campos derivados.
+O sistema deve suportar calculos automaticos por categoria.
 
 ### RF-15
 O dashboard deve exibir indicadores reais de instrumentos, categorias e prazos.
 
----
-
-## 4. Requisitos Nao Funcionais
+## 5. Requisitos nao funcionais
 
 ### RNF-01
-O sistema deve operar sobre dados reais do Supabase no schema `calibracao`.
+O sistema deve operar sobre dados reais do Supabase.
 
 ### RNF-02
-A aplicacao deve ser responsiva e funcionar em desktop e mobile.
+O schema principal de negocio e `calibracao`.
 
 ### RNF-03
 Fluxos sensiveis devem ter confirmacao explicita.
 
 ### RNF-04
-A extracao por IA deve ter timeout para nao prender a interface indefinidamente.
+A extracao por IA deve falhar de forma controlada, com timeout e mensagens claras.
 
 ### RNF-05
 Regras de negocio criticas devem ser cobertas por testes automatizados.
 
 ### RNF-06
-A documentacao do projeto deve refletir o estado real do sistema.
+A documentacao deve refletir o estado real do codigo e do produto.
 
----
+### RNF-07
+O sistema deve preservar rastreabilidade de certificado e historico de calibracao.
 
-## 5. Estado Atual do Produto
+## 6. Estado atual do produto
 
-### Ja implementado
-- categorias
-- unidades de medida
-- instrumentos
+### Implementado
+- login
 - dashboard
-- detalhe individual de instrumento
+- categorias
+- medidas
+- instrumentos
+- detalhe de instrumento
 - log de calibracoes
-- cadastro de nova calibracao
-- cadastro de novo instrumento em 2 etapas
+- nova calibracao
+- cadastro de novo instrumento com calibracao inicial
 - upload de PDF
-- extracao assistida por IA via OpenRouter
+- extracao assistida por IA
+- parser local complementar para certificados conhecidos
 - calculos automaticos para `Paquimetro`
-- TDD com cobertura
+- testes unitarios da camada de regra
 
-### Ainda em evolucao
+### Em evolucao
 - ampliar regras derivadas para outras categorias
 - melhorar a qualidade e a velocidade da extracao por IA
-- tornar os templates mais proximos da estrutura real das planilhas por categoria
-- ampliar cobertura de testes em regras ainda sem cobertura suficiente
+- aumentar cobertura de regras ainda nao blindadas
+- aproximar ainda mais os templates da estrutura real dos certificados e planilhas
 
----
+## 7. Riscos e cuidados de produto
+- A IA pode sugerir dados incompletos ou imprecisos; a revisao humana continua obrigatoria
+- Mudancas de categoria ou template impactam o cadastro e a leitura de calibracoes futuras
+- O valor juridico e operacional do historico depende de manter certificado e metadados consistentes
 
-## 6. Roadmap
+## 8. Roadmap sugerido
 
 ### Fase 1
-- inventario tecnico
-- categorias e medidas
-- dashboard
-- detalhe de instrumento
+- consolidar inventario, categorias, medidas e dashboard
 
 ### Fase 2
-- cadastro de calibracao com upload de PDF
-- log historico
-- pre-preenchimento com IA
-- revisao humana
+- consolidar historico de calibracoes, upload de PDF e revisao humana
 
 ### Fase 3
-- ampliar regras automaticas por categoria
-- melhorar dashboards e indicadores
-- evoluir rastreabilidade e analise operacional
+- ampliar automacoes por categoria
+- melhorar indicadores operacionais
+- evoluir apoio tecnico ao time de metrologia
 
----
-
-## 7. Tecnologias
-- React
-- Next.js
-- TypeScript
-- Supabase
-- OpenRouter
-- Vitest
+## 9. Tecnologias
+- `Next.js`
+- `React`
+- `TypeScript`
+- `Supabase`
+- `OpenRouter`
+- `Vitest`

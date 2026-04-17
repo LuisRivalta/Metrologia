@@ -1,87 +1,35 @@
 # Rotina de TDD
 
 ## Objetivo
-Usar testes pequenos, rapidos e orientados a comportamento para proteger regras de negocio antes de alterar fluxos do sistema.
+Proteger regras de negocio e serializacao do sistema com testes pequenos, rapidos e orientados a comportamento.
+
+## Ferramentas
+- Runner: `Vitest`
+- Ambiente: `node`
+- Alias: `@` aponta para a raiz do projeto
+- Cobertura: `v8`
 
 ## Comandos
-- `npm run test`: roda a suite completa uma vez.
-- `npm run test:tdd`: abre o modo watch para o ciclo vermelho -> verde -> refatorar.
-- `npm run test:watch`: alias simples do watch do Vitest.
-- `npm run test:coverage`: gera cobertura em texto, HTML e `json-summary`.
-- `npm run test:ci`: roda `test` e `build` em sequencia para validacao final local.
+- `npm run test`: roda a suite completa uma vez
+- `npm run test:watch`: watch simples do Vitest
+- `npm run test:tdd`: watch para ciclo vermelho -> verde -> refatorar
+- `npm run test:coverage`: gera texto, HTML e `coverage-summary.json`
+- `npm run test:ci`: executa `test` e `build`
 
-## Ciclo Completo
-1. Escolha um comportamento novo ou um bug real.
-2. Escreva primeiro um teste que falha pelo motivo certo.
-3. Rode `npm run test:tdd` e confirme o vermelho.
-4. Implemente o minimo para deixar o teste verde.
-5. Refatore sem mudar comportamento.
-6. Rode `npm run test`.
-7. Rode `npm run test:coverage` quando a mudanca tocar regra de negocio relevante.
-8. Se a mudanca tocar tela, rota ou serializacao importante, finalize com `npm run build`.
+## Cobertura configurada
+- Inclui: `lib/**/*.ts`
+- Exclui:
+  - `lib/api/**`
+  - `lib/server/**`
+  - `lib/supabase/**`
 
-## O Que Testar Primeiro
-- Datas, vencimentos e comparacoes de prazo.
-- Serializacao e parse de registros de calibracao.
-- Calculos automaticos por categoria.
-- Normalizacao de payloads de API.
-- Conversoes de medida, slug e nome tecnico.
-- Regressao de bug: todo bug corrigido deve ganhar um teste que reproduza o caso original.
-
-## Onde Escrever Testes
-- `tests/lib/*.test.ts` para regras puras de negocio.
-- Extraia logica de componentes ou rotas para `lib/` antes de testar.
-- De preferencia a testes pequenos e focados em uma regra por vez.
-
-## Nome dos Testes
-- Escreva pelo comportamento esperado.
-- Prefira `it("calcula ...")`, `it("ignora ...")`, `it("retorna erro quando ...")`.
-- Evite nomes presos a detalhes internos de implementacao.
-
-## Estrategia Recomendada Neste Projeto
-- Componentes devem ficar finos.
-- Regras de metrologia, validacoes e calculos devem morar em `lib/`.
-- A IA deve extrair valores; a regra de negocio deve ser testada e calculada localmente.
-- Se uma regra variar por categoria, o comportamento da categoria deve ter teste proprio.
-
-## Checklist de Pronto
-- Existe teste cobrindo o comportamento novo ou o bug corrigido.
-- O teste falhou antes da implementacao.
-- A implementacao minima deixou o teste verde.
-- A refatoracao manteve a suite verde.
-- `npm run test` passou.
-- `npm run build` passou quando a mudanca afetou fluxo real da aplicacao.
-
-## Cobertura
-O projeto gera cobertura para `lib/**/*.ts`, excluindo camadas de infraestrutura como:
-- `lib/api/**`
-- `lib/server/**`
-- `lib/supabase/**`
-
-Arquivos de saida:
+Arquivos gerados:
 - `coverage/index.html`
 - `coverage/coverage-summary.json`
 
-## Exemplo Rapido
-```bash
-npm run test:tdd
-```
-
-No watch:
-1. escrever um teste vermelho em `tests/lib/...`
-2. implementar o minimo em `lib/...`
-3. confirmar o verde
-4. refatorar
-
-Depois:
-```bash
-npm run test
-npm run test:coverage
-npm run build
-```
-
-## Suite Atual
+## Suite atual
 - `tests/lib/calibrations.test.ts`
+- `tests/lib/calibration-certificate-parsers.test.ts`
 - `tests/lib/calibration-certificates.test.ts`
 - `tests/lib/calibration-derivations.test.ts`
 - `tests/lib/calibration-extraction.test.ts`
@@ -89,4 +37,57 @@ npm run build
 - `tests/lib/categories.test.ts`
 - `tests/lib/date-utils.test.ts`
 - `tests/lib/instruments.test.ts`
+- `tests/lib/measurement-fields.test.ts`
 - `tests/lib/measurements.test.ts`
+
+## O que deve ser testado primeiro neste projeto
+- Regras de prazo e comparacao de datas
+- Normalizacao e serializacao de medidas
+- Slug e agrupamento de campos de medicao
+- Regras derivadas por categoria
+- Serializacao e parse de `observacoes`
+- Filtros e status do historico de calibracao
+- Paths e validacoes de certificados PDF
+- Normalizacao da extracao assistida por IA
+- Parsers locais de certificados conhecidos
+
+## Estrategia pratica
+1. Escolha um comportamento observavel ou um bug real.
+2. Escreva primeiro um teste que falha pelo motivo certo.
+3. Rode `npm run test:tdd`.
+4. Implemente o minimo para deixar o teste verde.
+5. Refatore sem mudar comportamento.
+6. Rode `npm run test`.
+7. Se a mudanca tocar fluxo real, finalize com `npm run build`.
+
+## Onde colocar novos testes
+- Preferencia: `tests/lib/*.test.ts`
+- Se a regra estiver enterrada em componente ou rota, extraia primeiro para `lib/`
+- Evite testar JSX quando o comportamento puder ser testado como funcao pura
+
+## Convencoes de nome
+- Prefira nomes pelo comportamento:
+  - `it("calcula ...")`
+  - `it("normaliza ...")`
+  - `it("retorna erro quando ...")`
+  - `it("ignora ...")`
+- Evite nomes presos a detalhes internos de implementacao
+
+## Regras especificas desta base
+- Mudou serializacao de calibracao: teste `lib/calibration-records.ts`
+- Mudou derivacao por categoria: teste `lib/calibration-derivations.ts`
+- Mudou leitura local de certificados: teste `lib/calibration-certificate-parsers.ts`
+- Mudou unidade de medida ou slug: teste `lib/measurements.ts` e `lib/measurement-fields.ts`
+- Corrigiu bug de negocio: inclua teste que reproduz o caso original
+
+## Checklist de pronto
+- Existe teste para o comportamento alterado
+- O teste falhou antes da implementacao
+- A implementacao minima deixou o teste verde
+- `npm run test` passou
+- `npm run build` passou quando a alteracao afetou fluxo real
+
+## Limite atual da estrategia
+- O projeto nao tem hoje uma suite estruturada de testes de componente ou E2E
+- O foco atual esta em blindar a camada de regra e serializacao
+- Se algum fluxo de UI ficar complexo demais, extraia a logica antes de tentar validar

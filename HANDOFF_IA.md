@@ -3,6 +3,19 @@
 ## Leia isto primeiro
 Este arquivo existe para dar contexto operacional rapido a outra IA que vai trabalhar nesta base. A ideia e reduzir perguntas basicas e evitar mudancas que quebrem regras ja existentes.
 
+## Estado atual (2026-04-18)
+
+Suite de testes: **73 testes passando**, cobertura de statements em **87%**.
+
+Mudancas recentes importantes:
+- `lib/dashboard-metrics.ts`: funcao `computeDashboardMetrics` exportada (logica pura extraida de `getDashboardMetrics`); `supabaseAdmin` agora importado dinamicamente dentro de `loadDashboardRows` para nao quebrar Vitest.
+- `lib/measurement-fields.ts`: campo `hint` adicionado a `MeasurementFieldItem` e `MeasurementFieldDraft`; mapeado de `dica_extracao` no banco.
+- `lib/calibration-extraction.ts`: prompt inclui `; dica: <hint>` quando campo tem hint; nova instrucao sobre campos tecnicos no cabecalho.
+
+Proximos passos sugeridos:
+- Brainstorm e spec para B1 (pipeline de IA), B2 (fluxo de calibracao) ou B3 (dashboard funcional).
+- Commitar as mudancas pendentes em `categories-content.tsx`, `instrument-calibration-create-content.tsx`, `calibracoes/extrair/route.ts`, `categorias/route.ts`, `login/page.tsx` (ainda nao commitadas).
+
 ## Resumo em 30 segundos
 - Projeto: sistema interno de metrologia com instrumentos, categorias, calibracoes e certificados
 - Banco principal: `Supabase`, schema `calibracao`

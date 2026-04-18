@@ -1,5 +1,33 @@
 # Logs do Projeto
 
+## 2026-04-18 — Saúde Técnica: Cobertura de Testes P0/P1/P2
+
+### O que foi feito
+
+Ciclo completo de brainstorm → spec → plano → execução com subagentes para cobrir os caminhos de negócio mais críticos do projeto.
+
+**Cobertura antes → depois:**
+- Statements: 71.6% → 87.15%
+- Branches: 56.19% → 70.73%
+- Functions: 76.82% → 94.07%
+- Testes: 39 → 73
+
+**Tasks executadas (TDD, sem mocks):**
+1. `dashboard-metrics.ts` (era 0%) — extraída função pura `computeDashboardMetrics`; import dinâmico de supabaseAdmin para compatibilidade com Vitest; 5 testes cobrindo empty, percentual, ordenação de alertas, limite e breakdown.
+2. `instruments.ts` — 7 testes cobrindo far-future em meses, null date, e 4 branches de `formatInstrumentAlertNote`.
+3. `calibrations.ts` — 7 testes cobrindo todos os presets de filtro, validações de status, `deriveStatus` com validade vencida/próxima, resultados do banco quando observacoes não tem payload.
+4. `calibration-certificates.ts` — 7 testes cobrindo `getCalibrationCertificateStoragePathFromUrl` e `isPdfCertificateFile`.
+5. `measurement-fields.ts` — 4 testes via wrappers públicos `mapInstrumentMeasurementFieldRow` e `mapCategoryMeasurementFieldRow`, incluindo hint e slug derivado.
+6. `measurements.ts` — 4 testes cobrindo HR genérico, compostos com db/ph/hz, ra/rz compostos e serialização com Unicode.
+
+**Documentos gerados:**
+- `docs/superpowers/specs/2026-04-18-technical-health-design.md`
+- `docs/superpowers/plans/2026-04-18-technical-health.md`
+
+## 2026-04-17 — Geração do CLAUDE.md
+
+O arquivo `CLAUDE.md` foi gerado com sucesso nesta sessão. A IA leu e consolidou o conteúdo de `CONTEXT.md`, `HANDOFF_IA.md`, `PRD_Metrologia.md` e `TDD.md`, produzindo um guia operacional direto para futuras instâncias de Claude Code. O documento cobre os comandos de desenvolvimento e teste, o caminho completo de uma requisição (fetchApi → middleware → API route com supabaseAdmin), o modelo de domínio Categoria → Instrumento → Calibração, o formato dual de `observacoes` com payload JSON embutido, o pipeline de extração assistida por IA via OpenRouter, as regras derivadas exclusivas do `Paquímetro` e as convenções de slug de campo. A partir desta sessão, a IA compreende que cálculos de negócio pertencem ao código em `lib/`, que a IA de extração apenas sugere valores, e que alterar slug, `observacoes` ou a categoria `Paquímetro` exige atenção redobrada e cobertura de testes.
+
 ## 2026-04-17
 
 ### O que foi feito

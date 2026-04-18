@@ -338,6 +338,34 @@ export function InstrumentCalibrationCreateContent({
     setExtractionError("");
     setExtractionMessage("");
     setExtractionWarnings([]);
+
+    if (!nextFile) {
+      setValidationErrors((current) => ({
+        ...current,
+        certificateFile: undefined,
+        form: undefined
+      }));
+      return;
+    }
+
+    if (!isPdfFile(nextFile)) {
+      setValidationErrors((current) => ({
+        ...current,
+        certificateFile: "O certificado deve estar no formato PDF.",
+        form: undefined
+      }));
+      return;
+    }
+
+    if (nextFile.size > maxCertificateFileSize) {
+      setValidationErrors((current) => ({
+        ...current,
+        certificateFile: "O certificado deve ter no maximo 10 MB.",
+        form: undefined
+      }));
+      return;
+    }
+
     setValidationErrors((current) => ({
       ...current,
       certificateFile: undefined,
@@ -355,6 +383,12 @@ export function InstrumentCalibrationCreateContent({
     setExtractionMessage("");
     setExtractionWarnings([]);
 
+    const extractionAbortController = new AbortController();
+    const extractionTimeoutId = window.setTimeout(
+      () => extractionAbortController.abort(),
+      75_000
+    );
+
     try {
       const payload = new FormData();
       payload.set("instrumentId", String(instrumentId));
@@ -362,7 +396,8 @@ export function InstrumentCalibrationCreateContent({
 
       const response = await fetchApi("/api/calibracoes/extrair", {
         method: "POST",
-        body: payload
+        body: payload,
+        signal: extractionAbortController.signal
       });
       const responsePayload = (await response.json()) as CalibrationExtractionApiResponse;
 
@@ -420,9 +455,15 @@ export function InstrumentCalibrationCreateContent({
         validityDate: undefined,
         form: undefined
       }));
-    } catch {
-      setExtractionError("Nao foi possivel ler o certificado com a IA.");
+    } catch (err) {
+      const isAbort = err instanceof Error && err.name === "AbortError";
+      setExtractionError(
+        isAbort
+          ? "A leitura demorou mais do que o esperado. Tente novamente."
+          : "Nao foi possivel ler o certificado com a IA."
+      );
     } finally {
+      window.clearTimeout(extractionTimeoutId);
       setIsExtracting(false);
     }
   }

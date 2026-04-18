@@ -603,6 +603,78 @@ export function InstrumentCalibrationCreateContent({
             </section>
 
             <form className="instrument-calibration-form" onSubmit={handleSubmit}>
+              <section
+                className={`instrument-calibration-upload${
+                  validationErrors.certificateFile ? " is-invalid" : ""
+                }`}
+              >
+                <div className="instrument-calibration-upload__copy">
+                  <strong>Certificado em PDF</strong>
+                  <p>Envie o arquivo oficial para manter o historico de auditoria vinculado ao instrumento. O nome do PDF sera usado no log.</p>
+                </div>
+
+                <input
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  onChange={handleFileChange}
+                />
+
+                {selectedFileLabel ? (
+                  <div className="instrument-calibration-upload__file">
+                    <span>{selectedFileLabel}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormState((current) => ({
+                          ...current,
+                          certificateFile: null
+                        }));
+                        setFieldResults(createFieldReviewItems(instrument));
+                        setExtractionError("");
+                        setExtractionMessage("");
+                        setExtractionWarnings([]);
+                        setValidationErrors((current) => ({
+                          ...current,
+                          certificateFile: undefined,
+                          form: undefined
+                        }));
+                      }}
+                    >
+                      Remover arquivo
+                    </button>
+                  </div>
+                ) : null}
+
+                <div className="instrument-calibration-upload__actions">
+                  <button
+                    type="button"
+                    className="instrument-calibration-upload__extract"
+                    onClick={handleExtractWithAi}
+                    disabled={!formState.certificateFile || isExtracting || isSubmitting}
+                  >
+                    {isExtracting ? "Lendo certificado..." : "Extrair com IA"}
+                  </button>
+                </div>
+
+                {validationErrors.certificateFile ? (
+                  <p className="instrument-modal__field-error">
+                    {validationErrors.certificateFile}
+                  </p>
+                ) : (
+                  <p className="instrument-calibration-upload__hint">
+                    Arquivo unico em PDF com ate 10 MB.
+                  </p>
+                )}
+
+                {extractionError ? (
+                  <p className="instrument-modal__field-error">{extractionError}</p>
+                ) : null}
+
+                {extractionMessage ? (
+                  <p className="instrument-calibration-upload__success">{extractionMessage}</p>
+                ) : null}
+              </section>
+
               <div className="instrument-calibration-form__grid">
                 <label className="instrument-modal__field">
                   <span>Status geral</span>
@@ -735,78 +807,6 @@ export function InstrumentCalibrationCreateContent({
                   ) : null}
                 </label>
               </div>
-
-              <section
-                className={`instrument-calibration-upload${
-                  validationErrors.certificateFile ? " is-invalid" : ""
-                }`}
-              >
-                <div className="instrument-calibration-upload__copy">
-                  <strong>Certificado em PDF</strong>
-                  <p>Envie o arquivo oficial para manter o historico de auditoria vinculado ao instrumento. O nome do PDF sera usado no log.</p>
-                </div>
-
-                <input
-                  type="file"
-                  accept="application/pdf,.pdf"
-                  onChange={handleFileChange}
-                />
-
-                {selectedFileLabel ? (
-                  <div className="instrument-calibration-upload__file">
-                    <span>{selectedFileLabel}</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setFormState((current) => ({
-                          ...current,
-                          certificateFile: null
-                        }));
-                        setFieldResults(createFieldReviewItems(instrument));
-                        setExtractionError("");
-                        setExtractionMessage("");
-                        setExtractionWarnings([]);
-                        setValidationErrors((current) => ({
-                          ...current,
-                          certificateFile: undefined,
-                          form: undefined
-                        }));
-                      }}
-                    >
-                      Remover arquivo
-                    </button>
-                  </div>
-                ) : null}
-
-                <div className="instrument-calibration-upload__actions">
-                  <button
-                    type="button"
-                    className="instrument-calibration-upload__extract"
-                    onClick={handleExtractWithAi}
-                    disabled={!formState.certificateFile || isExtracting || isSubmitting}
-                  >
-                    {isExtracting ? "Lendo certificado..." : "Extrair com IA"}
-                  </button>
-                </div>
-
-                {validationErrors.certificateFile ? (
-                  <p className="instrument-modal__field-error">
-                    {validationErrors.certificateFile}
-                  </p>
-                ) : (
-                  <p className="instrument-calibration-upload__hint">
-                    Arquivo unico em PDF com ate 10 MB.
-                  </p>
-                )}
-
-                {extractionError ? (
-                  <p className="instrument-modal__field-error">{extractionError}</p>
-                ) : null}
-
-                {extractionMessage ? (
-                  <p className="instrument-calibration-upload__success">{extractionMessage}</p>
-                ) : null}
-              </section>
 
               <section className="instrument-calibration-review">
                 <div className="instrument-calibration-review__header">

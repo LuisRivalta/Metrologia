@@ -1,5 +1,4 @@
 import { formatInstrumentAlertNote, mapInstrumentRow, type InstrumentCategoryRow, type InstrumentDbRow } from "@/lib/instruments";
-import { supabaseAdmin } from "@/lib/supabase/admin";
 
 type DashboardInstrumentRow = ReturnType<typeof mapInstrumentRow>;
 
@@ -37,6 +36,7 @@ function compareAlertPriority(
 }
 
 async function loadDashboardRows(referenceDate: Date) {
+  const { supabaseAdmin } = await import("@/lib/supabase/admin");
   const [instrumentRowsResponse, categoryRowsResponse] = await Promise.all([
     supabaseAdmin
       .schema("calibracao")
@@ -69,8 +69,10 @@ async function loadDashboardRows(referenceDate: Date) {
   };
 }
 
-export async function getDashboardMetrics(referenceDate = new Date()): Promise<DashboardMetrics> {
-  const { rows, totalCategories } = await loadDashboardRows(referenceDate);
+export function computeDashboardMetrics(
+  rows: DashboardInstrumentRow[],
+  totalCategories: number
+): DashboardMetrics {
   const totalInstruments = rows.length;
   const okCount = rows.filter((row) => row.tone === "neutral").length;
   const warningCount = rows.filter((row) => row.tone === "warning").length;
@@ -114,4 +116,9 @@ export async function getDashboardMetrics(referenceDate = new Date()): Promise<D
     alerts,
     breakdown
   };
+}
+
+export async function getDashboardMetrics(referenceDate = new Date()): Promise<DashboardMetrics> {
+  const { rows, totalCategories } = await loadDashboardRows(referenceDate);
+  return computeDashboardMetrics(rows, totalCategories);
 }

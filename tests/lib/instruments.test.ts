@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildInstrumentDisplayTag,
+  formatInstrumentAlertNote,
   formatInstrumentCalibration,
   getRelativeCalibration,
   mergeInstrumentFieldsWithLatestCalibration,
@@ -121,5 +122,47 @@ describe("instruments", () => {
         hasLatestValue: false
       })
     ]);
+  });
+
+  it("descreve calibracao futura distante em meses", () => {
+    expect(getRelativeCalibration("2026-08-01", referenceDate)).toEqual({
+      tone: "neutral",
+      diffInDays: 122,
+      description: "Vence em 5 meses"
+    });
+  });
+
+  it("trata data nula em formatInstrumentCalibration como sem prazo", () => {
+    expect(formatInstrumentCalibration(null, referenceDate)).toEqual({
+      calibration: "Sem prazo definido",
+      tone: "neutral",
+      diffInDays: 0
+    });
+  });
+
+  it("formata nota de alerta para instrumento sem data de calibracao", () => {
+    expect(formatInstrumentAlertNote(null, 0)).toBe("Sem prazo de calibração definido");
+  });
+
+  it("formata nota de alerta para instrumento vencido", () => {
+    expect(formatInstrumentAlertNote("2026-03-15", -17)).toBe(
+      "Vencido há 17 dias - calibração 15/03/2026"
+    );
+  });
+
+  it("formata nota de alerta no singular para instrumento vencido ha 1 dia", () => {
+    expect(formatInstrumentAlertNote("2026-03-31", -1)).toBe(
+      "Vencido há 1 dia - calibração 31/03/2026"
+    );
+  });
+
+  it("formata nota de alerta para instrumento perto de vencer", () => {
+    expect(formatInstrumentAlertNote("2026-04-15", 14)).toBe(
+      "Vence em 14 dias - calibração 15/04/2026"
+    );
+  });
+
+  it("formata nota de alerta com data invalida", () => {
+    expect(formatInstrumentAlertNote("2026-02-31", -1)).toContain("invalido");
   });
 });

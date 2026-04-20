@@ -136,10 +136,10 @@ export function buildCalibrationExtractionPrompt(args: {
   documentText?: string | null;
 }) {
   const fieldsBlock = args.fields
-    .map(
-      (field) =>
-        `- slug: ${field.slug}; nome: ${field.name}; grupo: ${field.groupName || "nenhum"}; subgrupo: ${field.subgroupName || "nenhum"}; medida esperada: ${field.measurementName || field.measurementRawName || "nao informada"}`
-    )
+    .map((field) => {
+      const base = `- slug: ${field.slug}; nome: ${field.name}; grupo: ${field.groupName || "nenhum"}; subgrupo: ${field.subgroupName || "nenhum"}; medida esperada: ${field.measurementName || field.measurementRawName || "nao informada"}`;
+      return field.hint ? `${base}; dica: ${field.hint}` : base;
+    })
     .join("\n");
 
   const documentTextBlock = args.documentText
@@ -159,6 +159,7 @@ export function buildCalibrationExtractionPrompt(args: {
     "Nao invente resultados, datas, nomes ou status.",
     "Nao retorne numero do certificado nem laboratorio.",
     "Para cada campo esperado, procure a linha correspondente e indique se esta conforme quando isso aparecer no certificado.",
+    "Alguns campos representam caracteristicas tecnicas do instrumento (como capacidade, divisao, resolucao, classe) que podem estar na secao de identificacao ou cabecalho do certificado, e nao somente nas tabelas de medicao.",
     "Use somente os field_slug fornecidos abaixo.",
     args.documentText
       ? "Use apenas o texto extraido abaixo. Ele pode conter quebras de linha imperfeitas, colunas quebradas e cabecalhos repetidos."

@@ -1,12 +1,14 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { FormEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 import BorderGlow from "@/app/_components/border-glow";
-import LightPillar from "@/app/_components/light-pillar";
 import ShinyText from "@/app/_components/shiny-text";
+
+const LightPillar = dynamic(() => import("@/app/_components/light-pillar"), { ssr: false });
 import { syncSupabaseSessionCookies } from "@/lib/supabase/auth-session";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 

@@ -3,18 +3,23 @@
 ## Leia isto primeiro
 Este arquivo existe para dar contexto operacional rapido a outra IA que vai trabalhar nesta base. A ideia e reduzir perguntas basicas e evitar mudancas que quebrem regras ja existentes.
 
-## Estado atual (2026-04-18)
+## Estado atual (2026-04-20)
 
 Suite de testes: **73 testes passando**, cobertura de statements em **87%**.
 
 Mudancas recentes importantes:
-- `lib/dashboard-metrics.ts`: funcao `computeDashboardMetrics` exportada (logica pura extraida de `getDashboardMetrics`); `supabaseAdmin` agora importado dinamicamente dentro de `loadDashboardRows` para nao quebrar Vitest.
-- `lib/measurement-fields.ts`: campo `hint` adicionado a `MeasurementFieldItem` e `MeasurementFieldDraft`; mapeado de `dica_extracao` no banco.
-- `lib/calibration-extraction.ts`: prompt inclui `; dica: <hint>` quando campo tem hint; nova instrucao sobre campos tecnicos no cabecalho.
+- `app/_components/instrument-calibration-create-content.tsx` (B2 — 3 commits):
+  - PDF subiu para o topo do formulario (primeiro elemento visivel)
+  - Validacao imediata de tipo/tamanho do PDF no onChange (sem esperar submit)
+  - Erro generico de validacao de campo removido; so aparece para falhas de servidor
+  - Bonus: abort controller de 75s adicionado em `handleExtractWithAi`
+- `lib/dashboard-metrics.ts`: funcao `computeDashboardMetrics` exportada (logica pura); `supabaseAdmin` importado dinamicamente.
+- `lib/measurement-fields.ts`: campo `hint` adicionado; mapeado de `dica_extracao` no banco.
+- `lib/calibration-extraction.ts`: prompt inclui `; dica: <hint>` quando campo tem hint.
 
 Proximos passos sugeridos:
-- Brainstorm e spec para B1 (pipeline de IA), B2 (fluxo de calibracao) ou B3 (dashboard funcional).
-- Commitar as mudancas pendentes em `categories-content.tsx`, `instrument-calibration-create-content.tsx`, `calibracoes/extrair/route.ts`, `categorias/route.ts`, `login/page.tsx` (ainda nao commitadas).
+- Commitar mudancas pendentes em `categories-content.tsx`, `calibracoes/extrair/route.ts`, `categorias/route.ts`, `login/page.tsx`.
+- Brainstorm B1 (pipeline de IA) ou B3 (dashboard funcional).
 
 ## Resumo em 30 segundos
 - Projeto: sistema interno de metrologia com instrumentos, categorias, calibracoes e certificados

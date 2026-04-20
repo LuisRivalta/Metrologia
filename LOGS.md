@@ -1,5 +1,62 @@
 # Logs do Projeto
 
+## 2026-04-20 — B1: AI Pipeline — Confiabilidade e Visibilidade
+
+### O que foi feito
+
+Brainstorm → spec → plano → execução com subagentes para melhorar confiabilidade e visibilidade do pipeline de extração por IA.
+
+**5 commits entregues:**
+- `b666202` — `feat: add structured log after AI extraction attempt`
+- `4246fd6` — `fix: use response.ok instead of hardcoded true in extraction log`
+- `68f2992` — `feat: add model fallback on timeout or 503 in AI extraction`
+- `b22d32e` — `feat: show confidence indicators in calibration field table after AI extraction`
+- `e7354a3` — `fix: add confidence badge styles and guard auto-calculated fields`
+- `0be6690` — `fix: compute fieldsFilled from parsed response in extraction log`
+
+**Mudanças em `app/api/calibracoes/extrair/route.ts`:**
+1. `logExtractionAttempt` emite JSON estruturado ao console após cada tentativa (event, model, attempt, status, ok, fields_filled, raw_response_snippet)
+2. `runExtractionAttempt` closure encapsula chamada ao OpenRouter + retry json_schema→json_object + log
+3. Fallback automático de modelo via `OPENROUTER_FALLBACK_MODEL` env var — acionado em AbortError (timeout) ou status 503
+
+**Mudanças em `app/_components/calibration-field-review-table.tsx`:**
+1. `renderConfidenceBadge` helper — badge "baixa confiança" (amarelo, confidence < 0.7) e "não encontrado" (cinza, value vazio + confidence null)
+2. Prop `showConfidenceIndicators?: boolean` (default `false`) — badges só aparecem após extração rodar
+3. Badges renderizados nos 4 caminhos: tabela plana (editável e estático) e layout agrupado (editável e estático)
+4. Guard `!autoCalculated` nos ramos estáticos para evitar falso positivo
+
+**Mudanças em `app/_components/instrument-calibration-create-content.tsx`:**
+- `showConfidenceIndicators={!!extractionMessage}` passado para `CalibrationFieldReviewTable`
+
+**Mudanças em `app/globals.css`:**
+- Estilos para `.calibration-field-table__confidence`, `--low`, `--not-found`
+
+**Documentos gerados:**
+- `docs/superpowers/specs/2026-04-20-b1-ai-pipeline-design.md`
+- `docs/superpowers/plans/2026-04-20-b1-ai-pipeline.md`
+
+## 2026-04-20 — B2: Melhoria do Fluxo de Calibração (UX Inline Validation)
+
+### O que foi feito
+
+Brainstorm → spec → plano → execução com subagentes para melhorar o fluxo de nova calibração para usuários avançados.
+
+**3 commits entregues:**
+- `9c9f709` — `feat: validate PDF format and size immediately on file select`
+- `cc73c3c` — `feat: move PDF upload section to top of calibration form`
+- `0fbc704` — `feat: show inline field errors only, keep generic error for server failures`
+
+**Mudanças em `app/_components/instrument-calibration-create-content.tsx`:**
+1. PDF sobe para o topo do formulário — primeira seção visível, antes dos campos de data
+2. Validação imediata no upload: tipo (`.pdf`) e tamanho (≤ 10 MB) validados no `onChange`, erro inline aparece sem esperar o submit
+3. Erro genérico "Revise os campos..." removido do `validateForm` — erros inline por campo + scroll automático são suficientes; `validationErrors.form` preservado apenas para falhas de servidor (API/rede)
+
+**Observação:** o commit `9c9f709` também incluiu melhoria extra em `handleExtractWithAi` (abort controller de 75s + mensagem de timeout diferenciada) que não constava no plano mas é tecnicamente correta.
+
+**Documentos gerados:**
+- `docs/superpowers/specs/2026-04-18-b2-calibration-flow-design.md`
+- `docs/superpowers/plans/2026-04-18-b2-calibration-flow.md`
+
 ## 2026-04-18 — Saúde Técnica: Cobertura de Testes P0/P1/P2
 
 ### O que foi feito

@@ -109,7 +109,12 @@ npm run test:ci
 - [PRD_Metrologia.md](./PRD_Metrologia.md): escopo e requisitos de produto.
 - [TDD.md](./TDD.md): estrategia de testes do projeto.
 - [LOGS.md](./LOGS.md): historico das entregas e atualizacoes.
-
+	[[CLAUDE]]
+		[[2026-04-18-b2-calibration-flow]]
+		[[2026-04-18-b2-calibration-flow-design]]
+		[[2026-04-18-technical-health-design]]
+		[[2026-04-18-technical-health]]
+		
 ## Ponto de entrada recomendado para outra IA
 Se outra IA for trabalhar nesta base, o melhor caminho e:
 

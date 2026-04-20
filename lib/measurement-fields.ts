@@ -18,6 +18,7 @@ export type InstrumentMeasurementFieldRow = BaseMeasurementFieldRow & {
 
 export type CategoryMeasurementFieldRow = BaseMeasurementFieldRow & {
   categoria_id: number | null;
+  dica_extracao?: string | null;
 };
 
 export type MeasurementFieldItem = {
@@ -31,6 +32,7 @@ export type MeasurementFieldItem = {
   order: number;
   groupName?: string;
   subgroupName?: string;
+  hint?: string;
 };
 
 export type MeasurementFieldDraft = {
@@ -39,6 +41,7 @@ export type MeasurementFieldDraft = {
   measurementId?: string | number;
   groupName?: string;
   subgroupName?: string;
+  hint?: string;
 };
 
 export type MeasurementFieldValueConfig = {
@@ -190,7 +193,7 @@ function getMeasurementInfo(
 }
 
 function mapMeasurementFieldRow(
-  row: BaseMeasurementFieldRow,
+  row: BaseMeasurementFieldRow & { dica_extracao?: string | null },
   measurementsById: Map<number, MeasurementRow>
 ): MeasurementFieldItem {
   const measurementInfo = getMeasurementInfo(row.unidade_medida_id, measurementsById);
@@ -198,6 +201,7 @@ function mapMeasurementFieldRow(
   const name = normalizeText(row.nome);
   const groupName = valueConfig.groupName || undefined;
   const subgroupName = valueConfig.subgroupName || undefined;
+  const hint = normalizeText(row.dica_extracao) || undefined;
 
   return {
     dbId: row.id,
@@ -215,7 +219,8 @@ function mapMeasurementFieldRow(
     valueType: valueConfig.type || "numero",
     order: row.ordem ?? 0,
     groupName,
-    subgroupName
+    subgroupName,
+    hint
   };
 }
 

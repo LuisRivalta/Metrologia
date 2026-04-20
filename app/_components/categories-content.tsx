@@ -21,6 +21,7 @@ type CategoryFieldFormItem = {
   measurementId: string;
   groupName: string;
   subgroupName: string;
+  hint: string;
 };
 
 type CategoryFieldDraftRow = {
@@ -28,6 +29,7 @@ type CategoryFieldDraftRow = {
   dbId?: number;
   name: string;
   measurementId: string;
+  hint: string;
 };
 
 type CategoryFieldDraftSubgroup = {
@@ -67,7 +69,8 @@ function mapFieldToFormItem(field: CategoryItem["fields"][number]): CategoryFiel
     name: field.name,
     measurementId: field.measurementId,
     groupName: field.groupName ?? "",
-    subgroupName: field.subgroupName ?? ""
+    subgroupName: field.subgroupName ?? "",
+    hint: field.hint ?? ""
   };
 }
 
@@ -75,7 +78,8 @@ function createFieldDraftRow(): CategoryFieldDraftRow {
   return {
     clientId: createClientId(),
     name: "",
-    measurementId: ""
+    measurementId: "",
+    hint: ""
   };
 }
 
@@ -92,7 +96,8 @@ function mapFieldToDraftRow(field: CategoryFieldFormItem): CategoryFieldDraftRow
     clientId: field.clientId,
     dbId: field.dbId,
     name: field.name,
-    measurementId: field.measurementId
+    measurementId: field.measurementId,
+    hint: field.hint
   };
 }
 
@@ -420,7 +425,7 @@ export function CategoriesContent() {
   function updateFieldDraftRow(
     subgroupClientId: string,
     clientId: string,
-    nextValue: Partial<Pick<CategoryFieldDraftRow, "name" | "measurementId">>
+    nextValue: Partial<Pick<CategoryFieldDraftRow, "name" | "measurementId" | "hint">>
   ) {
     setFieldDraftSubgroups((current) =>
       current.map((subgroup) =>
@@ -542,6 +547,7 @@ export function CategoriesContent() {
           ...draftRow,
           name: trimmedName,
           measurementId: draftRow.measurementId,
+          hint: draftRow.hint.trim(),
           subgroupName: trimmedSubgroupName
         });
       }
@@ -553,7 +559,8 @@ export function CategoriesContent() {
       name: draftRow.name,
       measurementId: draftRow.measurementId,
       groupName: trimmedGroupName,
-      subgroupName: draftRow.subgroupName
+      subgroupName: draftRow.subgroupName,
+      hint: draftRow.hint
     }));
 
     if (fieldModalMode === "edit" && editingFieldClientIds.length > 0) {
@@ -653,7 +660,8 @@ export function CategoriesContent() {
             name: field.name.trim(),
             measurementId: field.measurementId,
             groupName: field.groupName.trim(),
-            subgroupName: field.subgroupName.trim()
+            subgroupName: field.subgroupName.trim(),
+            hint: field.hint.trim()
           }))
         })
       });
@@ -1204,6 +1212,20 @@ export function CategoriesContent() {
                                       </option>
                                     ))}
                                   </select>
+                                </label>
+
+                                <label className="instrument-modal__field instrument-modal__field--full">
+                                  <span>Dica de extração (opcional)</span>
+                                  <input
+                                    type="text"
+                                    value={draftRow.hint}
+                                    placeholder='Ex: "Cap.:" ou "Capacidade máxima" no cabeçalho'
+                                    onChange={(event) =>
+                                      updateFieldDraftRow(subgroup.clientId, draftRow.clientId, {
+                                        hint: event.target.value
+                                      })
+                                    }
+                                  />
                                 </label>
                               </div>
 

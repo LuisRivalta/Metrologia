@@ -1,0 +1,204 @@
+{
+  "main": {
+    "id": "9ca4413b91f054eb",
+    "type": "split",
+    "children": [
+      {
+        "id": "bb8a81735fa0d658",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "02109d2acdb6f490",
+            "type": "leaf",
+            "state": {
+              "type": "graph",
+              "state": {},
+              "icon": "lucide-git-fork",
+              "title": "Visualização em gráfico"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "c4afe8cef67513f0",
+    "type": "split",
+    "children": [
+      {
+        "id": "8177a63f05ae14dc",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "bd296e5c15735697",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Explorador de arquivos"
+            }
+          },
+          {
+            "id": "063cc5fed265916e",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Procurar"
+            }
+          },
+          {
+            "id": "1a4a7ca8499e1da5",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Marcadores"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "00a7811040aa146e",
+    "type": "split",
+    "children": [
+      {
+        "id": "a87d3ae3b818ea5e",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "9d0ddf420aa34ce9",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Links inversos"
+            }
+          },
+          {
+            "id": "7ccf330041e14ff9",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Links de saída"
+            }
+          },
+          {
+            "id": "e8fcfd72ad508ff3",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Etiquetas"
+            }
+          },
+          {
+            "id": "5cc1db4528386aa3",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "Todas as propriedades"
+            }
+          },
+          {
+            "id": "39dc967ce23bd2ab",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Sumário"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Abrir a troca rápida": false,
+      "graph:Abrir visualização em gráfico": false,
+      "canvas:Criar novo canvas": false,
+      "daily-notes:Abrir a nota de hoje": false,
+      "templates:Inserir modelo": false,
+      "command-palette:Abrir paleta de comandos": false,
+      "bases:Criar nova base": false
+    }
+  },
+  "active": "02109d2acdb6f490",
+  "lastOpenFiles": [
+    "app/_components/calibration-field-review-table.tsx.tmp.19072.1776686457581",
+    "app/globals.css.tmp.19072.1776686447142",
+    "app/_components/calibration-field-review-table.tsx.tmp.19072.1776685842939",
+    "app/_components/calibration-field-review-table.tsx.tmp.19072.1776685823268",
+    "Sem título.canvas",
+    "docs/superpowers/plans/2026-04-20-b1-ai-pipeline.md",
+    "docs/superpowers/specs/2026-04-20-b1-ai-pipeline-design.md",
+    "README.md",
+    "docs/superpowers/specs/2026-04-18-technical-health-design.md",
+    "docs/superpowers/plans/2026-04-18-b2-calibration-flow.md",
+    "HANDOFF_IA.md.tmp.19072.1776682368590",
+    "app/_components/instrument-calibration-create-content.tsx.tmp.19072.1776541354295",
+    "docs/superpowers/specs/2026-04-18-b2-calibration-flow-design.md",
+    "HANDOFF_IA.md.tmp.19072.1776539808198",
+    "LOGS.md.tmp.19072.1776539790120",
+    "coverage/coverage-summary.json",
+    "coverage/measurements.ts.html",
+    "coverage/measurement-fields.ts.html",
+    "coverage/sort-arrow-sprite.png",
+    "coverage/favicon.png",
+    "docs/superpowers/plans/2026-04-18-technical-health.md",
+    "CLAUDE.md"
+  ]
+}

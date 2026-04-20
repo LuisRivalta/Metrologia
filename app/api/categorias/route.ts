@@ -23,6 +23,7 @@ type SanitizedMeasurementFieldInput = {
   groupName: string;
   subgroupName: string;
   valueType: string;
+  hint: string;
 };
 
 type CategoryPayload = {
@@ -160,6 +161,8 @@ function sanitizeMeasurementFields(rawFields: MeasurementFieldDraft[] | undefine
       return { error: `O campo ${name} esta duplicado.` };
     }
 
+    const hint = normalizeText(typeof rawField.hint === "string" ? rawField.hint : "");
+
     seenSlugs.add(slug);
     sanitizedFields.push({
       dbId: Number.isFinite(dbId) && dbId !== null && dbId > 0 ? dbId : null,
@@ -169,7 +172,8 @@ function sanitizeMeasurementFields(rawFields: MeasurementFieldDraft[] | undefine
       order: index,
       groupName,
       subgroupName,
-      valueType: "numero"
+      valueType: "numero",
+      hint
     });
   }
 
@@ -203,7 +207,7 @@ async function loadCategoryMeasurementFields() {
   return supabaseAdmin
     .schema("calibracao")
     .from("categoria_campos_medicao")
-    .select("id, categoria_id, nome, slug, unidade_medida_id, tipo_valor, ordem, ativo")
+    .select("id, categoria_id, nome, slug, unidade_medida_id, tipo_valor, ordem, ativo, dica_extracao")
     .eq("ativo", true)
     .order("ordem", { ascending: true })
     .order("id", { ascending: true });
@@ -266,7 +270,8 @@ async function replaceCategoryMeasurementFields(
           subgroupName: field.subgroupName
         }),
         ordem: field.order,
-        ativo: true
+        ativo: true,
+        dica_extracao: field.hint || null
       })
       .eq("categoria_id", categoryId)
       .eq("id", field.dbId as number);
@@ -289,7 +294,8 @@ async function replaceCategoryMeasurementFields(
         subgroupName: field.subgroupName
       }),
       ordem: field.order ?? index,
-      ativo: true
+      ativo: true,
+      dica_extracao: field.hint || null
     }));
 
   if (insertPayload.length > 0) {
@@ -680,7 +686,8 @@ export async function PATCH(request: Request) {
         order: field.order,
         groupName: field.groupName ?? "",
         subgroupName: field.subgroupName ?? "",
-        valueType: field.valueType || "numero"
+        valueType: field.valueType || "numero",
+        hint: field.hint || ""
       }))
   );
 

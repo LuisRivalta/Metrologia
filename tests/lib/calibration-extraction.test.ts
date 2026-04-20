@@ -132,4 +132,31 @@ describe("calibration-extraction", () => {
   it("ignores extracted document text when it is too short", () => {
     expect(prepareCalibrationExtractionDocumentText("  abc  ")).toBeNull();
   });
+
+  it("includes field hint in the prompt when the field has a hint", () => {
+    const fieldsWithHint = [
+      {
+        ...fields[0]!,
+        hint: "pode estar no cabecalho do certificado como capacidade maxima"
+      }
+    ];
+
+    const prompt = buildCalibrationExtractionPrompt({
+      instrumentTag: "DI-048",
+      category: "Paquimetro",
+      fields: fieldsWithHint
+    });
+
+    expect(prompt).toContain("dica: pode estar no cabecalho do certificado como capacidade maxima");
+  });
+
+  it("omits the dica suffix when the field has no hint", () => {
+    const prompt = buildCalibrationExtractionPrompt({
+      instrumentTag: "DI-048",
+      category: "Paquimetro",
+      fields
+    });
+
+    expect(prompt).not.toContain("dica:");
+  });
 });

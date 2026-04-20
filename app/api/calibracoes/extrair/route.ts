@@ -221,6 +221,15 @@ function loadPdfParseConstructor(): PdfParseConstructor {
   return loadedModule.PDFParse;
 }
 
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("pdf_parse_timeout")), ms)
+    )
+  ]);
+}
+
 async function extractPdfDocumentData(fileBytes: ArrayBuffer) {
   let parser: PdfParseInstance | null = null;
   let documentText: string | null = null;
@@ -233,13 +242,10 @@ async function extractPdfDocumentData(fileBytes: ArrayBuffer) {
       data: Buffer.from(fileBytes)
     });
 
-    const textResult = await parser.getText({
-      lineEnforce: true
-    });
-
+    const textResult = await withTimeout(parser.getText({ lineEnforce: true }), 8_000);
     documentText = prepareCalibrationExtractionDocumentText(textResult.text);
 
-    const tableResult = await parser.getTable();
+    const tableResult = await withTimeout(parser.getTable(), 8_000);
     tablePages = Array.isArray(tableResult?.pages)
       ? tableResult.pages.map((page) => ({
           num: page?.num ?? 0,
@@ -315,6 +321,33 @@ function getOpenRouterTimeoutMs(model: string) {
   return /:free$/i.test(normalizeText(model))
     ? freeModelOpenRouterTimeoutMs
     : defaultOpenRouterTimeoutMs;
+}
+
+function logExtractionAttempt(args: {
+  attempt: number;
+  model: string;
+  pdfTextChars: number;
+  pdfSentAsFile: boolean;
+  status: number;
+  ok: boolean;
+  fieldsTotal: number;
+  fieldsFilled: number;
+  rawResponseSnippet: string;
+}) {
+  console.log(
+    JSON.stringify({
+      event: "calibration_extraction",
+      attempt: args.attempt,
+      model: args.model,
+      pdf_text_chars: args.pdfTextChars,
+      pdf_sent_as_file: args.pdfSentAsFile,
+      status: args.status,
+      ok: args.ok,
+      fields_total: args.fieldsTotal,
+      fields_filled: args.fieldsFilled,
+      raw_response_snippet: args.rawResponseSnippet
+    })
+  );
 }
 
 async function callOpenRouter(args: {
@@ -539,6 +572,19 @@ export async function POST(request: Request) {
       typeof normalizeCalibrationExtractionResult
     >[0];
     const normalizedExtraction = normalizeCalibrationExtractionResult(parsedPayload, extractionFields);
+
+    logExtractionAttempt({
+      attempt: 1,
+      model: defaultCalibrationExtractionModel,
+      pdfTextChars: extractedDocumentText?.length ?? 0,
+      pdfSentAsFile: !extractedDocumentText,
+      status: response.status,
+      ok: true,
+      fieldsTotal: extractionFields.length,
+      fieldsFilled: normalizedExtraction.fields.filter((f) => f.value !== null).length,
+      rawResponseSnippet: response.text.slice(0, 300)
+    });
+
     const localFieldOverrides = buildPaquimetroFieldOverridesFromTablePages({
       categoryIdentifier: extractionTarget.category,
       documentText: extractedDocumentText,

@@ -314,10 +314,6 @@ export function InstrumentCalibrationCreateContent({
       nextErrors.certificateFile = "O certificado deve ter no maximo 10 MB.";
     }
 
-    if (Object.keys(nextErrors).length > 0) {
-      nextErrors.form = "Revise os campos obrigatorios acima antes de salvar.";
-    }
-
     setValidationErrors(nextErrors);
     return Object.keys(nextErrors).filter((key) => key !== "form").length === 0;
   }

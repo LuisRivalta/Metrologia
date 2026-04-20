@@ -25,6 +25,7 @@ type CalibrationFieldReviewTableProps = {
   emptyMessage: string;
   editable?: boolean;
   showStatusColumn?: boolean;
+  showConfidenceIndicators?: boolean;
   onValueChange?: (rowId: string | number, value: string) => void;
   onStatusChange?: (rowId: string | number, status: CalibrationFieldReviewStatus) => void;
 };
@@ -41,11 +42,38 @@ function getSubgroupGridClassName(count: number) {
     : "calibration-group-layout__subgroups";
 }
 
+function renderConfidenceBadge(
+  confidence: number | null,
+  value: string,
+  show: boolean
+): React.ReactNode {
+  if (!show) return null;
+
+  if (value !== "" && confidence !== null && confidence < 0.7) {
+    return (
+      <span className="calibration-field-table__confidence calibration-field-table__confidence--low">
+        baixa confiança
+      </span>
+    );
+  }
+
+  if (value === "" && confidence === null) {
+    return (
+      <span className="calibration-field-table__confidence calibration-field-table__confidence--not-found">
+        não encontrado
+      </span>
+    );
+  }
+
+  return null;
+}
+
 export function CalibrationFieldReviewTable({
   rows,
   emptyMessage,
   editable = false,
   showStatusColumn = true,
+  showConfidenceIndicators = false,
   onValueChange,
   onStatusChange
 }: CalibrationFieldReviewTableProps) {
@@ -83,18 +111,22 @@ export function CalibrationFieldReviewTable({
                 </td>
                 <td className="calibration-field-table__value">
                   {editable && !row.autoCalculated ? (
-                    <input
-                      type="text"
-                      value={row.value}
-                      placeholder="Ex: 0,005"
-                      onChange={(event) => onValueChange?.(row.id, event.target.value)}
-                    />
+                    <>
+                      <input
+                        type="text"
+                        value={row.value}
+                        placeholder="Ex: 0,005"
+                        onChange={(event) => onValueChange?.(row.id, event.target.value)}
+                      />
+                      {renderConfidenceBadge(row.confidence, row.value, showConfidenceIndicators)}
+                    </>
                   ) : (
                     <div className="calibration-field-table__value-static">
                       <strong>
                         {row.value || (row.autoCalculated ? "Calculado automaticamente" : "Nao informado")}
                       </strong>
                       {row.autoCalculated ? <span>Soma automatica</span> : null}
+                      {renderConfidenceBadge(row.confidence, row.value, showConfidenceIndicators)}
                     </div>
                   )}
                 </td>
@@ -210,13 +242,16 @@ export function CalibrationFieldReviewTable({
 
                         <div className="calibration-group-layout__field-value">
                           {editable && !field.autoCalculated ? (
-                            <input
-                              className="calibration-group-layout__input"
-                              type="text"
-                              value={field.value}
-                              placeholder="Ex: 0,005"
-                              onChange={(event) => onValueChange?.(field.id, event.target.value)}
-                            />
+                            <>
+                              <input
+                                className="calibration-group-layout__input"
+                                type="text"
+                                value={field.value}
+                                placeholder="Ex: 0,005"
+                                onChange={(event) => onValueChange?.(field.id, event.target.value)}
+                              />
+                              {renderConfidenceBadge(field.confidence, field.value, showConfidenceIndicators)}
+                            </>
                           ) : (
                             <div className="calibration-group-layout__value-static">
                               <strong>
@@ -228,6 +263,7 @@ export function CalibrationFieldReviewTable({
                               {field.autoCalculated ? (
                                 <span>Soma automatica</span>
                               ) : null}
+                              {renderConfidenceBadge(field.confidence, field.value, showConfidenceIndicators)}
                             </div>
                           )}
                         </div>

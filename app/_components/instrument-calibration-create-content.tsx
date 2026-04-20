@@ -843,6 +843,7 @@ export function InstrumentCalibrationCreateContent({
                   }))}
                   editable
                   showStatusColumn={false}
+                  showConfidenceIndicators={!!extractionMessage}
                   emptyMessage="Esse instrumento ainda nao possui itens configurados no template de calibracao."
                   onValueChange={(rowId, value) =>
                     setFieldResults((current) =>

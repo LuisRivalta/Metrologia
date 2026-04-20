@@ -590,6 +590,16 @@ export async function POST(request: Request) {
         transportError = error;
       }
 
+      let fieldsFilled = 0;
+      if (response?.text) {
+        try {
+          const parsed = JSON.parse(response.text) as { fields?: Array<{ value: unknown }> };
+          fieldsFilled = (parsed.fields ?? []).filter((f) => f.value !== null).length;
+        } catch {
+          // leave fieldsFilled as 0
+        }
+      }
+
       logExtractionAttempt({
         attempt,
         model,
@@ -598,7 +608,7 @@ export async function POST(request: Request) {
         status: transportError ? -1 : (response?.status ?? -1),
         ok: !transportError && (response?.ok ?? false),
         fieldsTotal: extractionFields.length,
-        fieldsFilled: 0,
+        fieldsFilled,
         rawResponseSnippet: response?.text?.slice(0, 300) ?? ""
       });
 

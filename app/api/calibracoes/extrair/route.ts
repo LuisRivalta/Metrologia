@@ -350,6 +350,21 @@ function logExtractionAttempt(args: {
   );
 }
 
+function getOpenRouterFallbackModel() {
+  return process.env.OPENROUTER_FALLBACK_MODEL?.trim() ?? "";
+}
+
+function shouldFallbackToAlternativeModel(
+  transportError: unknown,
+  status: number
+): boolean {
+  if (transportError) {
+    const err = transportError as { name?: string };
+    return err?.name === "AbortError";
+  }
+  return status === 503;
+}
+
 async function callOpenRouter(args: {
   apiKey: string;
   prompt: string;
@@ -530,37 +545,84 @@ export async function POST(request: Request) {
     const fileDataUrl = extractedDocumentText
       ? undefined
       : encodePdfAsDataUrl(certificateFile, fileBytes);
-    const preferJsonSchema = shouldPreferJsonSchema(defaultCalibrationExtractionModel);
-    let response = await callOpenRouter({
-      apiKey,
-      prompt,
-      schema: extractionSchema,
-      model: defaultCalibrationExtractionModel,
-      fileName: extractedDocumentText ? undefined : certificateFile.name,
-      fileDataUrl,
-      useJsonSchema: preferJsonSchema
-    });
+    const pdfTextChars = extractedDocumentText?.length ?? 0;
+    const pdfSentAsFile = !extractedDocumentText;
+    const fallbackModel = getOpenRouterFallbackModel();
 
-    if (
-      preferJsonSchema &&
-      !response.ok &&
-      shouldRetryWithoutJsonSchema(response.status, response.payload)
-    ) {
-      response = await callOpenRouter({
-        apiKey,
-        prompt,
-        schema: extractionSchema,
-        model: defaultCalibrationExtractionModel,
-        fileName: extractedDocumentText ? undefined : certificateFile.name,
-        fileDataUrl,
-        useJsonSchema: false
+    const runExtractionAttempt = async (
+      model: string,
+      attempt: number
+    ): Promise<{
+      response: Awaited<ReturnType<typeof callOpenRouter>> | null;
+      transportError: unknown;
+    }> => {
+      let response: Awaited<ReturnType<typeof callOpenRouter>> | null = null;
+      let transportError: unknown = null;
+      const preferSchema = shouldPreferJsonSchema(model);
+
+      try {
+        response = await callOpenRouter({
+          apiKey,
+          prompt,
+          schema: extractionSchema,
+          model,
+          fileName: pdfSentAsFile ? certificateFile.name : undefined,
+          fileDataUrl: pdfSentAsFile ? fileDataUrl : undefined,
+          useJsonSchema: preferSchema
+        });
+
+        if (
+          preferSchema &&
+          !response.ok &&
+          shouldRetryWithoutJsonSchema(response.status, response.payload)
+        ) {
+          response = await callOpenRouter({
+            apiKey,
+            prompt,
+            schema: extractionSchema,
+            model,
+            fileName: pdfSentAsFile ? certificateFile.name : undefined,
+            fileDataUrl: pdfSentAsFile ? fileDataUrl : undefined,
+            useJsonSchema: false
+          });
+        }
+      } catch (error) {
+        transportError = error;
+      }
+
+      logExtractionAttempt({
+        attempt,
+        model,
+        pdfTextChars,
+        pdfSentAsFile,
+        status: transportError ? -1 : (response?.status ?? -1),
+        ok: !transportError && (response?.ok ?? false),
+        fieldsTotal: extractionFields.length,
+        fieldsFilled: 0,
+        rawResponseSnippet: response?.text?.slice(0, 300) ?? ""
       });
+
+      return { response, transportError };
+    };
+
+    let result = await runExtractionAttempt(defaultCalibrationExtractionModel, 1);
+    let response = result.response;
+    let transportError = result.transportError;
+
+    if (fallbackModel && shouldFallbackToAlternativeModel(transportError, response?.status ?? 0)) {
+      const fallbackResult = await runExtractionAttempt(fallbackModel, 2);
+      response = fallbackResult.response;
+      transportError = fallbackResult.transportError;
     }
 
-    if (!response.ok) {
+    if (transportError) {
+      return buildError(getTransportErrorMessage(transportError), 502);
+    }
+
+    if (!response || !response.ok) {
       return buildError(
-        getOpenRouterErrorMessage(response.status, response.payload),
-        response.status === 429 ? 429 : 502
+        getOpenRouterErrorMessage(response?.status ?? 502, response?.payload ?? null),
+        (response?.status ?? 0) === 429 ? 429 : 502
       );
     }
 
@@ -572,18 +634,6 @@ export async function POST(request: Request) {
       typeof normalizeCalibrationExtractionResult
     >[0];
     const normalizedExtraction = normalizeCalibrationExtractionResult(parsedPayload, extractionFields);
-
-    logExtractionAttempt({
-      attempt: 1,
-      model: defaultCalibrationExtractionModel,
-      pdfTextChars: extractedDocumentText?.length ?? 0,
-      pdfSentAsFile: !extractedDocumentText,
-      status: response.status,
-      ok: response.ok,
-      fieldsTotal: extractionFields.length,
-      fieldsFilled: normalizedExtraction.fields.filter((f) => f.value !== null).length,
-      rawResponseSnippet: response.text.slice(0, 300)
-    });
 
     const localFieldOverrides = buildPaquimetroFieldOverridesFromTablePages({
       categoryIdentifier: extractionTarget.category,

@@ -6222,6 +6222,25 @@ html.page-is-transitioning .page-entry-shell .inventory-content > :nth-child(5) 
   accent-color: #144f9c;
 }
 
+.calibration-field-table__confidence {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.calibration-field-table__confidence--low {
+  background: #ffc56f;
+  color: #72450b;
+}
+
+.calibration-field-table__confidence--not-found {
+  background: rgba(10, 40, 86, 0.08);
+  color: #66758f;
+}
+
 .instrument-calibration-entry__actions {
   display: flex;
   justify-content: flex-end;

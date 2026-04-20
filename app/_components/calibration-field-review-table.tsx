@@ -46,7 +46,7 @@ function renderConfidenceBadge(
   confidence: number | null,
   value: string,
   show: boolean
-): React.ReactNode {
+) {
   if (!show) return null;
 
   if (value !== "" && confidence !== null && confidence < 0.7) {
@@ -126,7 +126,7 @@ export function CalibrationFieldReviewTable({
                         {row.value || (row.autoCalculated ? "Calculado automaticamente" : "Nao informado")}
                       </strong>
                       {row.autoCalculated ? <span>Soma automatica</span> : null}
-                      {renderConfidenceBadge(row.confidence, row.value, showConfidenceIndicators)}
+                      {renderConfidenceBadge(row.confidence, row.value, showConfidenceIndicators && !row.autoCalculated)}
                     </div>
                   )}
                 </td>
@@ -263,7 +263,7 @@ export function CalibrationFieldReviewTable({
                               {field.autoCalculated ? (
                                 <span>Soma automatica</span>
                               ) : null}
-                              {renderConfidenceBadge(field.confidence, field.value, showConfidenceIndicators)}
+                              {renderConfidenceBadge(field.confidence, field.value, showConfidenceIndicators && !field.autoCalculated)}
                             </div>
                           )}
                         </div>

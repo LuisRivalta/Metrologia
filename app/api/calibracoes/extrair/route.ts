@@ -579,7 +579,7 @@ export async function POST(request: Request) {
       pdfTextChars: extractedDocumentText?.length ?? 0,
       pdfSentAsFile: !extractedDocumentText,
       status: response.status,
-      ok: true,
+      ok: response.ok,
       fieldsTotal: extractionFields.length,
       fieldsFilled: normalizedExtraction.fields.filter((f) => f.value !== null).length,
       rawResponseSnippet: response.text.slice(0, 300)

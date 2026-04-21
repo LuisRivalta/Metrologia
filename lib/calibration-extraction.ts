@@ -1,4 +1,5 @@
 import type { MeasurementFieldItem } from "@/lib/measurement-fields";
+import type { CalibrationCertificateTablePage } from "@/lib/calibration-certificate-parsers";
 
 export const defaultCalibrationExtractionModel =
   process.env.OPENROUTER_CALIBRATION_EXTRACTION_MODEL?.trim() ||
@@ -198,6 +199,47 @@ export function prepareCalibrationExtractionDocumentText(
   }
 
   return `${normalizedText.slice(0, maxLength).trimEnd()}\n\n[texto extraido truncado]`;
+}
+
+export function formatTablePagesAsMarkdown(
+  tablePages: CalibrationCertificateTablePage[],
+  maxLength = maxCalibrationExtractionDocumentTextLength
+): string {
+  const sections: string[] = [];
+
+  for (const page of tablePages) {
+    for (let tableIndex = 0; tableIndex < page.tables.length; tableIndex++) {
+      const table = page.tables[tableIndex];
+      if (!table || table.length === 0) continue;
+
+      const rows = table.filter((row) => row.some((cell) => cell.trim() !== ""));
+      if (rows.length === 0) continue;
+
+      const header = rows[0]!;
+      const body = rows.slice(1);
+      const headerRow = `| ${header.map((c) => c.trim() || " ").join(" | ")} |`;
+      const separatorRow = `| ${header.map(() => "---").join(" | ")} |`;
+      const bodyRows = body.map(
+        (row) => `| ${row.map((c) => c.trim() || " ").join(" | ")} |`
+      );
+
+      sections.push(
+        [
+          `### Página ${page.num} — Tabela ${tableIndex + 1}`,
+          headerRow,
+          separatorRow,
+          ...bodyRows
+        ].join("\n")
+      );
+    }
+  }
+
+  if (sections.length === 0) return "";
+
+  const result = ["## Tabelas extraídas do PDF", ...sections].join("\n\n");
+  if (result.length <= maxLength) return result;
+
+  return `${result.slice(0, maxLength).trimEnd()}\n\n[tabelas truncadas]`;
 }
 
 export function normalizeCalibrationExtractionResult(

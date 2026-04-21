@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildCalibrationExtractionPrompt,
   buildCalibrationExtractionSchema,
+  formatTablePagesAsMarkdown,
   normalizeCalibrationExtractionResult,
   prepareCalibrationExtractionDocumentText
 } from "@/lib/calibration-extraction";
@@ -158,5 +159,82 @@ describe("calibration-extraction", () => {
     });
 
     expect(prompt).not.toContain("dica:");
+  });
+
+  describe("formatTablePagesAsMarkdown", () => {
+    it("returns empty string when tablePages is empty", () => {
+      expect(formatTablePagesAsMarkdown([])).toBe("");
+    });
+
+    it("returns empty string when all rows are empty", () => {
+      const pages = [{ num: 1, tables: [[ ["", ""], ["", ""] ]] }];
+      expect(formatTablePagesAsMarkdown(pages)).toBe("");
+    });
+
+    it("formats a single table with header and body rows", () => {
+      const pages = [
+        {
+          num: 1,
+          tables: [
+            [
+              ["Ponto", "Valor", "Erro"],
+              ["1", "25,00", "0,01"],
+              ["2", "50,00", "0,02"]
+            ]
+          ]
+        }
+      ];
+      const result = formatTablePagesAsMarkdown(pages);
+      expect(result).toContain("## Tabelas extraídas do PDF");
+      expect(result).toContain("### Página 1 — Tabela 1");
+      expect(result).toContain("| Ponto | Valor | Erro |");
+      expect(result).toContain("| --- | --- | --- |");
+      expect(result).toContain("| 1 | 25,00 | 0,01 |");
+      expect(result).toContain("| 2 | 50,00 | 0,02 |");
+    });
+
+    it("filters out rows where all cells are empty", () => {
+      const pages = [
+        {
+          num: 2,
+          tables: [
+            [
+              ["Col A", "Col B"],
+              ["", ""],
+              ["val", "123"]
+            ]
+          ]
+        }
+      ];
+      const result = formatTablePagesAsMarkdown(pages);
+      expect(result).toContain("| val | 123 |");
+      expect(result).not.toContain("| | |");
+    });
+
+    it("truncates output when it exceeds maxLength", () => {
+      const longCell = "A".repeat(200);
+      const pages = [
+        {
+          num: 1,
+          tables: [
+            Array.from({ length: 30 }, () => [longCell, longCell, longCell])
+          ]
+        }
+      ];
+      const result = formatTablePagesAsMarkdown(pages, 500);
+      expect(result.length).toBeLessThanOrEqual(540);
+      expect(result).toContain("[tabelas truncadas]");
+    });
+
+    it("labels multiple tables across pages correctly", () => {
+      const pages = [
+        { num: 1, tables: [ [["H1"], ["V1"]] ] },
+        { num: 3, tables: [ [["H2"], ["V2"]], [["H3"], ["V3"]] ] }
+      ];
+      const result = formatTablePagesAsMarkdown(pages);
+      expect(result).toContain("### Página 1 — Tabela 1");
+      expect(result).toContain("### Página 3 — Tabela 1");
+      expect(result).toContain("### Página 3 — Tabela 2");
+    });
   });
 });

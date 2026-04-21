@@ -1,6 +1,12 @@
 import Link from "next/link";
 import { getDashboardMetrics } from "@/lib/dashboard-metrics";
 
+const breakdownToneToStatus: Record<"ok" | "warning" | "danger", string> = {
+  ok: "neutral",
+  warning: "warning",
+  danger: "danger"
+};
+
 export async function DashboardContent() {
   const metrics = await getDashboardMetrics();
   const okCount = Math.max(metrics.totalInstruments - metrics.warningCount - metrics.dangerCount, 0);
@@ -37,12 +43,6 @@ export async function DashboardContent() {
         dashOffset: `${segmentOffset}`
       };
     });
-
-  const breakdownToneToStatus: Record<string, string> = {
-    ok: "neutral",
-    warning: "warning",
-    danger: "danger"
-  };
 
   return (
     <section className="inventory-content dashboard-content">

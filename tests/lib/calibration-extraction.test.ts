@@ -161,6 +161,33 @@ describe("calibration-extraction", () => {
     expect(prompt).not.toContain("dica:");
   });
 
+  it("includes table markdown in the prompt when tableMarkdown is provided", () => {
+    const prompt = buildCalibrationExtractionPrompt({
+      instrumentTag: "DI-048",
+      category: "Paquimetro",
+      fields,
+      documentText: "Texto do certificado",
+      tableMarkdown: "## Tabelas extraídas do PDF\n### Página 1 — Tabela 1\n| Col | Val |\n| --- | --- |\n| a | 1 |"
+    });
+
+    expect(prompt).toContain("Texto do certificado");
+    expect(prompt).toContain("## Tabelas extraídas do PDF");
+    expect(prompt).toContain("Use apenas o texto extraido abaixo.");
+  });
+
+  it("uses tableMarkdown as document section when documentText is absent", () => {
+    const prompt = buildCalibrationExtractionPrompt({
+      instrumentTag: "DI-048",
+      category: "Paquimetro",
+      fields,
+      tableMarkdown: "## Tabelas extraídas do PDF\n| Col | Val |"
+    });
+
+    expect(prompt).toContain("## Tabelas extraídas do PDF");
+    expect(prompt).toContain("Use apenas o texto extraido abaixo.");
+    expect(prompt).not.toContain("Use o PDF anexado como fonte principal.");
+  });
+
   describe("formatTablePagesAsMarkdown", () => {
     it("returns empty string when tablePages is empty", () => {
       expect(formatTablePagesAsMarkdown([])).toBe("");

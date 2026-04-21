@@ -135,6 +135,7 @@ export function buildCalibrationExtractionPrompt(args: {
   category: string;
   fields: MeasurementFieldItem[];
   documentText?: string | null;
+  tableMarkdown?: string | null;
 }) {
   const fieldsBlock = args.fields
     .map((field) => {
@@ -143,12 +144,18 @@ export function buildCalibrationExtractionPrompt(args: {
     })
     .join("\n");
 
-  const documentTextBlock = args.documentText
+  const documentParts: string[] = [];
+  if (args.documentText) documentParts.push(args.documentText);
+  if (args.tableMarkdown) documentParts.push(args.tableMarkdown);
+
+  const hasDocumentContent = documentParts.length > 0;
+
+  const documentTextBlock = hasDocumentContent
     ? [
         "",
         "Texto extraido do certificado:",
         '"""',
-        args.documentText,
+        documentParts.join("\n\n"),
         '"""'
       ].join("\n")
     : "";
@@ -162,7 +169,7 @@ export function buildCalibrationExtractionPrompt(args: {
     "Para cada campo esperado, procure a linha correspondente e indique se esta conforme quando isso aparecer no certificado.",
     "Alguns campos representam caracteristicas tecnicas do instrumento (como capacidade, divisao, resolucao, classe) que podem estar na secao de identificacao ou cabecalho do certificado, e nao somente nas tabelas de medicao.",
     "Use somente os field_slug fornecidos abaixo.",
-    args.documentText
+    hasDocumentContent
       ? "Use apenas o texto extraido abaixo. Ele pode conter quebras de linha imperfeitas, colunas quebradas e cabecalhos repetidos."
       : "Use o PDF anexado como fonte principal.",
     "",

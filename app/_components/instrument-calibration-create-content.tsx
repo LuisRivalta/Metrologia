@@ -3,6 +3,7 @@
 import { type ChangeEvent, type FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { fetchApi } from "@/lib/api/client";
+import { readExtractionSseStream } from "@/lib/api/extract-sse";
 import {
   applyCalibrationDerivedValues,
   isAutoCalculatedCalibrationField
@@ -94,6 +95,8 @@ type CalibrationCreateValidationErrors = Partial<
     string
   >
 >;
+
+type ExtractionStep = "reading_pdf" | "calling_ai" | "processing";
 
 const maxCertificateFileSize = 10 * 1024 * 1024;
 
@@ -213,6 +216,7 @@ export function InstrumentCalibrationCreateContent({
   const [loadError, setLoadError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
+  const [extractionStep, setExtractionStep] = useState<ExtractionStep | null>(null);
   const [isPageConformityChecked, setIsPageConformityChecked] = useState(false);
   const [extractionError, setExtractionError] = useState("");
   const [extractionMessage, setExtractionMessage] = useState("");
@@ -375,6 +379,7 @@ export function InstrumentCalibrationCreateContent({
     }
 
     setIsExtracting(true);
+    setExtractionStep(null);
     setExtractionError("");
     setExtractionMessage("");
     setExtractionWarnings([]);
@@ -395,62 +400,82 @@ export function InstrumentCalibrationCreateContent({
         body: payload,
         signal: extractionAbortController.signal
       });
-      const responsePayload = (await response.json()) as CalibrationExtractionApiResponse;
 
-      if (!response.ok || !responsePayload.extraction) {
-        setExtractionError(responsePayload.error ?? "Nao foi possivel ler o certificado com a IA.");
-        setIsExtracting(false);
+      if (!response.ok) {
+        const errorPayload = (await response.json()) as { error?: string };
+        setExtractionError(
+          errorPayload.error ?? "Nao foi possivel ler o certificado com a IA."
+        );
         return;
       }
 
-      setFormState((current) => ({
-        ...current,
-        responsible: responsePayload.extraction?.header.responsible ?? current.responsible,
-        calibrationDate:
-          responsePayload.extraction?.header.calibrationDate ?? current.calibrationDate,
-        certificateDate:
-          responsePayload.extraction?.header.certificateDate ?? current.certificateDate,
-        validityDate: responsePayload.extraction?.header.validityDate ?? current.validityDate,
-        observations: responsePayload.extraction?.header.observations ?? current.observations
-      }));
-      setFieldResults((current) =>
-        applyCalibrationDerivedValues(
-          getCalibrationCategoryIdentifier(instrument),
-          current.map((field) => {
-          const extractedField = responsePayload.extraction?.fields.find(
-            (item) => item.fieldId === field.fieldId
-          );
+      if (!response.body) {
+        setExtractionError("Nao foi possivel ler o certificado com a IA.");
+        return;
+      }
 
-          if (!extractedField) {
-            return field;
+      for await (const event of readExtractionSseStream(response.body)) {
+        if (event.type === "status") {
+          setExtractionStep(event.step as ExtractionStep);
+        } else if (event.type === "error") {
+          setExtractionError(event.message);
+          return;
+        } else if (event.type === "result") {
+          const extraction = (event.data as CalibrationExtractionApiResponse)?.extraction;
+
+          if (!extraction) {
+            setExtractionError("Nao foi possivel ler o certificado com a IA.");
+            return;
           }
 
-          return {
-            ...field,
-            value: extractedField.value ?? "",
-            unit: extractedField.unit ?? "",
-            confidence: extractedField.confidence,
-            evidence: extractedField.evidence ?? "",
-            status:
-              extractedField.conforme === true
-                ? "conforming"
-                : "unknown"
-          };
-          })
-        )
-      );
-      setExtractionWarnings(responsePayload.extraction.warnings);
-      setExtractionMessage(
-        "Leitura concluida. Revise os dados sugeridos pela IA antes de registrar a calibracao."
-      );
-      setValidationErrors((current) => ({
-        ...current,
-        responsible: undefined,
-        calibrationDate: undefined,
-        certificateDate: undefined,
-        validityDate: undefined,
-        form: undefined
-      }));
+          setFormState((current) => ({
+            ...current,
+            responsible: extraction.header.responsible ?? current.responsible,
+            calibrationDate: extraction.header.calibrationDate ?? current.calibrationDate,
+            certificateDate: extraction.header.certificateDate ?? current.certificateDate,
+            validityDate: extraction.header.validityDate ?? current.validityDate,
+            observations: extraction.header.observations ?? current.observations
+          }));
+          setFieldResults((current) =>
+            applyCalibrationDerivedValues(
+              getCalibrationCategoryIdentifier(instrument),
+              current.map((field) => {
+                const extractedField = extraction.fields.find(
+                  (item) => item.fieldId === field.fieldId
+                );
+
+                if (!extractedField) {
+                  return field;
+                }
+
+                return {
+                  ...field,
+                  value: extractedField.value ?? "",
+                  unit: extractedField.unit ?? "",
+                  confidence: extractedField.confidence,
+                  evidence: extractedField.evidence ?? "",
+                  status:
+                    extractedField.conforme === true
+                      ? "conforming"
+                      : "unknown"
+                };
+              })
+            )
+          );
+          setExtractionWarnings(extraction.warnings);
+          setExtractionMessage(
+            "Leitura concluida. Revise os dados sugeridos pela IA antes de registrar a calibracao."
+          );
+          setValidationErrors((current) => ({
+            ...current,
+            responsible: undefined,
+            calibrationDate: undefined,
+            certificateDate: undefined,
+            validityDate: undefined,
+            form: undefined
+          }));
+        }
+      }
     } catch (err) {
       const isAbort = err instanceof Error && err.name === "AbortError";
       setExtractionError(
@@ -461,6 +486,7 @@ export function InstrumentCalibrationCreateContent({
     } finally {
       window.clearTimeout(extractionTimeoutId);
       setIsExtracting(false);
+      setExtractionStep(null);
     }
   }
 
@@ -648,7 +674,15 @@ export function InstrumentCalibrationCreateContent({
                     onClick={handleExtractWithAi}
                     disabled={!formState.certificateFile || isExtracting || isSubmitting}
                   >
-                    {isExtracting ? "Lendo certificado..." : "Extrair com IA"}
+                    {isExtracting
+                      ? extractionStep === "reading_pdf"
+                        ? "Lendo o certificado..."
+                        : extractionStep === "calling_ai"
+                          ? "Enviando para a IA..."
+                          : extractionStep === "processing"
+                            ? "Processando resposta..."
+                            : "Lendo certificado..."
+                      : "Extrair com IA"}
                   </button>
                 </div>
 

@@ -92,4 +92,16 @@ describe("dashboard-metrics", () => {
     expect(breakdown[1]).toMatchObject({ label: "Perto de vencer", tone: "warning" });
     expect(breakdown[2]).toMatchObject({ label: "Vencidos", tone: "danger" });
   });
+
+  it("inclui o id do instrumento em cada alerta", () => {
+    const rows = [
+      makeRow({ id: 42, tag: "INS-042", tone: "danger", diffInDays: -1, calibrationDateValue: "2026-04-20" })
+    ];
+
+    const metrics = computeDashboardMetrics(rows, 0);
+
+    expect(metrics.alerts).toHaveLength(1);
+    expect(metrics.alerts[0].id).toBe(42);
+    expect(metrics.alerts[0].tag).toBe("INS-042");
+  });
 });

@@ -2,8 +2,8 @@ import { formatInstrumentAlertNote, mapInstrumentRow, type InstrumentCategoryRow
 
 type DashboardInstrumentRow = ReturnType<typeof mapInstrumentRow>;
 
-export type DashboardSummaryCard = { title: string; value: string; note?: string; tone: "positive" | "neutral" };
-export type DashboardAlert = { tag: string; title: string; note: string; badgeLabel: string; tone: "warning" | "danger" };
+export type DashboardSummaryCard = { title: string; value: string; note?: string; tone: "positive" | "neutral"; href: string };
+export type DashboardAlert = { id: number; tag: string; title: string; note: string; badgeLabel: string; tone: "warning" | "danger" };
 export type DashboardBreakdownItem = { label: string; count: string; tone: "ok" | "warning" | "danger" };
 export type DashboardMetrics = {
   totalInstruments: number;
@@ -82,8 +82,8 @@ export function computeDashboardMetrics(
   const inCompliancePercentage = percentage(inComplianceCount, totalInstruments);
 
   const summaryCards: DashboardSummaryCard[] = [
-    { title: "Total instrumentos", value: integerFormatter.format(totalInstruments), tone: "positive" },
-    { title: "Categorias", value: integerFormatter.format(totalCategories), tone: "neutral" }
+    { title: "Total instrumentos", value: integerFormatter.format(totalInstruments), tone: "positive", href: "/instrumentos" },
+    { title: "Categorias", value: integerFormatter.format(totalCategories), tone: "neutral", href: "/categorias" }
   ];
 
   const alerts = rows
@@ -91,6 +91,7 @@ export function computeDashboardMetrics(
     .sort(compareAlertPriority)
     .slice(0, 5)
     .map((row) => ({
+      id: row.id,
       tag: row.tag,
       title: `${row.category} - ${row.manufacturer}`,
       note: formatInstrumentAlertNote(row.calibrationDateValue ?? null, row.diffInDays),

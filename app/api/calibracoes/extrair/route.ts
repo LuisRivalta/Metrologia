@@ -8,6 +8,8 @@ import {
   buildCalibrationExtractionPrompt,
   buildCalibrationExtractionSchema,
   defaultCalibrationExtractionModel,
+  formatTablePagesAsMarkdown,
+  maxCalibrationExtractionDocumentTextLength,
   normalizeCalibrationExtractionResult,
   prepareCalibrationExtractionDocumentText
 } from "@/lib/calibration-extraction";
@@ -524,163 +526,226 @@ export async function POST(request: Request) {
     );
   }
 
-  try {
-    const extractionSchema = buildCalibrationExtractionSchema(extractionFields);
-    const extractionPrompt = buildCalibrationExtractionPrompt({
-      instrumentTag: extractionTarget.tag,
-      category: extractionTarget.category,
-      fields: extractionFields
-    });
-    const fileBytes = await certificateFile.arrayBuffer();
-    const extractedDocumentData = await extractPdfDocumentData(fileBytes);
-    const extractedDocumentText = extractedDocumentData.documentText;
-    const prompt = extractedDocumentText
-      ? buildCalibrationExtractionPrompt({
-          instrumentTag: extractionTarget.tag,
-          category: extractionTarget.category,
-          fields: extractionFields,
-          documentText: extractedDocumentText
-        })
-      : extractionPrompt;
-    const fileDataUrl = extractedDocumentText
-      ? undefined
-      : encodePdfAsDataUrl(certificateFile, fileBytes);
-    const pdfTextChars = extractedDocumentText?.length ?? 0;
-    const pdfSentAsFile = !extractedDocumentText;
-    const fallbackModel = getOpenRouterFallbackModel();
+  const encoder = new TextEncoder();
 
-    const runExtractionAttempt = async (
-      model: string,
-      attempt: number
-    ): Promise<{
-      response: Awaited<ReturnType<typeof callOpenRouter>> | null;
-      transportError: unknown;
-    }> => {
-      let response: Awaited<ReturnType<typeof callOpenRouter>> | null = null;
-      let transportError: unknown = null;
-      const preferSchema = shouldPreferJsonSchema(model);
+  function emitSse(
+    controller: ReadableStreamDefaultController<Uint8Array>,
+    event: string,
+    data: unknown
+  ) {
+    controller.enqueue(
+      encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
+    );
+  }
 
+  const capturedFile = certificateFile;
+  const capturedFields = extractionFields;
+  const capturedTarget = extractionTarget;
+  const capturedApiKey = apiKey;
+
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
       try {
-        response = await callOpenRouter({
-          apiKey,
-          prompt,
-          schema: extractionSchema,
-          model,
-          fileName: pdfSentAsFile ? certificateFile.name : undefined,
-          fileDataUrl: pdfSentAsFile ? fileDataUrl : undefined,
-          useJsonSchema: preferSchema
+        const extractionSchema = buildCalibrationExtractionSchema(capturedFields);
+        const fallbackModel = getOpenRouterFallbackModel();
+
+        emitSse(controller, "status", { step: "reading_pdf", message: "Lendo o certificado..." });
+
+        const fileBytes = await capturedFile.arrayBuffer();
+        const extractedDocumentData = await extractPdfDocumentData(fileBytes);
+        const extractedDocumentText = extractedDocumentData.documentText;
+
+        const tablesBudget = Math.max(
+          0,
+          maxCalibrationExtractionDocumentTextLength - (extractedDocumentText?.length ?? 0)
+        );
+        const tableMarkdown = formatTablePagesAsMarkdown(
+          extractedDocumentData.tablePages,
+          tablesBudget
+        );
+
+        const prompt = buildCalibrationExtractionPrompt({
+          instrumentTag: capturedTarget.tag,
+          category: capturedTarget.category,
+          fields: capturedFields,
+          documentText: extractedDocumentText,
+          tableMarkdown: tableMarkdown || undefined
         });
 
-        if (
-          preferSchema &&
-          !response.ok &&
-          shouldRetryWithoutJsonSchema(response.status, response.payload)
-        ) {
-          response = await callOpenRouter({
-            apiKey,
-            prompt,
-            schema: extractionSchema,
-            model,
-            fileName: pdfSentAsFile ? certificateFile.name : undefined,
-            fileDataUrl: pdfSentAsFile ? fileDataUrl : undefined,
-            useJsonSchema: false
-          });
-        }
-      } catch (error) {
-        transportError = error;
-      }
+        const fileDataUrl =
+          extractedDocumentText || tableMarkdown
+            ? undefined
+            : encodePdfAsDataUrl(capturedFile, fileBytes);
+        const pdfTextChars = (extractedDocumentText?.length ?? 0) + (tableMarkdown?.length ?? 0);
+        const pdfSentAsFile = !extractedDocumentText && !tableMarkdown;
 
-      let fieldsFilled = 0;
-      if (response?.text) {
-        try {
-          const parsed = JSON.parse(response.text) as { fields?: Array<{ value: unknown }> };
-          fieldsFilled = (parsed.fields ?? []).filter((f) => f.value !== null).length;
-        } catch {
-          // leave fieldsFilled as 0
-        }
-      }
+        emitSse(controller, "status", { step: "calling_ai", message: "Enviando para a IA..." });
 
-      logExtractionAttempt({
-        attempt,
-        model,
-        pdfTextChars,
-        pdfSentAsFile,
-        status: transportError ? -1 : (response?.status ?? -1),
-        ok: !transportError && (response?.ok ?? false),
-        fieldsTotal: extractionFields.length,
-        fieldsFilled,
-        rawResponseSnippet: response?.text?.slice(0, 300) ?? ""
-      });
+        const runExtractionAttempt = async (
+          model: string,
+          attempt: number
+        ): Promise<{
+          response: Awaited<ReturnType<typeof callOpenRouter>> | null;
+          transportError: unknown;
+        }> => {
+          let response: Awaited<ReturnType<typeof callOpenRouter>> | null = null;
+          let transportError: unknown = null;
+          const preferSchema = shouldPreferJsonSchema(model);
 
-      return { response, transportError };
-    };
+          try {
+            response = await callOpenRouter({
+              apiKey: capturedApiKey,
+              prompt,
+              schema: extractionSchema,
+              model,
+              fileName: pdfSentAsFile ? capturedFile.name : undefined,
+              fileDataUrl: pdfSentAsFile ? fileDataUrl : undefined,
+              useJsonSchema: preferSchema
+            });
 
-    let result = await runExtractionAttempt(defaultCalibrationExtractionModel, 1);
-    let response = result.response;
-    let transportError = result.transportError;
-
-    if (fallbackModel && shouldFallbackToAlternativeModel(transportError, response?.status ?? 0)) {
-      const fallbackResult = await runExtractionAttempt(fallbackModel, 2);
-      response = fallbackResult.response;
-      transportError = fallbackResult.transportError;
-    }
-
-    if (transportError) {
-      return buildError(getTransportErrorMessage(transportError), 502);
-    }
-
-    if (!response || !response.ok) {
-      return buildError(
-        getOpenRouterErrorMessage(response?.status ?? 502, response?.payload ?? null),
-        (response?.status ?? 0) === 429 ? 429 : 502
-      );
-    }
-
-    if (!response.text) {
-      return buildError("A OpenRouter nao retornou dados estruturados para este certificado.", 502);
-    }
-
-    const parsedPayload = JSON.parse(response.text) as Parameters<
-      typeof normalizeCalibrationExtractionResult
-    >[0];
-    const normalizedExtraction = normalizeCalibrationExtractionResult(parsedPayload, extractionFields);
-
-    const localFieldOverrides = buildPaquimetroFieldOverridesFromTablePages({
-      categoryIdentifier: extractionTarget.category,
-      documentText: extractedDocumentText,
-      tablePages: extractedDocumentData.tablePages,
-      fields: extractionFields
-    });
-    const overridesByFieldId = new Map(
-      localFieldOverrides.map((field) => [field.fieldId, field])
-    );
-    const extraction = {
-      ...normalizedExtraction,
-      fields: normalizedExtraction.fields.map((field) => {
-        const override = overridesByFieldId.get(field.fieldId);
-
-        return override
-          ? {
-              ...field,
-              value: override.value,
-              unit: override.unit,
-              confidence: override.confidence,
-              evidence: override.evidence,
-              conforme: override.conforme
+            if (
+              preferSchema &&
+              !response.ok &&
+              shouldRetryWithoutJsonSchema(response.status, response.payload)
+            ) {
+              response = await callOpenRouter({
+                apiKey: capturedApiKey,
+                prompt,
+                schema: extractionSchema,
+                model,
+                fileName: pdfSentAsFile ? capturedFile.name : undefined,
+                fileDataUrl: pdfSentAsFile ? fileDataUrl : undefined,
+                useJsonSchema: false
+              });
             }
-          : field;
-      })
-    };
+          } catch (error) {
+            transportError = error;
+          }
 
-    return NextResponse.json({
-      instrument: {
-        id: extractionTarget.id,
-        tag: extractionTarget.tag,
-        category: extractionTarget.category
-      },
-      extraction
-    });
-  } catch (error) {
-    return buildError(getTransportErrorMessage(error), 502);
-  }
+          let fieldsFilled = 0;
+          if (response?.text) {
+            try {
+              const parsed = JSON.parse(response.text) as { fields?: Array<{ value: unknown }> };
+              fieldsFilled = (parsed.fields ?? []).filter((f) => f.value !== null).length;
+            } catch {
+              // leave fieldsFilled as 0
+            }
+          }
+
+          logExtractionAttempt({
+            attempt,
+            model,
+            pdfTextChars,
+            pdfSentAsFile,
+            status: transportError ? -1 : (response?.status ?? -1),
+            ok: !transportError && (response?.ok ?? false),
+            fieldsTotal: capturedFields.length,
+            fieldsFilled,
+            rawResponseSnippet: response?.text?.slice(0, 300) ?? ""
+          });
+
+          return { response, transportError };
+        };
+
+        let result = await runExtractionAttempt(defaultCalibrationExtractionModel, 1);
+        let response = result.response;
+        let transportError = result.transportError;
+
+        if (
+          fallbackModel &&
+          shouldFallbackToAlternativeModel(transportError, response?.status ?? 0)
+        ) {
+          const fallbackResult = await runExtractionAttempt(fallbackModel, 2);
+          response = fallbackResult.response;
+          transportError = fallbackResult.transportError;
+        }
+
+        if (transportError) {
+          emitSse(controller, "error", {
+            message: getTransportErrorMessage(transportError),
+            status: 502
+          });
+          return;
+        }
+
+        if (!response || !response.ok) {
+          const status = response?.status ?? 502;
+          emitSse(controller, "error", {
+            message: getOpenRouterErrorMessage(status, response?.payload ?? null),
+            status: status === 429 ? 429 : 502
+          });
+          return;
+        }
+
+        if (!response.text) {
+          emitSse(controller, "error", {
+            message: "A OpenRouter nao retornou dados estruturados para este certificado.",
+            status: 502
+          });
+          return;
+        }
+
+        emitSse(controller, "status", { step: "processing", message: "Processando resposta..." });
+
+        const parsedPayload = JSON.parse(response.text) as Parameters<
+          typeof normalizeCalibrationExtractionResult
+        >[0];
+        const normalizedExtraction = normalizeCalibrationExtractionResult(
+          parsedPayload,
+          capturedFields
+        );
+
+        const localFieldOverrides = buildPaquimetroFieldOverridesFromTablePages({
+          categoryIdentifier: capturedTarget.category,
+          documentText: extractedDocumentText,
+          tablePages: extractedDocumentData.tablePages,
+          fields: capturedFields
+        });
+        const overridesByFieldId = new Map(
+          localFieldOverrides.map((field) => [field.fieldId, field])
+        );
+        const extraction = {
+          ...normalizedExtraction,
+          fields: normalizedExtraction.fields.map((field) => {
+            const override = overridesByFieldId.get(field.fieldId);
+
+            return override
+              ? {
+                  ...field,
+                  value: override.value,
+                  unit: override.unit,
+                  confidence: override.confidence,
+                  evidence: override.evidence,
+                  conforme: override.conforme
+                }
+              : field;
+          })
+        };
+
+        emitSse(controller, "result", {
+          instrument: {
+            id: capturedTarget.id,
+            tag: capturedTarget.tag,
+            category: capturedTarget.category
+          },
+          extraction
+        });
+      } catch (error) {
+        emitSse(controller, "error", {
+          message: getTransportErrorMessage(error),
+          status: 502
+        });
+      } finally {
+        controller.close();
+      }
+    }
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive"
+    }
+  });
 }

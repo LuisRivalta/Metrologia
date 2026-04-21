@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getDashboardMetrics } from "@/lib/dashboard-metrics";
 
 export async function DashboardContent() {
@@ -37,6 +38,12 @@ export async function DashboardContent() {
       };
     });
 
+  const breakdownToneToStatus: Record<string, string> = {
+    ok: "neutral",
+    warning: "warning",
+    danger: "danger"
+  };
+
   return (
     <section className="inventory-content dashboard-content">
       <section className="dashboard-hero">
@@ -58,8 +65,9 @@ export async function DashboardContent() {
       <section className="dashboard-grid">
         <div className="dashboard-grid__stack">
           {metrics.summaryCards.map((card) => (
-            <article
+            <Link
               key={card.title}
+              href={card.href}
               className={`inventory-table-card dashboard-card dashboard-summary-card dashboard-summary-card--${card.tone}`}
             >
               <div className="dashboard-summary-card__top">
@@ -96,7 +104,7 @@ export async function DashboardContent() {
               <div className="dashboard-summary-card__body">
                 <p>{card.value}</p>
               </div>
-            </article>
+            </Link>
           ))}
         </div>
 
@@ -148,7 +156,11 @@ export async function DashboardContent() {
 
           <div className="dashboard-alert-list">
             {metrics.alerts.map((alert) => (
-              <article key={alert.tag} className={`dashboard-alert-item dashboard-alert-item--${alert.tone}`}>
+              <Link
+                key={alert.tag}
+                href={`/instrumentos/${alert.id}`}
+                className={`dashboard-alert-item dashboard-alert-item--${alert.tone}`}
+              >
                 <div className="dashboard-alert-item__icon" aria-hidden="true">
                   {alert.tone === "danger" ? (
                     <svg viewBox="0 0 24 24" fill="none">
@@ -184,7 +196,7 @@ export async function DashboardContent() {
                 <span className={`dashboard-alert-item__badge dashboard-alert-item__badge--${alert.tone}`}>
                   {alert.badgeLabel}
                 </span>
-              </article>
+              </Link>
             ))}
           </div>
         </article>
@@ -225,7 +237,11 @@ export async function DashboardContent() {
 
           <div className="dashboard-status-card__legend">
             {metrics.breakdown.map((item) => (
-              <div key={item.label} className="dashboard-status-card__legend-row">
+              <Link
+                key={item.label}
+                href={`/instrumentos?status=${breakdownToneToStatus[item.tone]}`}
+                className="dashboard-status-card__legend-row"
+              >
                 <div className="dashboard-status-card__legend-label">
                   <span className={`dashboard-status-card__swatch dashboard-status-card__swatch--${item.tone}`} />
                   <p>{item.label}</p>
@@ -234,7 +250,7 @@ export async function DashboardContent() {
                 <div className="dashboard-status-card__legend-values">
                   <strong>{item.count} instrumentos</strong>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </article>

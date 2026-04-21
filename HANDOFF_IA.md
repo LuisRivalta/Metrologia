@@ -3,23 +3,23 @@
 ## Leia isto primeiro
 Este arquivo existe para dar contexto operacional rapido a outra IA que vai trabalhar nesta base. A ideia e reduzir perguntas basicas e evitar mudancas que quebrem regras ja existentes.
 
-## Estado atual (2026-04-20)
+## Estado atual (2026-04-21)
 
-Suite de testes: **73 testes passando**, cobertura de statements em **87%**.
+Suite de testes: **82 testes passando**, cobertura de statements em **87%+**.
 
-Mudancas recentes importantes:
-- `app/_components/instrument-calibration-create-content.tsx` (B2 — 3 commits):
-  - PDF subiu para o topo do formulario (primeiro elemento visivel)
-  - Validacao imediata de tipo/tamanho do PDF no onChange (sem esperar submit)
-  - Erro generico de validacao de campo removido; so aparece para falhas de servidor
-  - Bonus: abort controller de 75s adicionado em `handleExtractWithAi`
-- `lib/dashboard-metrics.ts`: funcao `computeDashboardMetrics` exportada (logica pura); `supabaseAdmin` importado dinamicamente.
-- `lib/measurement-fields.ts`: campo `hint` adicionado; mapeado de `dica_extracao` no banco.
-- `lib/calibration-extraction.ts`: prompt inclui `; dica: <hint>` quando campo tem hint.
+Mudancas recentes importantes (B3 — Dashboard Navegavel):
+- `lib/dashboard-metrics.ts`: `DashboardAlert` ganhou `id: number`; `DashboardSummaryCard` ganhou `href: string`
+- `app/_components/dashboard-content.tsx`: alertas, cards de resumo e linhas da legenda do donut sao agora `<Link>`; mapeamento `breakdownToneToStatus` (ok→neutral) em escopo de modulo
+- `app/_components/instruments-content.tsx`: `useSearchParams` inicializa `calibrationFilter` a partir de `?status`; constante `VALID_CALIBRATION_FILTER_STATUSES` em escopo de modulo
+- `app/instrumentos/page.tsx`: `<Suspense fallback={null}>` adicionado
+
+Mudancas anteriores importantes (B1 v2 — SSE + Tabelas):
+- `lib/calibration-extraction.ts`: nova funcao `formatTablePagesAsMarkdown`; `buildCalibrationExtractionPrompt` aceita `tableMarkdown` opcional
+- `app/api/calibracoes/extrair/route.ts`: endpoint convertido para SSE; emite `status`, `result`, `error`
+- `lib/api/extract-sse.ts`: helper `readExtractionSseStream` (async generator)
 
 Proximos passos sugeridos:
-- Commitar mudancas pendentes em `categories-content.tsx`, `calibracoes/extrair/route.ts`, `categorias/route.ts`, `login/page.tsx`.
-- Brainstorm B1 (pipeline de IA) ou B3 (dashboard funcional).
+- B4: acoes rapidas no dashboard (registrar calibracao sem sair da pagina) ou melhorias de UX na lista de instrumentos.
 
 ## Resumo em 30 segundos
 - Projeto: sistema interno de metrologia com instrumentos, categorias, calibracoes e certificados

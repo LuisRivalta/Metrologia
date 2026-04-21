@@ -1,5 +1,60 @@
 # Logs do Projeto
 
+## 2026-04-21 — B3: Dashboard Navegável
+
+### O que foi feito
+
+Brainstorm → spec → plano → execução com subagentes para tornar o dashboard navegável.
+
+**5 commits entregues:**
+- `2cc8737` — `feat: add id to DashboardAlert and href to DashboardSummaryCard`
+- `0dce8d6` — `feat: add navigation links to dashboard alerts, summary cards, and donut legend`
+- `5396379` — `refactor: move breakdownToneToStatus to module scope`
+- `4b2d15c` — `feat: initialize calibration filter from URL status param`
+- `24c6c5c` — `refactor: add explicit Suspense fallback and hoist validStatuses to module scope`
+
+**Mudanças:**
+1. `DashboardAlert` ganhou `id: number`; `DashboardSummaryCard` ganhou `href: string` em `lib/dashboard-metrics.ts`
+2. `app/_components/dashboard-content.tsx`: alertas → `<Link href="/instrumentos/[id]">`, cards de resumo → `<Link href={card.href}>`, linhas da legenda do donut → `<Link href="/instrumentos?status=<tone>">` com mapeamento `ok→neutral`
+3. `app/_components/instruments-content.tsx`: `useSearchParams` lê `?status` e inicializa `calibrationFilter`; constante `VALID_CALIBRATION_FILTER_STATUSES` em escopo de módulo
+4. `app/instrumentos/page.tsx`: `<Suspense fallback={null}>` adicionado (obrigatório para `useSearchParams` em build estático)
+
+**Testes:** 82 passando. Build limpo.
+
+**Documentos gerados:**
+- `docs/superpowers/specs/2026-04-21-b3-dashboard-navigation-design.md`
+- `docs/superpowers/plans/2026-04-21-b3-dashboard-navigation.md`
+
+## 2026-04-21 — B1 (v2): SSE Streaming + Formatação de Tabelas PDF
+
+### O que foi feito
+
+Brainstorm → spec → plano → execução com 6 subagentes para melhorar qualidade e UX do pipeline de extração por IA.
+
+**7 commits entregues:**
+- `5e64ac6` — `feat: add formatTablePagesAsMarkdown to calibration-extraction`
+- `e995970` — `feat: add tableMarkdown param to buildCalibrationExtractionPrompt`
+- `89fde79` — `feat: convert extraction endpoint to SSE streaming`
+- `75182d8` — `refactor: remove unnecessary captured* aliases in extraction route`
+- `e5e5f74` — `feat: add SSE stream reader helper for extraction endpoint`
+- `ce65460` — `feat: add SSE progress steps to calibration create form`
+- `a84b647` — `feat: add SSE progress steps to instrument create form`
+
+**Mudanças:**
+1. `formatTablePagesAsMarkdown` em `lib/calibration-extraction.ts` — converte `string[][][]` do pdf-parse em Markdown estruturado (`| col |`, `| --- |`) com budget calculado pelo espaço restante após texto corrido; trunca com `[tabelas truncadas]`
+2. `buildCalibrationExtractionPrompt` aceita `tableMarkdown?: string | null` — concatena com `documentText` dentro do mesmo bloco `"""`; `hasDocumentContent` controla a instrução ao modelo
+3. Endpoint `POST /api/calibracoes/extrair` convertido para SSE (`ReadableStream`, `text/event-stream`); erros de validação ainda retornam JSON 4xx; eventos: `status` (reading_pdf → calling_ai → processing), `result`, `error`
+4. `lib/api/extract-sse.ts` — async generator `readExtractionSseStream` com buffer SSE correto, `reader.releaseLock()` no `finally`
+5. Ambos os formulários (`instrument-calibration-create-content.tsx`, `instrument-create-content.tsx`) atualizam label do botão por etapa durante extração
+
+**Testes:** 81 passando. Build limpo.
+
+**Documentos gerados:**
+- `docs/superpowers/specs/2026-04-21-ai-pipeline-design.md`
+- `docs/superpowers/plans/2026-04-21-ai-pipeline-b1.md`
+
+
+
 ## 2026-04-20 — B1: AI Pipeline — Confiabilidade e Visibilidade
 
 ### O que foi feito

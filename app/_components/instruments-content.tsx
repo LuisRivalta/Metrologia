@@ -1,6 +1,7 @@
 "use client";
 
 import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { fetchApi } from "@/lib/api/client";
 import type { InstrumentDetailItem, InstrumentItem } from "@/lib/instruments";
 import type { MeasurementFieldItem } from "@/lib/measurement-fields";
@@ -124,6 +125,10 @@ function mapInstrumentDetailFieldToFormItem(
 }
 
 export function InstrumentsContent() {
+  const searchParams = useSearchParams();
+  const initialStatus = searchParams.get("status");
+  const validStatuses: CalibrationFilter[] = ["neutral", "warning", "danger"];
+
   const [rows, setRows] = useState<InstrumentItem[]>([]);
   const [metadataCategories, setMetadataCategories] = useState<InstrumentMetadataCategory[]>([]);
   const [measurements, setMeasurements] = useState<MeasurementItem[]>([]);
@@ -134,7 +139,11 @@ export function InstrumentsContent() {
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState("");
   const [manufacturerFilter, setManufacturerFilter] = useState("");
-  const [calibrationFilter, setCalibrationFilter] = useState<CalibrationFilter>("all");
+  const [calibrationFilter, setCalibrationFilter] = useState<CalibrationFilter>(
+    validStatuses.includes(initialStatus as CalibrationFilter)
+      ? (initialStatus as CalibrationFilter)
+      : "all"
+  );
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [isModalOpen, setIsModalOpen] = useState(false);

@@ -651,33 +651,30 @@ export function InstrumentCreateContent() {
 
   return (
     <section className="inventory-content instrument-create-content">
-      <div className="instrument-detail-nav instrument-detail-nav--split">
-        <PageTransitionLink href="/instrumentos" className="instrument-detail-back">
+      <div className="instrument-detail-nav instrument-create-nav">
+        <PageTransitionLink href="/instrumentos" className="instrument-detail-back instrument-create-back" aria-label="Voltar para instrumentos">
           <span aria-hidden="true" className="instrument-detail-back__icon">
             <svg viewBox="0 0 24 24" fill="none">
               <path d="M14.5 6.5 9 12l5.5 5.5M10 12h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </span>
-          Voltar para instrumentos
         </PageTransitionLink>
-      </div>
 
-      <section className="inventory-table-card instrument-create-steps" aria-label="Etapas do cadastro">
-        <div className={`instrument-create-step${step === "details" ? " is-active" : " is-complete"}`}>
-          <span className="instrument-create-step__number">1</span>
-          <div className="instrument-create-step__copy">
-            <strong>Dados do instrumento</strong>
-            <span>Categoria, fabricante e template</span>
+        <div className="instrument-create-steps" aria-label="Etapas do cadastro">
+          <div className={`instrument-create-step${step === "details" ? " is-active" : " is-complete"}`}>
+            <span className="instrument-create-step__number">1</span>
+            <div className="instrument-create-step__copy">
+              <strong>Dados do instrumento</strong>
+            </div>
+          </div>
+          <div className={`instrument-create-step${step === "certificate" ? " is-active" : ""}`}>
+            <span className="instrument-create-step__number">2</span>
+            <div className="instrument-create-step__copy">
+              <strong>Certificado e revisao</strong>
+            </div>
           </div>
         </div>
-        <div className={`instrument-create-step${step === "certificate" ? " is-active" : ""}`}>
-          <span className="instrument-create-step__number">2</span>
-          <div className="instrument-create-step__copy">
-            <strong>Certificado e revisao</strong>
-            <span>Upload, IA e confirmacao final</span>
-          </div>
-        </div>
-      </section>
+      </div>
 
       {loadError ? (
         <section className="inventory-table-card instrument-detail-card instrument-detail-card--state">
@@ -771,7 +768,7 @@ export function InstrumentCreateContent() {
                 <label className="instrument-modal__field"><span>Responsavel</span><input type="text" className={validationErrors.responsible ? "is-invalid" : undefined} value={calibrationForm.responsible} onChange={(event) => { setCalibrationForm((current) => ({ ...current, responsible: event.target.value })); setValidationErrors((current) => ({ ...current, responsible: undefined, form: undefined })); }} />{validationErrors.responsible ? <small className="instrument-modal__field-error">{validationErrors.responsible}</small> : null}</label>
                 <label className="instrument-modal__field"><span>Status geral</span><select value={calibrationForm.status} onChange={(event) => setCalibrationForm((current) => ({ ...current, status: event.target.value as CreateCalibrationFormState["status"] }))}>{calibrationStatusOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
                 <label className="instrument-modal__field"><span>Data da calibracao</span><input type="date" className={validationErrors.calibrationDate ? "is-invalid" : undefined} value={calibrationForm.calibrationDate} onChange={(event) => { setCalibrationForm((current) => ({ ...current, calibrationDate: event.target.value })); setValidationErrors((current) => ({ ...current, calibrationDate: undefined, form: undefined })); }} />{validationErrors.calibrationDate ? <small className="instrument-modal__field-error">{validationErrors.calibrationDate}</small> : null}</label>
-                <label className="instrument-modal__field"><span>Emissao do certificado</span><input type="date" className={validationErrors.certificateDate ? "is-invalid" : undefined} value={calibrationForm.certificateDate} onChange={(event) => { setCalibrationForm((current) => ({ ...current, certificateDate: event.target.value })); setValidationErrors((current) => ({ ...current, certificateDate: undefined, form: undefined })); }} />{validationErrors.certificateDate ? <small className="instrument-modal__field-error">{validationErrors.certificateDate}</small> : null}</label>
+
                 <label className="instrument-modal__field instrument-modal__field--full"><span>Proxima calibracao</span><input type="date" className={validationErrors.validityDate ? "is-invalid" : undefined} value={calibrationForm.validityDate} onChange={(event) => { setCalibrationForm((current) => ({ ...current, validityDate: event.target.value })); setValidationErrors((current) => ({ ...current, validityDate: undefined, form: undefined })); }} />{validationErrors.validityDate ? <small className="instrument-modal__field-error">{validationErrors.validityDate}</small> : null}</label>
               </div>
 
@@ -779,16 +776,18 @@ export function InstrumentCreateContent() {
                 <div className="instrument-calibration-upload__copy"><strong>Certificado em PDF</strong><p>Envie o arquivo oficial para criar o instrumento ja com a calibracao inicial registrada. O nome do PDF sera usado no log.</p></div>
                 <input type="file" accept="application/pdf,.pdf" onChange={(event: ChangeEvent<HTMLInputElement>) => { const nextFile = event.target.files?.[0] ?? null; setCalibrationForm((current) => ({ ...current, certificateFile: nextFile })); clearExtractionFeedback(); setValidationErrors((current) => ({ ...current, certificateFile: undefined, form: undefined })); }} />
                 {calibrationForm.certificateFile ? <div className="instrument-calibration-upload__file"><span>{`${calibrationForm.certificateFile.name} (${formatFileSize(calibrationForm.certificateFile.size)})`}</span><button type="button" onClick={() => setCalibrationForm((current) => ({ ...current, certificateFile: null }))}>Remover arquivo</button></div> : null}
-                <div className="instrument-calibration-upload__actions"><button type="button" className="instrument-calibration-upload__extract" onClick={handleExtractWithAi} disabled={!calibrationForm.certificateFile || isExtracting || isSubmitting}>{isExtracting
-                  ? extractionStep === "reading_pdf"
-                    ? "Lendo o certificado..."
-                    : extractionStep === "calling_ai"
-                      ? "Enviando para a IA..."
-                      : extractionStep === "processing"
-                        ? "Processando resposta..."
-                        : "Lendo certificado..."
-                  : "Extrair com IA"}</button></div>
-                {validationErrors.certificateFile ? <p className="instrument-modal__field-error">{validationErrors.certificateFile}</p> : <p className="instrument-calibration-upload__hint">Arquivo unico em PDF com ate 10 MB.</p>}
+                <div className="instrument-calibration-upload__actions">
+                  {validationErrors.certificateFile ? <p className="instrument-modal__field-error">{validationErrors.certificateFile}</p> : <p className="instrument-calibration-upload__hint">Arquivo unico em PDF com ate 10 MB.</p>}
+                  <button type="button" className="instrument-calibration-upload__extract" onClick={handleExtractWithAi} disabled={!calibrationForm.certificateFile || isExtracting || isSubmitting}>{isExtracting
+                    ? extractionStep === "reading_pdf"
+                      ? "Lendo o certificado..."
+                      : extractionStep === "calling_ai"
+                        ? "Enviando para a IA..."
+                        : extractionStep === "processing"
+                          ? "Processando resposta..."
+                          : "Lendo certificado..."
+                    : "Extrair com IA"}</button>
+                </div>
                 {extractionError ? <p className="instrument-modal__field-error">{extractionError}</p> : null}
                 {extractionMessage ? <p className="instrument-calibration-upload__success">{extractionMessage}</p> : null}
               </section>

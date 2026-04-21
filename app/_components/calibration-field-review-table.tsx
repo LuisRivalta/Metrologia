@@ -36,12 +36,6 @@ function getStatusLabel(status: CalibrationFieldReviewStatus) {
   return "Nao identificado";
 }
 
-function getSubgroupGridClassName(count: number) {
-  return count <= 1
-    ? "calibration-group-layout__subgroups calibration-group-layout__subgroups--single"
-    : "calibration-group-layout__subgroups";
-}
-
 function renderConfidenceBadge(
   confidence: number | null,
   value: string,
@@ -170,106 +164,88 @@ export function CalibrationFieldReviewTable({
   );
 
   return (
-    <div className="calibration-group-layout">
+    <div className="calibration-matrix-layout">
       {groupedRows.map((group) => (
-        <section key={group.key} className="calibration-group-layout__group">
-          <header className="calibration-group-layout__group-header">
+        <section key={group.key} className="calibration-matrix-layout__group">
+          <header className="calibration-matrix-layout__group-header">
             <h4>{group.label || "Campos gerais"}</h4>
-            <span>{group.subgroups.reduce((total, subgroup) => total + subgroup.fields.length, 0)} campos</span>
+            <span>
+              {group.subgroups.reduce((total, subgroup) => total + subgroup.fields.length, 0)} campos
+            </span>
           </header>
 
-          <div className={getSubgroupGridClassName(group.subgroups.length)}>
+          <div className="calibration-matrix-layout__subgroups">
             {group.subgroups.map((subgroup) => (
-              <article key={subgroup.key} className="calibration-group-layout__subgroup">
-                <div className="calibration-group-layout__subgroup-header">
+              <article key={subgroup.key} className="calibration-matrix-layout__subgroup">
+                <div className="calibration-matrix-layout__subgroup-header">
                   <strong>{subgroup.label || "Campos gerais"}</strong>
-                  <span className="calibration-group-layout__subgroup-count">
-                    {subgroup.fields.length} {subgroup.fields.length === 1 ? "campo" : "campos"}
-                  </span>
+                  <span>{subgroup.fields.length} campos</span>
                 </div>
 
-                <div className="calibration-group-layout__fields">
-                  {subgroup.fields.map((field) => (
-                    <article key={field.id} className="calibration-group-layout__field">
-                      <div className="calibration-group-layout__field-head">
-                        <div className="calibration-group-layout__field-copy">
-                          <strong className="calibration-group-layout__field-name">
-                            {field.fieldName}
-                          </strong>
-                          <div className="calibration-group-layout__field-meta">
-                            <span className="calibration-group-layout__field-measurement">
-                              {field.measurementName || "Nao informada"}
+                <div className="calibration-matrix-layout__table-wrap">
+                  <table className="calibration-matrix-layout__table">
+                    <thead>
+                      <tr>
+                        {subgroup.fields.map((field) => (
+                          <th key={field.id}>
+                            <span className="calibration-matrix-layout__th-name">
+                              {field.fieldName}
                             </span>
-                            {field.unit ? (
-                              <span className="calibration-group-layout__field-support">
-                                Leitura IA: {field.unit}
+                            {field.measurementName ? (
+                              <span className="calibration-matrix-layout__th-unit">
+                                {" "}{field.measurementName}
                               </span>
                             ) : null}
-                          </div>
-                        </div>
-
-                        {showStatusColumn ? (
-                          <div className="calibration-group-layout__field-status">
-                            {editable ? (
-                              <label className="calibration-field-table__check">
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        {subgroup.fields.map((field) => (
+                          <td key={field.id} className="calibration-matrix-layout__cell">
+                            {editable && !field.autoCalculated ? (
+                              <div className="calibration-matrix-layout__cell-edit">
                                 <input
-                                  type="checkbox"
-                                  checked={field.status === "conforming"}
+                                  className="calibration-matrix-layout__input"
+                                  type="text"
+                                  value={field.value}
+                                  placeholder="—"
                                   onChange={(event) =>
-                                    onStatusChange?.(
-                                      field.id,
-                                      event.target.checked ? "conforming" : "unknown"
-                                    )
+                                    onValueChange?.(field.id, event.target.value)
                                   }
                                 />
-                                <span>Verificado</span>
-                              </label>
+                                {renderConfidenceBadge(
+                                  field.confidence,
+                                  field.value,
+                                  showConfidenceIndicators
+                                )}
+                              </div>
                             ) : (
-                              <span
-                                className={`calibration-field-table__status-pill calibration-field-table__status-pill--${field.status}`}
-                              >
-                                {getStatusLabel(field.status)}
-                              </span>
+                              <div className="calibration-matrix-layout__cell-static">
+                                <strong>
+                                  {field.value ||
+                                    (field.autoCalculated
+                                      ? "Auto"
+                                      : "—")}
+                                </strong>
+                                {field.autoCalculated ? (
+                                  <span className="calibration-matrix-layout__cell-auto">
+                                    auto
+                                  </span>
+                                ) : null}
+                                {renderConfidenceBadge(
+                                  field.confidence,
+                                  field.value,
+                                  showConfidenceIndicators && !field.autoCalculated
+                                )}
+                              </div>
                             )}
-                          </div>
-                        ) : null}
-                      </div>
-
-                      <div className="calibration-group-layout__field-entry">
-                        <span className="calibration-group-layout__field-entry-label">
-                          {editable && !field.autoCalculated ? "Valor medido" : "Valor"}
-                        </span>
-
-                        <div className="calibration-group-layout__field-value">
-                          {editable && !field.autoCalculated ? (
-                            <>
-                              <input
-                                className="calibration-group-layout__input"
-                                type="text"
-                                value={field.value}
-                                placeholder="Ex: 0,005"
-                                onChange={(event) => onValueChange?.(field.id, event.target.value)}
-                              />
-                              {renderConfidenceBadge(field.confidence, field.value, showConfidenceIndicators)}
-                            </>
-                          ) : (
-                            <div className="calibration-group-layout__value-static">
-                              <strong>
-                                {field.value ||
-                                  (field.autoCalculated
-                                    ? "Calculado automaticamente"
-                                    : "Nao informado")}
-                              </strong>
-                              {field.autoCalculated ? (
-                                <span>Soma automatica</span>
-                              ) : null}
-                              {renderConfidenceBadge(field.confidence, field.value, showConfidenceIndicators && !field.autoCalculated)}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </article>
-                  ))}
+                          </td>
+                        ))}
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </article>
             ))}

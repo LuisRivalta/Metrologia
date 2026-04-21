@@ -668,6 +668,15 @@ export function InstrumentCalibrationCreateContent({
                 ) : null}
 
                 <div className="instrument-calibration-upload__actions">
+                  {validationErrors.certificateFile ? (
+                    <p className="instrument-modal__field-error">
+                      {validationErrors.certificateFile}
+                    </p>
+                  ) : (
+                    <p className="instrument-calibration-upload__hint">
+                      Arquivo unico em PDF com ate 10 MB.
+                    </p>
+                  )}
                   <button
                     type="button"
                     className="instrument-calibration-upload__extract"
@@ -685,16 +694,6 @@ export function InstrumentCalibrationCreateContent({
                       : "Extrair com IA"}
                   </button>
                 </div>
-
-                {validationErrors.certificateFile ? (
-                  <p className="instrument-modal__field-error">
-                    {validationErrors.certificateFile}
-                  </p>
-                ) : (
-                  <p className="instrument-calibration-upload__hint">
-                    Arquivo unico em PDF com ate 10 MB.
-                  </p>
-                )}
 
                 {extractionError ? (
                   <p className="instrument-modal__field-error">{extractionError}</p>
@@ -787,30 +786,6 @@ export function InstrumentCalibrationCreateContent({
                   ) : null}
                 </label>
 
-                <label className="instrument-modal__field">
-                  <span>Emissao do certificado</span>
-                  <input
-                    type="date"
-                    className={validationErrors.certificateDate ? "is-invalid" : undefined}
-                    value={formState.certificateDate}
-                    onChange={(event) => {
-                      setFormState((current) => ({
-                        ...current,
-                        certificateDate: event.target.value
-                      }));
-                      setValidationErrors((current) => ({
-                        ...current,
-                        certificateDate: undefined,
-                        form: undefined
-                      }));
-                    }}
-                  />
-                  {validationErrors.certificateDate ? (
-                    <small className="instrument-modal__field-error">
-                      {validationErrors.certificateDate}
-                    </small>
-                  ) : null}
-                </label>
 
                 <label className="instrument-modal__field instrument-modal__field--full">
                   <span>Proxima calibracao</span>

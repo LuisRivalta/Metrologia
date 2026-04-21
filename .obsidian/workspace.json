@@ -4,11 +4,11 @@
     "type": "split",
     "children": [
       {
-        "id": "bb8a81735fa0d658",
+        "id": "458b23406101bd01",
         "type": "tabs",
         "children": [
           {
-            "id": "02109d2acdb6f490",
+            "id": "dbc9d86e1592d8de",
             "type": "leaf",
             "state": {
               "type": "graph",
@@ -176,26 +176,29 @@
       "bases:Criar nova base": false
     }
   },
-  "active": "02109d2acdb6f490",
+  "active": "dbc9d86e1592d8de",
   "lastOpenFiles": [
+    "LOGS.md.tmp.17076.1776788683122",
+    "app/_components/dashboard-content.tsx.tmp.17076.1776787821453",
+    "lib/dashboard-metrics.ts.tmp.17076.1776787668073",
+    "lib/dashboard-metrics.ts.tmp.17076.1776787664762",
+    "docs/superpowers/plans/2026-04-21-b3-dashboard-navigation.md",
+    "docs/superpowers/specs/2026-04-21-b3-dashboard-navigation-design.md",
+    "HANDOFF_IA.md.tmp.17076.1776772194666",
+    "LOGS.md.tmp.17076.1776772178908",
+    "app/_components/instrument-create-content.tsx.tmp.17076.1776771825615",
+    "app/_components/instrument-create-content.tsx.tmp.17076.1776771818910",
+    "docs/superpowers/plans/2026-04-21-ai-pipeline-b1.md",
+    "Sem título.canvas",
     "app/_components/calibration-field-review-table.tsx.tmp.19072.1776686457581",
     "app/globals.css.tmp.19072.1776686447142",
     "app/_components/calibration-field-review-table.tsx.tmp.19072.1776685842939",
-    "app/_components/calibration-field-review-table.tsx.tmp.19072.1776685823268",
-    "Sem título.canvas",
     "docs/superpowers/plans/2026-04-20-b1-ai-pipeline.md",
     "docs/superpowers/specs/2026-04-20-b1-ai-pipeline-design.md",
     "README.md",
     "docs/superpowers/specs/2026-04-18-technical-health-design.md",
     "docs/superpowers/plans/2026-04-18-b2-calibration-flow.md",
-    "HANDOFF_IA.md.tmp.19072.1776682368590",
-    "app/_components/instrument-calibration-create-content.tsx.tmp.19072.1776541354295",
     "docs/superpowers/specs/2026-04-18-b2-calibration-flow-design.md",
-    "HANDOFF_IA.md.tmp.19072.1776539808198",
-    "LOGS.md.tmp.19072.1776539790120",
-    "coverage/coverage-summary.json",
-    "coverage/measurements.ts.html",
-    "coverage/measurement-fields.ts.html",
     "coverage/sort-arrow-sprite.png",
     "coverage/favicon.png",
     "docs/superpowers/plans/2026-04-18-technical-health.md",

@@ -5,7 +5,7 @@ import { ManagementShell } from "../_components/management-shell";
 export default function InstrumentosPage() {
   return (
     <ManagementShell activeItem="instrumentos">
-      <Suspense>
+      <Suspense fallback={null}>
         <InstrumentsContent />
       </Suspense>
     </ManagementShell>

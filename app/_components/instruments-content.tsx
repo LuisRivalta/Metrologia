@@ -43,6 +43,8 @@ type CalibrationFilter = "all" | "neutral" | "warning" | "danger";
 type SortKey = "tag" | "category" | "manufacturer" | "calibration";
 type SortDirection = "asc" | "desc";
 
+const VALID_CALIBRATION_FILTER_STATUSES: CalibrationFilter[] = ["neutral", "warning", "danger"];
+
 type InstrumentApiResponse = {
   error?: string;
   item?: InstrumentItem;
@@ -127,7 +129,6 @@ function mapInstrumentDetailFieldToFormItem(
 export function InstrumentsContent() {
   const searchParams = useSearchParams();
   const initialStatus = searchParams.get("status");
-  const validStatuses: CalibrationFilter[] = ["neutral", "warning", "danger"];
 
   const [rows, setRows] = useState<InstrumentItem[]>([]);
   const [metadataCategories, setMetadataCategories] = useState<InstrumentMetadataCategory[]>([]);
@@ -140,7 +141,7 @@ export function InstrumentsContent() {
   const [categoryFilter, setCategoryFilter] = useState("");
   const [manufacturerFilter, setManufacturerFilter] = useState("");
   const [calibrationFilter, setCalibrationFilter] = useState<CalibrationFilter>(
-    validStatuses.includes(initialStatus as CalibrationFilter)
+    VALID_CALIBRATION_FILTER_STATUSES.includes(initialStatus as CalibrationFilter)
       ? (initialStatus as CalibrationFilter)
       : "all"
   );

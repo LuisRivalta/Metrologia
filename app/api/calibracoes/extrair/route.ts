@@ -538,20 +538,15 @@ export async function POST(request: Request) {
     );
   }
 
-  const capturedFile = certificateFile;
-  const capturedFields = extractionFields;
-  const capturedTarget = extractionTarget;
-  const capturedApiKey = apiKey;
-
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       try {
-        const extractionSchema = buildCalibrationExtractionSchema(capturedFields);
+        const extractionSchema = buildCalibrationExtractionSchema(extractionFields);
         const fallbackModel = getOpenRouterFallbackModel();
 
         emitSse(controller, "status", { step: "reading_pdf", message: "Lendo o certificado..." });
 
-        const fileBytes = await capturedFile.arrayBuffer();
+        const fileBytes = await certificateFile.arrayBuffer();
         const extractedDocumentData = await extractPdfDocumentData(fileBytes);
         const extractedDocumentText = extractedDocumentData.documentText;
 
@@ -565,9 +560,9 @@ export async function POST(request: Request) {
         );
 
         const prompt = buildCalibrationExtractionPrompt({
-          instrumentTag: capturedTarget.tag,
-          category: capturedTarget.category,
-          fields: capturedFields,
+          instrumentTag: extractionTarget.tag,
+          category: extractionTarget.category,
+          fields: extractionFields,
           documentText: extractedDocumentText,
           tableMarkdown: tableMarkdown || undefined
         });
@@ -575,7 +570,7 @@ export async function POST(request: Request) {
         const fileDataUrl =
           extractedDocumentText || tableMarkdown
             ? undefined
-            : encodePdfAsDataUrl(capturedFile, fileBytes);
+            : encodePdfAsDataUrl(certificateFile, fileBytes);
         const pdfTextChars = (extractedDocumentText?.length ?? 0) + (tableMarkdown?.length ?? 0);
         const pdfSentAsFile = !extractedDocumentText && !tableMarkdown;
 
@@ -594,11 +589,11 @@ export async function POST(request: Request) {
 
           try {
             response = await callOpenRouter({
-              apiKey: capturedApiKey,
+              apiKey,
               prompt,
               schema: extractionSchema,
               model,
-              fileName: pdfSentAsFile ? capturedFile.name : undefined,
+              fileName: pdfSentAsFile ? certificateFile.name : undefined,
               fileDataUrl: pdfSentAsFile ? fileDataUrl : undefined,
               useJsonSchema: preferSchema
             });
@@ -609,11 +604,11 @@ export async function POST(request: Request) {
               shouldRetryWithoutJsonSchema(response.status, response.payload)
             ) {
               response = await callOpenRouter({
-                apiKey: capturedApiKey,
+                apiKey,
                 prompt,
                 schema: extractionSchema,
                 model,
-                fileName: pdfSentAsFile ? capturedFile.name : undefined,
+                fileName: pdfSentAsFile ? certificateFile.name : undefined,
                 fileDataUrl: pdfSentAsFile ? fileDataUrl : undefined,
                 useJsonSchema: false
               });
@@ -639,7 +634,7 @@ export async function POST(request: Request) {
             pdfSentAsFile,
             status: transportError ? -1 : (response?.status ?? -1),
             ok: !transportError && (response?.ok ?? false),
-            fieldsTotal: capturedFields.length,
+            fieldsTotal: extractionFields.length,
             fieldsFilled,
             rawResponseSnippet: response?.text?.slice(0, 300) ?? ""
           });
@@ -692,14 +687,14 @@ export async function POST(request: Request) {
         >[0];
         const normalizedExtraction = normalizeCalibrationExtractionResult(
           parsedPayload,
-          capturedFields
+          extractionFields
         );
 
         const localFieldOverrides = buildPaquimetroFieldOverridesFromTablePages({
-          categoryIdentifier: capturedTarget.category,
+          categoryIdentifier: extractionTarget.category,
           documentText: extractedDocumentText,
           tablePages: extractedDocumentData.tablePages,
-          fields: capturedFields
+          fields: extractionFields
         });
         const overridesByFieldId = new Map(
           localFieldOverrides.map((field) => [field.fieldId, field])
@@ -724,9 +719,9 @@ export async function POST(request: Request) {
 
         emitSse(controller, "result", {
           instrument: {
-            id: capturedTarget.id,
-            tag: capturedTarget.tag,
-            category: capturedTarget.category
+            id: extractionTarget.id,
+            tag: extractionTarget.tag,
+            category: extractionTarget.category
           },
           extraction
         });

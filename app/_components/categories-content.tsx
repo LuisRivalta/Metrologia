@@ -135,7 +135,7 @@ function getFieldGridClassName(count: number) {
     return "template-preview__fields template-preview__fields--single";
   }
 
-  if (count === 2) {
+  if (count === 2 || count === 4) {
     return "template-preview__fields template-preview__fields--double";
   }
 

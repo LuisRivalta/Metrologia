@@ -3,6 +3,7 @@
 import { type ChangeEvent, type FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { fetchApi } from "@/lib/api/client";
+import { readExtractionSseStream } from "@/lib/api/extract-sse";
 import {
   applyCalibrationDerivedValues,
   isAutoCalculatedCalibrationField
@@ -19,6 +20,8 @@ import { DefaultFieldPreviewTable } from "./default-field-preview-table";
 import { PageTransitionLink } from "./page-transition-link";
 
 type Step = "details" | "certificate";
+
+type ExtractionStep = "reading_pdf" | "calling_ai" | "processing";
 
 type InstrumentFormState = {
   tag: string;
@@ -264,6 +267,7 @@ export function InstrumentCreateContent() {
   const [isLoadingMetadata, setIsLoadingMetadata] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
+  const [extractionStep, setExtractionStep] = useState<ExtractionStep | null>(null);
   const [isPageConformityChecked, setIsPageConformityChecked] = useState(false);
   const [extractionError, setExtractionError] = useState("");
   const [extractionMessage, setExtractionMessage] = useState("");
@@ -387,10 +391,13 @@ export function InstrumentCreateContent() {
     if (!calibrationForm.certificateFile) return;
 
     setIsExtracting(true);
+    setExtractionStep(null);
     clearExtractionFeedback();
 
     try {
-      const measurementsById = new Map(measurements.map((measurement) => [measurement.id, measurement]));
+      const measurementsById = new Map(
+        measurements.map((measurement) => [measurement.id, measurement])
+      );
       const payload = new FormData();
       payload.set("instrumentTag", formState.tag.trim());
       payload.set("category", selectedCategoryLabel);
@@ -416,58 +423,86 @@ export function InstrumentCreateContent() {
         method: "POST",
         body: payload
       });
-      const responsePayload = (await response.json()) as CalibrationExtractionApiResponse;
 
-      if (!response.ok || !responsePayload.extraction) {
-        setExtractionError(responsePayload.error ?? "Nao foi possivel ler o certificado com a IA.");
+      if (!response.ok) {
+        const errorPayload = (await response.json()) as { error?: string };
+        setExtractionError(
+          errorPayload.error ?? "Nao foi possivel ler o certificado com a IA."
+        );
         return;
       }
 
-      setCalibrationForm((current) => ({
-        ...current,
-        responsible: responsePayload.extraction?.header.responsible ?? current.responsible,
-        calibrationDate: responsePayload.extraction?.header.calibrationDate ?? current.calibrationDate,
-        certificateDate: responsePayload.extraction?.header.certificateDate ?? current.certificateDate,
-        validityDate: responsePayload.extraction?.header.validityDate ?? current.validityDate,
-        observations: responsePayload.extraction?.header.observations ?? current.observations
-      }));
-      setFieldReviewItems((current) =>
-        applyCalibrationDerivedValues(
-          getCategoryCalculationIdentifier(selectedCategory?.slug, selectedCategory?.name),
-          current.map((field) => {
-          const extractedField = responsePayload.extraction?.fields.find((item) => item.fieldSlug === field.fieldSlug);
+      if (!response.body) {
+        setExtractionError("Nao foi possivel ler o certificado com a IA.");
+        return;
+      }
 
-          if (!extractedField) return field;
+      for await (const event of readExtractionSseStream(response.body)) {
+        if (event.type === "status") {
+          setExtractionStep(event.step as ExtractionStep);
+        } else if (event.type === "error") {
+          setExtractionError(event.message);
+          return;
+        } else if (event.type === "result") {
+          const extraction = (event.data as CalibrationExtractionApiResponse)?.extraction;
 
-          return {
-            ...field,
-            value: extractedField.value ?? "",
-            unit: extractedField.unit ?? "",
-            confidence: extractedField.confidence,
-            evidence: extractedField.evidence ?? "",
-            status:
-              extractedField.conforme === true
-                ? "conforming"
-                : "unknown"
-          };
-          })
-        )
-      );
-      setExtractionWarnings(responsePayload.extraction.warnings);
-      setExtractionMessage("Leitura concluida. Revise os dados sugeridos pela IA antes de salvar o cadastro.");
-      setValidationErrors((current) => ({
-        ...current,
-        responsible: undefined,
-        calibrationDate: undefined,
-        certificateDate: undefined,
-        validityDate: undefined,
-        certificateFile: undefined,
-        form: undefined
-      }));
+          if (!extraction) {
+            setExtractionError("Nao foi possivel ler o certificado com a IA.");
+            return;
+          }
+
+          setCalibrationForm((current) => ({
+            ...current,
+            responsible: extraction.header.responsible ?? current.responsible,
+            calibrationDate: extraction.header.calibrationDate ?? current.calibrationDate,
+            certificateDate: extraction.header.certificateDate ?? current.certificateDate,
+            validityDate: extraction.header.validityDate ?? current.validityDate,
+            observations: extraction.header.observations ?? current.observations
+          }));
+          setFieldReviewItems((current) =>
+            applyCalibrationDerivedValues(
+              getCategoryCalculationIdentifier(selectedCategory?.slug, selectedCategory?.name),
+              current.map((field) => {
+                const extractedField = extraction.fields.find(
+                  (item) => item.fieldSlug === field.fieldSlug
+                );
+
+                if (!extractedField) return field;
+
+                return {
+                  ...field,
+                  value: extractedField.value ?? "",
+                  unit: extractedField.unit ?? "",
+                  confidence: extractedField.confidence,
+                  evidence: extractedField.evidence ?? "",
+                  status:
+                    extractedField.conforme === true
+                      ? "conforming"
+                      : "unknown"
+                };
+              })
+            )
+          );
+          setExtractionWarnings(extraction.warnings);
+          setExtractionMessage(
+            "Leitura concluida. Revise os dados sugeridos pela IA antes de salvar o cadastro."
+          );
+          setValidationErrors((current) => ({
+            ...current,
+            responsible: undefined,
+            calibrationDate: undefined,
+            certificateDate: undefined,
+            validityDate: undefined,
+            certificateFile: undefined,
+            form: undefined
+          }));
+        }
+      }
     } catch {
       setExtractionError("Nao foi possivel ler o certificado com a IA.");
     } finally {
       setIsExtracting(false);
+      setExtractionStep(null);
     }
   }
 
@@ -744,7 +779,15 @@ export function InstrumentCreateContent() {
                 <div className="instrument-calibration-upload__copy"><strong>Certificado em PDF</strong><p>Envie o arquivo oficial para criar o instrumento ja com a calibracao inicial registrada. O nome do PDF sera usado no log.</p></div>
                 <input type="file" accept="application/pdf,.pdf" onChange={(event: ChangeEvent<HTMLInputElement>) => { const nextFile = event.target.files?.[0] ?? null; setCalibrationForm((current) => ({ ...current, certificateFile: nextFile })); clearExtractionFeedback(); setValidationErrors((current) => ({ ...current, certificateFile: undefined, form: undefined })); }} />
                 {calibrationForm.certificateFile ? <div className="instrument-calibration-upload__file"><span>{`${calibrationForm.certificateFile.name} (${formatFileSize(calibrationForm.certificateFile.size)})`}</span><button type="button" onClick={() => setCalibrationForm((current) => ({ ...current, certificateFile: null }))}>Remover arquivo</button></div> : null}
-                <div className="instrument-calibration-upload__actions"><button type="button" className="instrument-calibration-upload__extract" onClick={handleExtractWithAi} disabled={!calibrationForm.certificateFile || isExtracting || isSubmitting}>{isExtracting ? "Lendo certificado..." : "Extrair com IA"}</button></div>
+                <div className="instrument-calibration-upload__actions"><button type="button" className="instrument-calibration-upload__extract" onClick={handleExtractWithAi} disabled={!calibrationForm.certificateFile || isExtracting || isSubmitting}>{isExtracting
+                  ? extractionStep === "reading_pdf"
+                    ? "Lendo o certificado..."
+                    : extractionStep === "calling_ai"
+                      ? "Enviando para a IA..."
+                      : extractionStep === "processing"
+                        ? "Processando resposta..."
+                        : "Lendo certificado..."
+                  : "Extrair com IA"}</button></div>
                 {validationErrors.certificateFile ? <p className="instrument-modal__field-error">{validationErrors.certificateFile}</p> : <p className="instrument-calibration-upload__hint">Arquivo unico em PDF com ate 10 MB.</p>}
                 {extractionError ? <p className="instrument-modal__field-error">{extractionError}</p> : null}
                 {extractionMessage ? <p className="instrument-calibration-upload__success">{extractionMessage}</p> : null}

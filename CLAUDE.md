@@ -3,12 +3,12 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 ## AI Agent Workflow (Obsidian Integration)
 When executing tasks, follow this autonomous workflow:
-1. **Start:** Always read `HANDOFF_IA.md` first to understand the current project state and where we stopped.
-2. **Context:** For business scope and rules, read `PRD_Metrologia.md` and `CONTEXT.md`.
-3. **Execution:** Write code following the Architecture rules below. If writing tests, read `TDD.md` first.
+1. **Start:** Always read `docs/estado/HANDOFF_IA.md` first to understand the current project state and where we stopped.
+2. **Context:** For business scope and rules, read `docs/produto/PRD.md`. For code navigation, read `docs/00-INDEX.md`.
+3. **Execution:** Write code following the Architecture rules below. If writing tests, read `docs/testes/TDD.md` first.
 4. **Finish:** After completing a task or before ending the session:
-   - Append a summary of what was done to `LOGS.md`.
-   - Update `HANDOFF_IA.md` with the new current state and next immediate steps.
+   - Append a summary of what was done to `docs/estado/LOGS.md`.
+   - Update `docs/estado/HANDOFF_IA.md` with the new current state and next immediate steps.
 ## Commands
 
 ```bash

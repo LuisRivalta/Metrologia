@@ -12,6 +12,11 @@ const settingsShortcuts = [
     href: "/configuracoes/medidas",
     title: "Cadastro de medidas",
     description: "Abra a tela de medidas para cadastrar, editar e excluir os tipos usados no sistema."
+  },
+  {
+    href: "/configuracoes/setores",
+    title: "Cadastro de setores",
+    description: "Abra a tela de setores para cadastrar, editar e excluir os setores de uso dos instrumentos."
   }
 ];
 

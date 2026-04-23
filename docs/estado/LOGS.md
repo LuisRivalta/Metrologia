@@ -1,5 +1,48 @@
 # Logs do Projeto
 
+## 2026-04-23 — Feature Setor de Uso: Implementação Completa (Tasks 1–8)
+
+### O que foi feito
+
+Feature "Setor de Uso em Instrumentos" implementada integralmente via Subagent-Driven Development (8 tasks, 2 revisões por task).
+
+**Componentes entregues:**
+- `lib/setores.ts` + `tests/lib/setores.test.ts` — tipos e funções puras (TDD, 3 testes)
+- `app/api/setores/route.ts` — CRUD completo para `calibracao.setores`
+- DB migration (manual no Supabase): `CREATE TABLE calibracao.setores` + `ALTER TABLE calibracao.instrumentos ADD COLUMN setor_id`
+- `lib/instruments.ts` — adicionado `setor_id` em `InstrumentDbRow`, `setor: SetorItem | null` em `InstrumentItem`, novo 3º parâmetro `setoresById` em `mapInstrumentRow`
+- `app/api/instrumentos/route.ts` + `metadata/route.ts` — setores carregados em paralelo, incluídos em todos os endpoints
+- `app/_components/setores-content.tsx` + `app/configuracoes/setores/page.tsx` — UI CRUD completa
+- `app/_components/settings-home-content.tsx` — atalho para `/configuracoes/setores`
+- `app/_components/instrument-create-content.tsx` — dropdown setor no formulário de criação
+- `app/_components/instruments-content.tsx` — coluna setor, filtro por setor, campo setor no modal de edição
+
+**Resultado:** 85 testes passando, build limpo, branch `feat/setor-instrumentos` pronta para merge.
+
+---
+
+## 2026-04-23 — Setor de Uso (Task 1 de 8): lib/setores.ts + Testes
+
+### O que foi feito
+
+Implementação TDD da biblioteca TypeScript pura `lib/setores.ts` e seus testes unitários. Esta é a Task 1 da feature plan "Setor de Uso em Instrumentos" — cria a base de tipos e funções de manipulação que serão usados em Tasks posteriores (API, migração SQL, UI).
+
+**1 commit entregue:**
+- `fa43b46` — `feat: add lib/setores with SetorRow, SetorItem, mapSetorRow, formatSetorLabel`
+
+**Mudanças:**
+1. `lib/setores.ts` — 2 tipos (`SetorRow` com optional `created_at`, `SetorItem` sem) e 2 funções puras:
+   - `mapSetorRow()` — converte row do banco para `SetorItem`, trimando campos `codigo` e `nome`
+   - `formatSetorLabel()` — formata exibição como "codigo – nome"
+2. `tests/lib/setores.test.ts` — 3 testes cobrindo: mapeamento de row com espaços, formatação de label, e handling de `created_at` ausente
+
+**Validação:**
+- 3 testes passando
+- Build `npm run build` limpo, sem erros TypeScript
+- Branch: `feat/setor-instrumentos` pronto para próxima task
+
+---
+
 ## 2026-04-22/23 — Wiki Obsidian: Reorganização da Documentação
 
 ### O que foi feito

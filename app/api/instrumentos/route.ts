@@ -19,6 +19,7 @@ import {
   type InstrumentDbRow
 } from "@/lib/instruments";
 import { type MeasurementRow } from "@/lib/measurements";
+import { mapSetorRow, type SetorItem, type SetorRow } from "@/lib/setores";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
@@ -43,6 +44,7 @@ type InstrumentPayload = {
   manufacturer?: string;
   calibrationDate?: string;
   fields?: MeasurementFieldDraft[];
+  setorId?: number | null;
 };
 
 function buildSchemaPermissionError() {
@@ -200,6 +202,18 @@ async function loadMeasurements() {
     .from("unidadas_medidas")
     .select("id, created_at, tipo, tipo_desc")
     .order("tipo", { ascending: true });
+}
+
+async function loadSetores() {
+  return supabaseAdmin
+    .schema("calibracao")
+    .from("setores")
+    .select("id, codigo, nome")
+    .order("codigo", { ascending: true });
+}
+
+function mapSetoresById(rows: SetorRow[]) {
+  return new Map(rows.map((row) => [row.id, mapSetorRow(row)]));
 }
 
 async function loadInstrumentMeasurementFields(instrumentIds: number[]) {
@@ -416,10 +430,11 @@ function buildInstrumentFieldsFromCategoryFields(categoryFields: CategoryMeasure
 function buildInstrumentDetail(
   row: InstrumentDbRow,
   categoriesById: Map<number, InstrumentCategoryRow>,
+  setoresById: Map<number, SetorItem>,
   instrumentFieldsByInstrumentId: Map<number, MeasurementFieldItem[]>,
   latestFieldEntries: ReturnType<typeof parseCalibrationRecord>["fields"] = []
 ) {
-  const baseItem = mapInstrumentRow(row, categoriesById);
+  const baseItem = mapInstrumentRow(row, categoriesById, setoresById);
 
   return {
     ...baseItem,
@@ -525,7 +540,7 @@ export async function GET(request: Request) {
     const instrumentResponse = await supabaseAdmin
       .schema("calibracao")
       .from("instrumentos")
-      .select("id, tag, categoria_id, fabricante, data_ultima_calibracao, proxima_calibracao")
+      .select("id, tag, categoria_id, fabricante, data_ultima_calibracao, proxima_calibracao, setor_id")
       .eq("id", instrumentId)
       .limit(1)
       .maybeSingle();
@@ -542,7 +557,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Instrumento nao encontrado." }, { status: 404 });
     }
 
-    const [categoryRowsResponse, measurementRowsResponse, instrumentFieldRowsResponse, latestCalibrationResponse] =
+    const [categoryRowsResponse, measurementRowsResponse, instrumentFieldRowsResponse, latestCalibrationResponse, setorRowsResponse] =
       await Promise.all([
         loadCategories(),
         loadMeasurements(),
@@ -555,14 +570,16 @@ export async function GET(request: Request) {
           .order("data_calibracao", { ascending: false })
           .order("id", { ascending: false })
           .limit(1)
-          .maybeSingle()
+          .maybeSingle(),
+        loadSetores()
       ]);
 
     const combinedError =
       categoryRowsResponse.error ??
       measurementRowsResponse.error ??
       instrumentFieldRowsResponse.error ??
-      latestCalibrationResponse.error;
+      latestCalibrationResponse.error ??
+      setorRowsResponse.error;
 
     if (combinedError) {
       if (isPermissionDenied(combinedError.message)) {
@@ -582,10 +599,12 @@ export async function GET(request: Request) {
       instrumentFieldRowsResponse.data,
       measurementsById
     );
+    const setoresById = mapSetoresById((setorRowsResponse.data ?? []) as SetorRow[]);
 
     const item = buildInstrumentDetail(
       instrumentResponse.data as InstrumentDbRow,
       categoriesById,
+      setoresById,
       instrumentFieldsByInstrumentId,
       parseCalibrationRecord(latestCalibrationResponse.data?.observacoes).fields
     );
@@ -593,18 +612,21 @@ export async function GET(request: Request) {
     return NextResponse.json({ item });
   }
 
-  const [instrumentRowsResponse, categoryRowsResponse] = await Promise.all([
+  const [instrumentRowsResponse, categoryRowsResponse, setorRowsResponse] = await Promise.all([
     supabaseAdmin
       .schema("calibracao")
       .from("instrumentos")
-      .select("id, tag, categoria_id, fabricante, data_ultima_calibracao, proxima_calibracao")
+      .select("id, tag, categoria_id, fabricante, data_ultima_calibracao, proxima_calibracao, setor_id")
       .order("id", { ascending: true }),
-    loadCategories()
+    loadCategories(),
+    loadSetores()
   ]);
 
-  if (instrumentRowsResponse.error || categoryRowsResponse.error) {
+  if (instrumentRowsResponse.error || categoryRowsResponse.error || setorRowsResponse.error) {
     const errorMessage =
-      instrumentRowsResponse.error?.message ?? categoryRowsResponse.error?.message ?? "";
+      instrumentRowsResponse.error?.message ??
+      categoryRowsResponse.error?.message ??
+      setorRowsResponse.error?.message ?? "";
 
     if (isPermissionDenied(errorMessage)) {
       return buildSchemaPermissionError();
@@ -616,8 +638,9 @@ export async function GET(request: Request) {
   const categoriesById = mapCategoriesById(
     (categoryRowsResponse.data ?? []) as InstrumentCategoryRow[]
   );
+  const setoresById = mapSetoresById((setorRowsResponse.data ?? []) as SetorRow[]);
   const items = ((instrumentRowsResponse.data ?? []) as InstrumentDbRow[]).map((row) =>
-    mapInstrumentRow(row, categoriesById)
+    mapInstrumentRow(row, categoriesById, setoresById)
   );
 
   return NextResponse.json({ items });
@@ -731,9 +754,10 @@ export async function POST(request: Request) {
       tag,
       categoria_id: resolvedCategory.category.id,
       fabricante: manufacturer || null,
-      proxima_calibracao: calibrationDate
+      proxima_calibracao: calibrationDate,
+      setor_id: payload.setorId ?? null
     })
-    .select("id, tag, categoria_id, fabricante, data_ultima_calibracao, proxima_calibracao")
+    .select("id, tag, categoria_id, fabricante, data_ultima_calibracao, proxima_calibracao, setor_id")
     .single();
 
   if (insertInstrument.error) {
@@ -877,10 +901,11 @@ export async function PATCH(request: Request) {
       tag,
       categoria_id: resolvedCategory.category.id,
       fabricante: manufacturer || null,
-      proxima_calibracao: calibrationDate
+      proxima_calibracao: calibrationDate,
+      setor_id: payload.setorId ?? null
     })
     .eq("id", id)
-    .select("id, tag, categoria_id, fabricante, data_ultima_calibracao, proxima_calibracao")
+    .select("id, tag, categoria_id, fabricante, data_ultima_calibracao, proxima_calibracao, setor_id")
     .single();
 
   if (updateInstrument.error) {

@@ -6,13 +6,28 @@ Este arquivo dá contexto operacional rápido. Para detalhes completos, comece p
 
 ## Estado atual (2026-04-23)
 
-Suite de testes: **82 testes passando**, cobertura de statements em **87%+**.
+Suite de testes: **85 testes passando**, cobertura de statements em **87%+**.
 
-### Última sessão — Wiki Obsidian
+### Última sessão — Feature Setor de Uso (COMPLETA)
 
-Reorganização completa da documentação em estrutura wiki categorizada (`docs/`). Todos os arquivos `.md` foram movidos para subpastas temáticas e 22 novos docs de módulos/componentes/API foram criados. `CLAUDE.md` e `README.md` atualizados para apontar para a nova estrutura.
+**CONCLUÍDO:** Todas as 8 tasks da feature "Setor de Uso em Instrumentos" implementadas e aprovadas.
 
-A documentação agora serve como atalho de navegação: antes de abrir um arquivo `.ts`, leia o doc correspondente em `docs/modulos/` para encontrar a função certa sem precisar ler o arquivo inteiro.
+Branch: `feat/setor-instrumentos` — pronta para merge.
+
+**O que foi entregue:**
+- `lib/setores.ts` — tipos `SetorRow`, `SetorItem`, `mapSetorRow`, `formatSetorLabel`
+- `tests/lib/setores.test.ts` — 3 testes unitários
+- `app/api/setores/route.ts` — CRUD GET/POST/PATCH/DELETE
+- DB: `calibracao.setores` (tabela) + `calibracao.instrumentos.setor_id` (FK nullable)
+- `lib/instruments.ts` — `InstrumentDbRow` com `setor_id`, `InstrumentItem` com `setor: SetorItem | null`, `mapInstrumentRow` com `setoresById` como 3º parâmetro
+- `app/api/instrumentos/route.ts` — carrega setores em paralelo, inclui `setor_id` em todos os SELECTs/payloads
+- `app/api/instrumentos/metadata/route.ts` — retorna `setores` no JSON
+- `app/_components/setores-content.tsx` + `app/configuracoes/setores/page.tsx` — UI CRUD de setores
+- `app/_components/settings-home-content.tsx` — atalho para `/configuracoes/setores`
+- `app/_components/instrument-create-content.tsx` — dropdown setor opcional
+- `app/_components/instruments-content.tsx` — coluna setor, filtro por setor, campo setor no modal de edição
+
+**Próximo:** Merge da branch `feat/setor-instrumentos` → `main`.
 
 ## Para navegar o código
 

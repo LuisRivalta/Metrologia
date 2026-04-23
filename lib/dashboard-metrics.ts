@@ -60,7 +60,7 @@ async function loadDashboardRows(referenceDate: Date) {
   const categories = (categoryRowsResponse.data ?? []) as InstrumentCategoryRow[];
   const categoriesById = new Map(categories.map((row) => [row.id, row]));
   const rows = ((instrumentRowsResponse.data ?? []) as InstrumentDbRow[]).map((row) =>
-    mapInstrumentRow(row, categoriesById, referenceDate)
+    mapInstrumentRow(row, categoriesById, new Map(), referenceDate)
   );
 
   return {

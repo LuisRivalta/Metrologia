@@ -6,6 +6,7 @@ import { fetchApi } from "@/lib/api/client";
 import type { InstrumentDetailItem, InstrumentItem } from "@/lib/instruments";
 import type { MeasurementFieldItem } from "@/lib/measurement-fields";
 import type { MeasurementItem } from "@/lib/measurements";
+import { formatSetorLabel, type SetorItem } from "@/lib/setores";
 import { DefaultFieldPreviewTable } from "./default-field-preview-table";
 import { PageTransitionLink } from "./page-transition-link";
 
@@ -15,6 +16,7 @@ type InstrumentFormState = {
   newCategoryName: string;
   manufacturer: string;
   calibrationDate: string;
+  setorId: number | null;
 };
 
 type InstrumentFieldFormItem = {
@@ -76,7 +78,8 @@ const emptyFormState: InstrumentFormState = {
   category: "",
   newCategoryName: "",
   manufacturer: "",
-  calibrationDate: ""
+  calibrationDate: "",
+  setorId: null
 };
 
 function normalizeSearchValue(value: string) {
@@ -131,6 +134,7 @@ export function InstrumentsContent() {
   const initialStatus = searchParams.get("status");
 
   const [rows, setRows] = useState<InstrumentItem[]>([]);
+  const [setores, setSetores] = useState<SetorItem[]>([]);
   const [metadataCategories, setMetadataCategories] = useState<InstrumentMetadataCategory[]>([]);
   const [measurements, setMeasurements] = useState<MeasurementItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -140,6 +144,7 @@ export function InstrumentsContent() {
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState("");
   const [manufacturerFilter, setManufacturerFilter] = useState("");
+  const [setorFilter, setSetorFilter] = useState("");
   const [calibrationFilter, setCalibrationFilter] = useState<CalibrationFilter>(
     VALID_CALIBRATION_FILTER_STATUSES.includes(initialStatus as CalibrationFilter)
       ? (initialStatus as CalibrationFilter)
@@ -182,9 +187,12 @@ export function InstrumentsContent() {
       const matchesCategory = !categoryFilter || row.category === categoryFilter;
       const matchesManufacturer = !manufacturerFilter || row.manufacturer === manufacturerFilter;
       const matchesCalibration = calibrationFilter === "all" || row.tone === calibrationFilter;
-      return matchesSearch && matchesCategory && matchesManufacturer && matchesCalibration;
+      const matchesSetor =
+        !setorFilter ||
+        (setorFilter === "none" ? row.setor === null : row.setor?.id === Number(setorFilter));
+      return matchesSearch && matchesCategory && matchesManufacturer && matchesCalibration && matchesSetor;
     });
-  }, [rows, searchTerm, categoryFilter, manufacturerFilter, calibrationFilter]);
+  }, [rows, searchTerm, categoryFilter, manufacturerFilter, calibrationFilter, setorFilter]);
 
   const sortedRows = useMemo(() => {
     if (!sortKey) return filteredRows;
@@ -198,6 +206,10 @@ export function InstrumentsContent() {
   useEffect(() => {
     window.localStorage.removeItem(LEGACY_INSTRUMENTS_STORAGE_KEY);
     void Promise.all([loadInstruments(), loadInstrumentMetadata()]);
+  }, []);
+
+  useEffect(() => {
+    void loadSetores();
   }, []);
 
   useEffect(() => {
@@ -262,6 +274,16 @@ export function InstrumentsContent() {
     }
   }
 
+  async function loadSetores() {
+    try {
+      const response = await fetchApi("/api/setores", { method: "GET", cache: "no-store" });
+      const payload = (await response.json()) as { items?: SetorItem[] };
+      setSetores(payload.items ?? []);
+    } catch {
+      // setores são opcionais — falha silenciosa
+    }
+  }
+
   function handleSort(nextKey: SortKey) {
     if (sortKey === nextKey) {
       setSortDirection((current) => (current === "asc" ? "desc" : "asc"));
@@ -293,7 +315,8 @@ export function InstrumentsContent() {
       category: row.categorySlug ?? "",
       newCategoryName: "",
       manufacturer: row.manufacturer === "Não informado" ? "" : row.manufacturer,
-      calibrationDate: row.calibrationDateValue ?? ""
+      calibrationDate: row.calibrationDateValue ?? "",
+      setorId: row.setor?.id ?? null
     });
     setIsModalOpen(true);
   }
@@ -396,7 +419,8 @@ export function InstrumentsContent() {
           tag: formState.tag.trim(),
           category: formState.category,
           manufacturer: formState.manufacturer.trim(),
-          calibrationDate: formState.calibrationDate
+          calibrationDate: formState.calibrationDate,
+          setorId: formState.setorId
         })
       });
       const payload = (await response.json()) as InstrumentApiResponse;
@@ -466,9 +490,19 @@ export function InstrumentsContent() {
             <div className="inventory-filters-grid">
               <label className="inventory-filter-field"><span>Categoria</span><select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}><option value="">Todas as categorias</option>{categoryOptions.map((option) => <option key={option.slug} value={option.name}>{option.name}</option>)}</select></label>
               <label className="inventory-filter-field"><span>Fabricante</span><select value={manufacturerFilter} onChange={(event) => setManufacturerFilter(event.target.value)}><option value="">Todos os fabricantes</option>{manufacturerOptions.map((option) => <option key={option} value={option}>{option}</option>)}</select></label>
+              <label className="inventory-filter-field">
+                <span>Setor</span>
+                <select value={setorFilter} onChange={(event) => setSetorFilter(event.target.value)}>
+                  <option value="">Todos os setores</option>
+                  <option value="none">Sem setor</option>
+                  {setores.map((setor) => (
+                    <option key={setor.id} value={setor.id}>{formatSetorLabel(setor)}</option>
+                  ))}
+                </select>
+              </label>
               <label className="inventory-filter-field"><span>Prazo de validade</span><select value={calibrationFilter} onChange={(event) => setCalibrationFilter(event.target.value as CalibrationFilter)}><option value="all">Todos</option><option value="neutral">Em dia</option><option value="warning">Vencendo</option><option value="danger">Vencido</option></select></label>
             </div>
-            <div className="inventory-filters-actions"><button type="button" className="inventory-filters-clear" onClick={() => { setCategoryFilter(""); setManufacturerFilter(""); setCalibrationFilter("all"); }}>Limpar filtros</button></div>
+            <div className="inventory-filters-actions"><button type="button" className="inventory-filters-clear" onClick={() => { setCategoryFilter(""); setManufacturerFilter(""); setSetorFilter(""); setCalibrationFilter("all"); }}>Limpar filtros</button></div>
           </section>
         ) : null}
 
@@ -482,13 +516,14 @@ export function InstrumentsContent() {
                   <th><button type="button" className={`inventory-sort-button${sortKey === "tag" ? " is-active" : ""}`} onClick={() => handleSort("tag")}><span>Tag</span><span className="inventory-sort-button__icon" aria-hidden="true">{sortKey === "tag" ? (sortDirection === "asc" ? "A-Z" : "Z-A") : "A-Z"}</span></button></th>
                   <th><button type="button" className={`inventory-sort-button${sortKey === "category" ? " is-active" : ""}`} onClick={() => handleSort("category")}><span>Categoria</span><span className="inventory-sort-button__icon" aria-hidden="true">{sortKey === "category" ? (sortDirection === "asc" ? "A-Z" : "Z-A") : "A-Z"}</span></button></th>
                   <th><button type="button" className={`inventory-sort-button${sortKey === "manufacturer" ? " is-active" : ""}`} onClick={() => handleSort("manufacturer")}><span>Fabricante</span><span className="inventory-sort-button__icon" aria-hidden="true">{sortKey === "manufacturer" ? (sortDirection === "asc" ? "A-Z" : "Z-A") : "A-Z"}</span></button></th>
+                  <th>Setor</th>
                   <th><button type="button" className={`inventory-sort-button inventory-sort-button--calibration${sortKey === "calibration" ? " is-active" : ""}`} onClick={() => handleSort("calibration")}><span>Prazo de calibração</span><span className="inventory-sort-button__icon inventory-sort-button__icon--calibration" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="9" r="5.25" fill="currentColor" opacity="0.16" /><circle cx="9" cy="9" r="4.25" stroke="currentColor" strokeWidth="1.8" /><path d="M9 6.9v2.5l1.7 1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /><path d={sortKey === "calibration" && sortDirection === "desc" ? "m16.5 16.2 2.5-2.6 2.5 2.6" : "m16.5 13.8 2.5 2.6 2.5-2.6"} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></span></button></th>
                   <th>Ações</th>
                 </tr>
               </thead>
               <tbody>
-                {isLoading ? <tr><td colSpan={5} className="inventory-table__empty">Carregando instrumentos...</td></tr> : null}
-                {!isLoading && sortedRows.length === 0 ? <tr><td colSpan={5} className="inventory-table__empty">Nenhum instrumento encontrado com os filtros atuais.</td></tr> : null}
+                {isLoading ? <tr><td colSpan={6} className="inventory-table__empty">Carregando instrumentos...</td></tr> : null}
+                {!isLoading && sortedRows.length === 0 ? <tr><td colSpan={6} className="inventory-table__empty">Nenhum instrumento encontrado com os filtros atuais.</td></tr> : null}
                 {!isLoading ? sortedRows.map((row) => {
                   const { dateLabel, statusLabel } = getCalibrationDisplayParts(row.calibration);
                   return (
@@ -496,6 +531,9 @@ export function InstrumentsContent() {
                       <td data-label="Tag"><PageTransitionLink href={`/instrumentos/${row.id}`} className="tag-pill tag-pill--link">{row.tag}</PageTransitionLink></td>
                       <td data-label="Categoria">{row.category}</td>
                       <td data-label="Fabricante">{row.manufacturer}</td>
+                      <td data-label="Setor">
+                        {row.setor ? formatSetorLabel(row.setor) : <span className="inventory-table__empty-cell">Sem setor</span>}
+                      </td>
                       <td data-label="Prazo de calibração"><div className="calibration-cell"><span className={`calibration-cell__date calibration-cell__date--${row.tone}`}>{dateLabel}</span>{statusLabel ? <span className={`calibration-badge calibration-badge--${row.tone}`}>{statusLabel}</span> : null}</div></td>
                       <td data-label="Ações"><button type="button" className="table-action" aria-label="Editar" onClick={() => openEditModal(row)}><svg viewBox="0 0 24 24" fill="none"><path d="M4 16.8V20h3.2L18 9.2 14.8 6 4 16.8Z" fill="currentColor" /><path d="m13.8 7 3.2 3.2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg></button></td>
                     </tr>
@@ -547,6 +585,27 @@ export function InstrumentsContent() {
                       }}
                     />
                     {validationErrors.manufacturer ? <small className="instrument-modal__field-error">{validationErrors.manufacturer}</small> : <small className="instrument-modal__field-help">Se nao informar, o instrumento sera salvo como nao informado.</small>}
+                  </label>
+
+                  <label className="instrument-modal__field instrument-modal__field--full">
+                    <span>Setor de uso</span>
+                    <select
+                      value={formState.setorId ?? ""}
+                      onChange={(event) => {
+                        const val = event.target.value;
+                        setFormState((current) => ({
+                          ...current,
+                          setorId: val === "" ? null : Number(val)
+                        }));
+                      }}
+                    >
+                      <option value="">Sem setor definido</option>
+                      {setores.map((setor) => (
+                        <option key={setor.id} value={setor.id}>
+                          {setor.codigo} – {setor.nome}
+                        </option>
+                      ))}
+                    </select>
                   </label>
 
                   <label className="instrument-modal__field">

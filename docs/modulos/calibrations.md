@@ -45,7 +45,7 @@ Centraliza a lógica de "como uma linha do banco vira um item do histórico". Se
 
 - [[modulos/calibration-records]] — `parseCalibrationRecord` chamado aqui
 - [[modulos/instruments]] — `getRelativeCalibration` usado no deriveStatus
-- [[componentes/calibration-create-flow]] — exibe o histórico
+- `app/_components/instrument-calibrations-content.tsx` — exibe o histórico via GET /api/calibracoes
 - [[api/calibracoes]] — retorna `CalibrationHistoryItem[]`
 
 ## Código-fonte

@@ -23,7 +23,7 @@ Gerencia o formato dual de `observacoes`: o campo pode ser texto puro ou pode co
 
 | Tipo | Descrição |
 |------|-----------|
-| `CalibrationStoredFieldEntry` | Uma entrada de campo: `fieldId`, `fieldSlug`, `value`, `unit`, `status`, `confidence`, `evidence` |
+| `CalibrationStoredFieldEntry` | Uma entrada de campo: `fieldId`, `fieldSlug`, `fieldName`, `measurementName`, `value`, `unit`, `status`, `confidence`, `evidence` |
 | `CalibrationFieldReviewStatus` | `"unknown" \| "conforming" \| "non_conforming"` |
 
 ## Contexto de criação

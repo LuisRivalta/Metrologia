@@ -23,7 +23,7 @@ tags: [arquitetura]
 Browser → fetchApi (injeta Bearer token) → middleware.ts (valida sessão) → API Route (supabaseAdmin) → Supabase
 ```
 
-- `lib/api/fetch-api.ts` injeta `Authorization: Bearer <access_token>` automaticamente
+- `lib/api/client.ts` injeta `Authorization: Bearer <access_token>` automaticamente
 - `middleware.ts` valida por bearer token ou cookies `metrologia-access-token` / `metrologia-refresh-token`
 - API routes usam `supabaseAdmin` (service role key) — nunca o browser client
 

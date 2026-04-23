@@ -29,7 +29,7 @@ npx vitest run tests/lib/calibration-derivations.test.ts
 ## Architecture
 
 ### Request path
-- Pages call `lib/api/fetch-api.ts` (`fetchApi`), which injects `Authorization: Bearer <access_token>` from `supabaseBrowser`
+- Pages call `lib/api/client.ts` (`fetchApi`), which injects `Authorization: Bearer <access_token>` from `supabaseBrowser`
 - `middleware.ts` validates that token (or `metrologia-access-token` / `metrologia-refresh-token` cookies) before allowing access to protected pages and API routes
 - API routes use `supabaseAdmin` (service role key) — never the browser client
 

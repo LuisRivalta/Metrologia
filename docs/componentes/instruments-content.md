@@ -29,7 +29,7 @@ Renderiza a lista de instrumentos com:
 ```ts
 const searchParams = useSearchParams();
 const initialStatus = searchParams.get("status");
-// validStatuses = ["neutral", "warning", "danger"]
+// VALID_CALIBRATION_FILTER_STATUSES = ["neutral", "warning", "danger"]
 // Se status válido → usa como filtro inicial; senão → "all"
 ```
 

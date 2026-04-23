@@ -29,6 +29,7 @@ OPENROUTER_API_KEY=""
 
 ```bash
 npm run build          # build de produção
+npm run lint           # ESLint via Next.js
 npm run test           # suite completa (Vitest)
 npm run test:tdd       # watch mode TDD
 npm run test:coverage  # cobertura

@@ -4,6 +4,7 @@ import {
   type CategoryMeasurementFieldRow
 } from "@/lib/measurement-fields";
 import { mapMeasurementRow, type MeasurementRow } from "@/lib/measurements";
+import { mapSetorRow, type SetorRow } from "@/lib/setores";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
@@ -76,7 +77,7 @@ function mapCategoryFieldsByCategoryId(
 }
 
 export async function GET() {
-  const [categoryRowsResponse, measurementRowsResponse, categoryFieldRowsResponse] = await Promise.all([
+  const [categoryRowsResponse, measurementRowsResponse, categoryFieldRowsResponse, setorRowsResponse] = await Promise.all([
     supabaseAdmin
       .schema("calibracao")
       .from("categorias_instrumentos")
@@ -93,11 +94,16 @@ export async function GET() {
       .select("id, categoria_id, nome, slug, unidade_medida_id, tipo_valor, ordem, ativo")
       .eq("ativo", true)
       .order("ordem", { ascending: true })
-      .order("id", { ascending: true })
+      .order("id", { ascending: true }),
+    supabaseAdmin
+      .schema("calibracao")
+      .from("setores")
+      .select("id, codigo, nome")
+      .order("codigo", { ascending: true })
   ]);
 
   const combinedError =
-    categoryRowsResponse.error ?? measurementRowsResponse.error ?? categoryFieldRowsResponse.error;
+    categoryRowsResponse.error ?? measurementRowsResponse.error ?? categoryFieldRowsResponse.error ?? setorRowsResponse.error;
 
   if (combinedError) {
     if (isPermissionDenied(combinedError.message)) {
@@ -123,5 +129,6 @@ export async function GET() {
     })
   );
 
-  return NextResponse.json({ categories, measurements });
+  const setores = ((setorRowsResponse.data ?? []) as SetorRow[]).map(mapSetorRow);
+  return NextResponse.json({ categories, measurements, setores });
 }

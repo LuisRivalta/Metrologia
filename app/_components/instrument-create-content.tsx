@@ -3,6 +3,7 @@
 import { type ChangeEvent, type FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { fetchApi } from "@/lib/api/client";
+import { type SetorItem } from "@/lib/setores";
 import { readExtractionSseStream } from "@/lib/api/extract-sse";
 import {
   applyCalibrationDerivedValues,
@@ -28,6 +29,7 @@ type InstrumentFormState = {
   category: string;
   newCategoryName: string;
   manufacturer: string;
+  setorId: number | null;
 };
 
 type InstrumentFieldFormItem = {
@@ -49,6 +51,7 @@ type InstrumentMetadataResponse = {
   error?: string;
   categories?: InstrumentMetadataCategory[];
   measurements?: MeasurementItem[];
+  setores?: SetorItem[];
 };
 
 type InstrumentApiResponse = {
@@ -133,7 +136,8 @@ const emptyFormState: InstrumentFormState = {
   tag: "",
   category: "",
   newCategoryName: "",
-  manufacturer: ""
+  manufacturer: "",
+  setorId: null
 };
 
 const maxCertificateFileSize = 10 * 1024 * 1024;
@@ -257,6 +261,7 @@ export function InstrumentCreateContent() {
   const [step, setStep] = useState<Step>("details");
   const [metadataCategories, setMetadataCategories] = useState<InstrumentMetadataCategory[]>([]);
   const [measurements, setMeasurements] = useState<MeasurementItem[]>([]);
+  const [setores, setSetores] = useState<SetorItem[]>([]);
   const [formState, setFormState] = useState<InstrumentFormState>(emptyFormState);
   const [fieldRows, setFieldRows] = useState<InstrumentFieldFormItem[]>([]);
   const [calibrationForm, setCalibrationForm] =
@@ -320,6 +325,7 @@ export function InstrumentCreateContent() {
       } else {
         setMetadataCategories(payload.categories ?? []);
         setMeasurements(payload.measurements ?? []);
+        setSetores(payload.setores ?? []);
         setLoadError("");
       }
     } catch {
@@ -559,7 +565,8 @@ export function InstrumentCreateContent() {
           tag: formState.tag.trim(),
           category: formState.category,
           manufacturer: formState.manufacturer.trim(),
-          calibrationDate: calibrationForm.validityDate
+          calibrationDate: calibrationForm.validityDate,
+          setorId: formState.setorId
         })
       });
       const instrumentPayload = (await instrumentResponse.json()) as InstrumentApiResponse;
@@ -708,6 +715,30 @@ export function InstrumentCreateContent() {
                   <span>Fabricante (opcional)</span>
                   <input type="text" placeholder="Ex: Mitutoyo" className={validationErrors.manufacturer ? "is-invalid" : undefined} value={formState.manufacturer} onChange={(event) => { setFormState((current) => ({ ...current, manufacturer: event.target.value })); setValidationErrors((current) => ({ ...current, manufacturer: undefined, form: undefined })); }} />
                   {validationErrors.manufacturer ? <small className="instrument-modal__field-error">{validationErrors.manufacturer}</small> : <small className="instrument-modal__field-help">Se nao informar, o instrumento sera salvo como nao informado.</small>}
+                </label>
+
+                <label className="instrument-modal__field instrument-modal__field--full">
+                  <span>Setor de uso</span>
+                  <select
+                    value={formState.setorId ?? ""}
+                    onChange={(event) => {
+                      const val = event.target.value;
+                      setFormState((current) => ({
+                        ...current,
+                        setorId: val === "" ? null : Number(val)
+                      }));
+                    }}
+                  >
+                    <option value="">Sem setor definido</option>
+                    {setores.map((setor) => (
+                      <option key={setor.id} value={setor.id}>
+                        {setor.codigo} – {setor.nome}
+                      </option>
+                    ))}
+                  </select>
+                  <small className="instrument-modal__field-help">
+                    Opcional. Identifica o local fisico onde o instrumento e utilizado.
+                  </small>
                 </label>
 
                 <div className="instrument-modal__field instrument-modal__field--category-builder">

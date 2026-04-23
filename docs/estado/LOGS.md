@@ -1,5 +1,43 @@
 # Logs do Projeto
 
+## 2026-04-22/23 — Wiki Obsidian: Reorganização da Documentação
+
+### O que foi feito
+
+Reorganização completa dos `.md` do projeto em estrutura wiki categorizada, com docs por módulo para navegação rápida por IA.
+
+**9 commits entregues:**
+- `chore` — reorganize docs into categorized wiki structure (Task 1)
+- `docs` — add wiki index and architecture docs (Task 2)
+- `42bcb4a` — add domain model, critical rules and slug docs (Task 3)
+- `37128bb` — add module docs for calibration core (records, derivations, certificates, parsers) (Task 4)
+- `f3a9700` — add module docs for extraction, calibrations history and dashboard metrics (Task 5)
+- `5115654` — add module docs for instruments, measurements, fields and categories (Task 6)
+- `23af41c` — add component docs for instrument create, calibration create, dashboard and instruments list (Task 7)
+- `0db4c87` — add API route docs for calibracoes, instrumentos and categorias (Task 8)
+- `4041e11` + `c246648` + `bfe7cf4` — CLAUDE.md paths, README thin, quality review fixes (Task 9)
+
+**Mudanças:**
+1. Estrutura `docs/` com 8 categorias: `estado/`, `produto/`, `arquitetura/`, `dominio/`, `modulos/`, `componentes/`, `api/`, `testes/`, `historico/`
+2. `docs/00-INDEX.md` — hub central com links `[[...]]` para toda a documentação
+3. 3 docs de arquitetura (`visao-geral`, `data-layer`, `ia-pipeline`)
+4. 3 docs de domínio (`modelo`, `regras-criticas`, `campo-slugs`)
+5. 11 docs de módulos `lib/` — cada um com tabela de funções, linha aproximada, tipos, regras e `[[link]]` para o arquivo de código
+6. 4 docs de componentes complexos
+7. 4 docs de API routes
+8. `CLAUDE.md` atualizado com paths novos; `README.md` thin apontando para wiki
+9. Arquivos movidos: `HANDOFF_IA.md`, `LOGS.md`, `PRD.md`, `TDD.md` → respectivas subpastas de `docs/`
+10. `CONTEXT.md` deletado (conteúdo absorvido pelos docs de arquitetura e domínio)
+
+**Correções de qualidade (code review):**
+- `lib/api/fetch-api.ts` → `lib/api/client.ts` (arquivo correto) em CLAUDE.md e visao-geral.md
+- `CalibrationStoredFieldEntry`: adicionados `fieldName` e `measurementName` faltantes no doc
+- `calibrations.md`: corrigido consumer do histórico (não é `calibration-create-flow`)
+
+**Testes:** sem alteração de código — suite intacta.
+
+---
+
 ## 2026-04-21 — B3: Dashboard Navegável
 
 ### O que foi feito

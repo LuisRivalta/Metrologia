@@ -1,5 +1,27 @@
 # Logs do Projeto
 
+## 2026-04-23 — Setor de Uso (Task 1 de 8): lib/setores.ts + Testes
+
+### O que foi feito
+
+Implementação TDD da biblioteca TypeScript pura `lib/setores.ts` e seus testes unitários. Esta é a Task 1 da feature plan "Setor de Uso em Instrumentos" — cria a base de tipos e funções de manipulação que serão usados em Tasks posteriores (API, migração SQL, UI).
+
+**1 commit entregue:**
+- `fa43b46` — `feat: add lib/setores with SetorRow, SetorItem, mapSetorRow, formatSetorLabel`
+
+**Mudanças:**
+1. `lib/setores.ts` — 2 tipos (`SetorRow` com optional `created_at`, `SetorItem` sem) e 2 funções puras:
+   - `mapSetorRow()` — converte row do banco para `SetorItem`, trimando campos `codigo` e `nome`
+   - `formatSetorLabel()` — formata exibição como "codigo – nome"
+2. `tests/lib/setores.test.ts` — 3 testes cobrindo: mapeamento de row com espaços, formatação de label, e handling de `created_at` ausente
+
+**Validação:**
+- 3 testes passando
+- Build `npm run build` limpo, sem erros TypeScript
+- Branch: `feat/setor-instrumentos` pronto para próxima task
+
+---
+
 ## 2026-04-22/23 — Wiki Obsidian: Reorganização da Documentação
 
 ### O que foi feito

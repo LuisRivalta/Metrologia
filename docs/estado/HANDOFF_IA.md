@@ -6,13 +6,15 @@ Este arquivo dá contexto operacional rápido. Para detalhes completos, comece p
 
 ## Estado atual (2026-04-23)
 
-Suite de testes: **82 testes passando**, cobertura de statements em **87%+**.
+Suite de testes: **85 testes passando** (adicionado 3 para setores), cobertura de statements em **87%+**.
 
-### Última sessão — Wiki Obsidian
+### Última sessão — Setor de Uso (Task 1 de 8)
 
-Reorganização completa da documentação em estrutura wiki categorizada (`docs/`). Todos os arquivos `.md` foram movidos para subpastas temáticas e 22 novos docs de módulos/componentes/API foram criados. `CLAUDE.md` e `README.md` atualizados para apontar para a nova estrutura.
+**CONCLUÍDO:** Implementação de `lib/setores.ts` com tipos `SetorRow` e `SetorItem`, funções `mapSetorRow()` (trim campos) e `formatSetorLabel()` (formato "codigo – nome"). Testes unitários todos passando. Build limpo.
 
-A documentação agora serve como atalho de navegação: antes de abrir um arquivo `.ts`, leia o doc correspondente em `docs/modulos/` para encontrar a função certa sem precisar ler o arquivo inteiro.
+Branch: `feat/setor-instrumentos` (commit: `fa43b46`)
+
+Próxima: Task 2 — Migração SQL no Supabase (criar tabela `setores`, adicionar FK em `instrumentos`)
 
 ## Para navegar o código
 

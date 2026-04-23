@@ -6,15 +6,28 @@ Este arquivo dá contexto operacional rápido. Para detalhes completos, comece p
 
 ## Estado atual (2026-04-23)
 
-Suite de testes: **85 testes passando** (adicionado 3 para setores), cobertura de statements em **87%+**.
+Suite de testes: **85 testes passando**, cobertura de statements em **87%+**.
 
-### Última sessão — Setor de Uso (Task 1 de 8)
+### Última sessão — Feature Setor de Uso (COMPLETA)
 
-**CONCLUÍDO:** Implementação de `lib/setores.ts` com tipos `SetorRow` e `SetorItem`, funções `mapSetorRow()` (trim campos) e `formatSetorLabel()` (formato "codigo – nome"). Testes unitários todos passando. Build limpo.
+**CONCLUÍDO:** Todas as 8 tasks da feature "Setor de Uso em Instrumentos" implementadas e aprovadas.
 
-Branch: `feat/setor-instrumentos` (commit: `fa43b46`)
+Branch: `feat/setor-instrumentos` — pronta para merge.
 
-Próxima: Task 2 — Migração SQL no Supabase (criar tabela `setores`, adicionar FK em `instrumentos`)
+**O que foi entregue:**
+- `lib/setores.ts` — tipos `SetorRow`, `SetorItem`, `mapSetorRow`, `formatSetorLabel`
+- `tests/lib/setores.test.ts` — 3 testes unitários
+- `app/api/setores/route.ts` — CRUD GET/POST/PATCH/DELETE
+- DB: `calibracao.setores` (tabela) + `calibracao.instrumentos.setor_id` (FK nullable)
+- `lib/instruments.ts` — `InstrumentDbRow` com `setor_id`, `InstrumentItem` com `setor: SetorItem | null`, `mapInstrumentRow` com `setoresById` como 3º parâmetro
+- `app/api/instrumentos/route.ts` — carrega setores em paralelo, inclui `setor_id` em todos os SELECTs/payloads
+- `app/api/instrumentos/metadata/route.ts` — retorna `setores` no JSON
+- `app/_components/setores-content.tsx` + `app/configuracoes/setores/page.tsx` — UI CRUD de setores
+- `app/_components/settings-home-content.tsx` — atalho para `/configuracoes/setores`
+- `app/_components/instrument-create-content.tsx` — dropdown setor opcional
+- `app/_components/instruments-content.tsx` — coluna setor, filtro por setor, campo setor no modal de edição
+
+**Próximo:** Merge da branch `feat/setor-instrumentos` → `main`.
 
 ## Para navegar o código
 

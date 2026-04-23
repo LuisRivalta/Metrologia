@@ -1,5 +1,26 @@
 # Logs do Projeto
 
+## 2026-04-23 — Feature Setor de Uso: Implementação Completa (Tasks 1–8)
+
+### O que foi feito
+
+Feature "Setor de Uso em Instrumentos" implementada integralmente via Subagent-Driven Development (8 tasks, 2 revisões por task).
+
+**Componentes entregues:**
+- `lib/setores.ts` + `tests/lib/setores.test.ts` — tipos e funções puras (TDD, 3 testes)
+- `app/api/setores/route.ts` — CRUD completo para `calibracao.setores`
+- DB migration (manual no Supabase): `CREATE TABLE calibracao.setores` + `ALTER TABLE calibracao.instrumentos ADD COLUMN setor_id`
+- `lib/instruments.ts` — adicionado `setor_id` em `InstrumentDbRow`, `setor: SetorItem | null` em `InstrumentItem`, novo 3º parâmetro `setoresById` em `mapInstrumentRow`
+- `app/api/instrumentos/route.ts` + `metadata/route.ts` — setores carregados em paralelo, incluídos em todos os endpoints
+- `app/_components/setores-content.tsx` + `app/configuracoes/setores/page.tsx` — UI CRUD completa
+- `app/_components/settings-home-content.tsx` — atalho para `/configuracoes/setores`
+- `app/_components/instrument-create-content.tsx` — dropdown setor no formulário de criação
+- `app/_components/instruments-content.tsx` — coluna setor, filtro por setor, campo setor no modal de edição
+
+**Resultado:** 85 testes passando, build limpo, branch `feat/setor-instrumentos` pronta para merge.
+
+---
+
 ## 2026-04-23 — Setor de Uso (Task 1 de 8): lib/setores.ts + Testes
 
 ### O que foi feito

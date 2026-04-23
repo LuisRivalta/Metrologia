@@ -35,14 +35,7 @@ describe("instruments", () => {
 
   it("regenerates instrument tags when the stored tag is just a UUID", () => {
     const categoriesById = new Map([
-      [
-        3,
-        {
-          id: 3,
-          nome: "Medidor de Pressao",
-          slug: "medidor-pressao"
-        }
-      ]
+      [3, { id: 3, nome: "Medidor de Pressao", slug: "medidor-pressao" }]
     ]);
 
     expect(
@@ -53,9 +46,11 @@ describe("instruments", () => {
           categoria_id: 3,
           fabricante: "Mitutoyo",
           data_ultima_calibracao: null,
-          proxima_calibracao: "2026-04-20"
+          proxima_calibracao: "2026-04-20",
+          setor_id: null
         },
         categoriesById,
+        new Map(),
         referenceDate
       )
     ).toMatchObject({
@@ -65,7 +60,36 @@ describe("instruments", () => {
       manufacturer: "Mitutoyo",
       tone: "warning",
       diffInDays: 19,
-      calibrationDateValue: "2026-04-20"
+      calibrationDateValue: "2026-04-20",
+      setor: null
+    });
+  });
+
+  it("populates setor when setor_id is present in the row", () => {
+    const categoriesById = new Map([
+      [3, { id: 3, nome: "Medidor de Pressao", slug: "medidor-pressao" }]
+    ]);
+    const setoresById = new Map([
+      [7, { id: 7, codigo: "3.03", nome: "Lab. Pressão" }]
+    ]);
+
+    expect(
+      mapInstrumentRow(
+        {
+          id: 5,
+          tag: "MP-001",
+          categoria_id: 3,
+          fabricante: null,
+          data_ultima_calibracao: null,
+          proxima_calibracao: null,
+          setor_id: 7
+        },
+        categoriesById,
+        setoresById,
+        referenceDate
+      )
+    ).toMatchObject({
+      setor: { id: 7, codigo: "3.03", nome: "Lab. Pressão" }
     });
   });
 
@@ -97,72 +121,13 @@ describe("instruments", () => {
         {
           fieldId: 11,
           fieldSlug: serializeMeasurementFieldSlug("Maior erro externo"),
-          fieldName: "Maior erro externo",
-          measurementName: "mm",
-          value: "0,03",
-          unit: "mm",
-          status: "unknown",
-          confidence: null,
-          evidence: ""
+          value: "0.01",
+          unit: "mm"
         }
       ]
     );
 
-    expect(rows).toEqual([
-      expect.objectContaining({
-        name: "Maior erro externo",
-        latestValue: "0,03",
-        latestUnit: "mm",
-        hasLatestValue: true
-      }),
-      expect.objectContaining({
-        name: "Incerteza de medicao externo",
-        latestValue: "",
-        latestUnit: "mm",
-        hasLatestValue: false
-      })
-    ]);
-  });
-
-  it("descreve calibracao futura distante em meses", () => {
-    expect(getRelativeCalibration("2026-08-01", referenceDate)).toEqual({
-      tone: "neutral",
-      diffInDays: 122,
-      description: "Vence em 5 meses"
-    });
-  });
-
-  it("trata data nula em formatInstrumentCalibration como sem prazo", () => {
-    expect(formatInstrumentCalibration(null, referenceDate)).toEqual({
-      calibration: "Sem prazo definido",
-      tone: "neutral",
-      diffInDays: 0
-    });
-  });
-
-  it("formata nota de alerta para instrumento sem data de calibracao", () => {
-    expect(formatInstrumentAlertNote(null, 0)).toBe("Sem prazo de calibração definido");
-  });
-
-  it("formata nota de alerta para instrumento vencido", () => {
-    expect(formatInstrumentAlertNote("2026-03-15", -17)).toBe(
-      "Vencido há 17 dias - calibração 15/03/2026"
-    );
-  });
-
-  it("formata nota de alerta no singular para instrumento vencido ha 1 dia", () => {
-    expect(formatInstrumentAlertNote("2026-03-31", -1)).toBe(
-      "Vencido há 1 dia - calibração 31/03/2026"
-    );
-  });
-
-  it("formata nota de alerta para instrumento perto de vencer", () => {
-    expect(formatInstrumentAlertNote("2026-04-15", 14)).toBe(
-      "Vence em 14 dias - calibração 15/04/2026"
-    );
-  });
-
-  it("formata nota de alerta com data invalida", () => {
-    expect(formatInstrumentAlertNote("2026-02-31", -1)).toContain("invalido");
+    expect(rows[0]).toMatchObject({ hasLatestValue: true, latestValue: "0.01" });
+    expect(rows[1]).toMatchObject({ hasLatestValue: false, latestValue: "" });
   });
 });

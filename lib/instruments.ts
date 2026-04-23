@@ -1,6 +1,7 @@
 import { parseValidIsoDate } from "@/lib/date-utils";
 import type { CalibrationStoredFieldEntry } from "@/lib/calibration-records";
 import type { MeasurementFieldItem } from "@/lib/measurement-fields";
+import type { SetorItem } from "@/lib/setores";
 
 export type InstrumentTone = "neutral" | "warning" | "danger";
 
@@ -11,6 +12,7 @@ export type InstrumentDbRow = {
   fabricante: string | null;
   data_ultima_calibracao: string | null;
   proxima_calibracao: string | null;
+  setor_id?: number | null;
   created_at?: string | null;
   updated_at?: string | null;
 };
@@ -33,6 +35,7 @@ export type InstrumentItem = {
   calibrationDateValue?: string;
   tone: InstrumentTone;
   diffInDays: number;
+  setor: SetorItem | null;
 };
 
 export type InstrumentDetailFieldItem = MeasurementFieldItem & {
@@ -219,6 +222,7 @@ export function formatInstrumentAlertNote(calibrationDateValue: string | null, d
 export function mapInstrumentRow(
   row: InstrumentDbRow,
   categoriesById: Map<number, InstrumentCategoryRow>,
+  setoresById: Map<number, SetorItem> = new Map(),
   referenceDate = new Date()
 ): InstrumentItem {
   const category = row.categoria_id ? categoriesById.get(row.categoria_id) : undefined;
@@ -228,6 +232,7 @@ export function mapInstrumentRow(
   const calibrationInfo = formatInstrumentCalibration(row.proxima_calibracao, referenceDate);
   const rawTag = normalizeText(row.tag);
   const displayTag = rawTag && !isUuidLike(rawTag) ? rawTag : buildInstrumentDisplayTag(row.id, categorySlug, categoryName);
+  const setor = (row.setor_id != null ? setoresById.get(row.setor_id) : undefined) ?? null;
 
   return {
     id: row.id,
@@ -239,7 +244,8 @@ export function mapInstrumentRow(
     calibration: calibrationInfo.calibration,
     calibrationDateValue: row.proxima_calibracao ?? undefined,
     tone: calibrationInfo.tone,
-    diffInDays: calibrationInfo.diffInDays
+    diffInDays: calibrationInfo.diffInDays,
+    setor
   };
 }
 

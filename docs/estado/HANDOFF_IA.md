@@ -4,30 +4,31 @@
 
 Este arquivo dá contexto operacional rápido. Para detalhes completos, comece por `docs/00-INDEX.md`.
 
-## Estado atual (2026-04-23)
+## Estado atual (2026-04-25)
 
 Suite de testes: **85 testes passando**, cobertura de statements em **87%+**.
 
-### Última sessão — Feature Setor de Uso (COMPLETA)
+### Última sessão — Feature B4: Atalhos de Calibração (COMPLETA, aguardando validação manual)
 
-**CONCLUÍDO:** Todas as 8 tasks da feature "Setor de Uso em Instrumentos" implementadas e aprovadas.
+**CONCLUÍDO:** Todas as 4 tasks da feature "B4: Atalhos de Registro de Calibração" implementadas e aprovadas em revisão.
 
-Branch: `feat/setor-instrumentos` — pronta para merge.
+Branch: `feat/b4-calibration-shortcuts` — aguardando validação manual antes do merge.
 
 **O que foi entregue:**
-- `lib/setores.ts` — tipos `SetorRow`, `SetorItem`, `mapSetorRow`, `formatSetorLabel`
-- `tests/lib/setores.test.ts` — 3 testes unitários
-- `app/api/setores/route.ts` — CRUD GET/POST/PATCH/DELETE
-- DB: `calibracao.setores` (tabela) + `calibracao.instrumentos.setor_id` (FK nullable)
-- `lib/instruments.ts` — `InstrumentDbRow` com `setor_id`, `InstrumentItem` com `setor: SetorItem | null`, `mapInstrumentRow` com `setoresById` como 3º parâmetro
-- `app/api/instrumentos/route.ts` — carrega setores em paralelo, inclui `setor_id` em todos os SELECTs/payloads
-- `app/api/instrumentos/metadata/route.ts` — retorna `setores` no JSON
-- `app/_components/setores-content.tsx` + `app/configuracoes/setores/page.tsx` — UI CRUD de setores
-- `app/_components/settings-home-content.tsx` — atalho para `/configuracoes/setores`
-- `app/_components/instrument-create-content.tsx` — dropdown setor opcional
-- `app/_components/instruments-content.tsx` — coluna setor, filtro por setor, campo setor no modal de edição
+- `app/globals.css` — grid do `.dashboard-alert-item` reestruturado; novas classes `__main` e `__calibrate`; dark theme e responsivo atualizados; `.table-action` com `inline-flex`
+- `app/_components/dashboard-content.tsx` — cards de alerta com dois links: área principal → detalhe, botão "Registrar calibração" → `/instrumentos/:id/calibracoes/nova`
+- `app/_components/instruments-content.tsx` — ícone de documento+plus na coluna "Ações" de todas as linhas
 
-**Próximo:** Merge da branch `feat/setor-instrumentos` → `main`.
+**Próximo:** Validação manual no browser + merge `feat/b4-calibration-shortcuts` → `main`.
+
+**Checklist de validação manual:**
+- [ ] Dashboard: clicar na área principal do card navega para `/instrumentos/:id`
+- [ ] Dashboard: clicar em "Registrar calibração" navega para `/instrumentos/:id/calibracoes/nova`
+- [ ] Dashboard: visual correto em light e dark theme
+- [ ] Dashboard: em tela estreita, botão ocupa largura total
+- [ ] Lista: ícone de prancheta navega para `/instrumentos/:id/calibracoes/nova`
+- [ ] Lista: lápis ainda abre o modal de edição
+- [ ] Lista: dois ícones alinhados lado a lado na coluna "Ações"
 
 ## Para navegar o código
 

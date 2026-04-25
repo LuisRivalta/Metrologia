@@ -1,5 +1,22 @@
 # Logs do Projeto
 
+## 2026-04-25 — Feature B4: Atalhos de Registro de Calibração (Tasks 1–4)
+
+### O que foi feito
+
+Feature "B4: Atalhos de Registro de Calibração" implementada via Subagent-Driven Development (4 tasks, revisão spec + qualidade por task). Branch: `feat/b4-calibration-shortcuts`.
+
+**Componentes entregues:**
+- `app/globals.css` — grid do `.dashboard-alert-item` reestruturado para 2 colunas; novas classes `.dashboard-alert-item__main` e `.dashboard-alert-item__calibrate`; dark theme e responsivo atualizados; `.table-action` com `inline-flex`
+- `app/_components/dashboard-content.tsx` — cards de alerta reestruturados: `<Link>` externo substituído por `<div>` + `__main` (link para detalhe) + `__calibrate` (link para calibração)
+- `app/_components/instruments-content.tsx` — `<PageTransitionLink>` com ícone de documento+plus adicionado na coluna "Ações" de cada linha
+
+**Resultado:** um único clique a partir do dashboard ou da lista de instrumentos inicia o registro de calibração, sem alterar o fluxo existente.
+
+**Testes:** 85 passando, build limpo.
+
+---
+
 ## 2026-04-23 — Feature Setor de Uso: Implementação Completa (Tasks 1–8)
 
 ### O que foi feito

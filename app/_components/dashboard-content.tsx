@@ -156,47 +156,55 @@ export async function DashboardContent() {
 
           <div className="dashboard-alert-list">
             {metrics.alerts.map((alert) => (
-              <Link
+              <div
                 key={alert.tag}
-                href={`/instrumentos/${alert.id}`}
                 className={`dashboard-alert-item dashboard-alert-item--${alert.tone}`}
               >
-                <div className="dashboard-alert-item__icon" aria-hidden="true">
-                  {alert.tone === "danger" ? (
-                    <svg viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M12 7v6M12 17.2h.01M4.9 18.5h14.2c1.1 0 1.8-1.2 1.2-2.1L13.1 4.3a1.3 1.3 0 0 0-2.2 0L3.7 16.4c-.6.9.1 2.1 1.2 2.1Z"
-                        stroke="currentColor"
-                        strokeWidth="1.9"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  ) : (
-                    <svg viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M12 6.5v5.3l3.1 1.9M20 12a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"
-                        stroke="currentColor"
-                        strokeWidth="1.9"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  )}
-                </div>
-
-                <div className="dashboard-alert-item__body">
-                  <div className="dashboard-alert-item__title-row">
-                    <strong>{alert.tag}</strong>
-                    <span>{alert.title}</span>
+                <Link href={`/instrumentos/${alert.id}`} className="dashboard-alert-item__main">
+                  <div className="dashboard-alert-item__icon" aria-hidden="true">
+                    {alert.tone === "danger" ? (
+                      <svg viewBox="0 0 24 24" fill="none">
+                        <path
+                          d="M12 7v6M12 17.2h.01M4.9 18.5h14.2c1.1 0 1.8-1.2 1.2-2.1L13.1 4.3a1.3 1.3 0 0 0-2.2 0L3.7 16.4c-.6.9.1 2.1 1.2 2.1Z"
+                          stroke="currentColor"
+                          strokeWidth="1.9"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    ) : (
+                      <svg viewBox="0 0 24 24" fill="none">
+                        <path
+                          d="M12 6.5v5.3l3.1 1.9M20 12a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"
+                          stroke="currentColor"
+                          strokeWidth="1.9"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    )}
                   </div>
-                  <p>{alert.note}</p>
-                </div>
 
-                <span className={`dashboard-alert-item__badge dashboard-alert-item__badge--${alert.tone}`}>
-                  {alert.badgeLabel}
-                </span>
-              </Link>
+                  <div className="dashboard-alert-item__body">
+                    <div className="dashboard-alert-item__title-row">
+                      <strong>{alert.tag}</strong>
+                      <span>{alert.title}</span>
+                    </div>
+                    <p>{alert.note}</p>
+                  </div>
+
+                  <span className={`dashboard-alert-item__badge dashboard-alert-item__badge--${alert.tone}`}>
+                    {alert.badgeLabel}
+                  </span>
+                </Link>
+
+                <Link
+                  href={`/instrumentos/${alert.id}/calibracoes/nova`}
+                  className="dashboard-alert-item__calibrate"
+                >
+                  Registrar calibração
+                </Link>
+              </div>
             ))}
           </div>
         </article>

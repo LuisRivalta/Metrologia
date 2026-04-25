@@ -1,5 +1,11 @@
 # Logs do Projeto
 
+## 2026-04-25 — UX: Linhas Clicáveis na Lista de Instrumentos
+
+Linhas da tabela de instrumentos tornadas clicáveis em sua totalidade via `onClick` no `<tr>` + `router.push`. `stopPropagation` no link da tag e no wrapper das ações preserva o comportamento existente. CSS: `cursor: pointer` + hover sutil light/dark.
+
+---
+
 ## 2026-04-25 — Feature B4: Atalhos de Registro de Calibração (Tasks 1–4)
 
 ### O que foi feito

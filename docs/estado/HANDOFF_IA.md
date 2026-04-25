@@ -8,7 +8,26 @@ Este arquivo dá contexto operacional rápido. Para detalhes completos, comece p
 
 Suite de testes: **85 testes passando**, cobertura de statements em **87%+**.
 
-### Última sessão — Feature B4: Atalhos de Calibração (COMPLETA, aguardando validação manual)
+### Última sessão — UX: Linhas Clicáveis na Lista de Instrumentos (COMPLETA, aguardando validação manual)
+
+**CONCLUÍDO:** Linhas da tabela de instrumentos clicáveis em sua totalidade.
+
+Branch: `feat/ux-clickable-rows` — aguardando validação manual antes do merge.
+
+**O que foi entregue:**
+- `app/globals.css` — `.inventory-table__row--clickable` com cursor pointer + hover sutil light e dark
+- `app/_components/instruments-content.tsx` — `useRouter`, `onClick` no `<tr>`, `stopPropagation` na tag pill e no wrapper das ações
+
+**Checklist de validação manual:**
+- [ ] Clicar em qualquer célula (Categoria, Fabricante, Setor, Prazo) navega para `/instrumentos/:id`
+- [ ] Clicar na tag pill navega (sem dupla navegação)
+- [ ] Clicar no lápis abre o modal (não navega)
+- [ ] Clicar no ícone de prancheta abre calibração (não detalhe)
+- [ ] Hover exibe fundo sutil em light e dark theme
+
+---
+
+### Sessão anterior — Feature B4: Atalhos de Calibração (COMPLETA, aguardando validação manual)
 
 **CONCLUÍDO:** Todas as 4 tasks da feature "B4: Atalhos de Registro de Calibração" implementadas e aprovadas em revisão.
 

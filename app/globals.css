@@ -1478,6 +1478,14 @@ html.page-is-transitioning .page-entry-shell {
   border-top: 1px solid rgba(16, 35, 78, 0.05);
 }
 
+.inventory-table__row--clickable {
+  cursor: pointer;
+}
+
+.inventory-table__row--clickable:hover td {
+  background: rgba(13, 79, 153, 0.04);
+}
+
 .inventory-table__skeleton {
   display: inline-flex;
   width: 100%;
@@ -7519,6 +7527,10 @@ html[data-theme="dark"] .inventory-footer {
 
 html[data-theme="dark"] .inventory-table__row--loading td {
   border-top-color: rgba(129, 151, 191, 0.1);
+}
+
+html[data-theme="dark"] .inventory-table__row--clickable:hover td {
+  background: rgba(74, 108, 170, 0.07);
 }
 
 html[data-theme="dark"] .inventory-table__skeleton {

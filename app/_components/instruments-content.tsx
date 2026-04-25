@@ -535,7 +535,36 @@ export function InstrumentsContent() {
                         {row.setor ? formatSetorLabel(row.setor) : <span className="inventory-table__empty-cell">Sem setor</span>}
                       </td>
                       <td data-label="Prazo de calibração"><div className="calibration-cell"><span className={`calibration-cell__date calibration-cell__date--${row.tone}`}>{dateLabel}</span>{statusLabel ? <span className={`calibration-badge calibration-badge--${row.tone}`}>{statusLabel}</span> : null}</div></td>
-                      <td data-label="Ações"><button type="button" className="table-action" aria-label="Editar" onClick={() => openEditModal(row)}><svg viewBox="0 0 24 24" fill="none"><path d="M4 16.8V20h3.2L18 9.2 14.8 6 4 16.8Z" fill="currentColor" /><path d="m13.8 7 3.2 3.2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg></button></td>
+                      <td data-label="Ações">
+                        <button type="button" className="table-action" aria-label="Editar" onClick={() => openEditModal(row)}>
+                          <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M4 16.8V20h3.2L18 9.2 14.8 6 4 16.8Z" fill="currentColor" />
+                            <path d="m13.8 7 3.2 3.2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                          </svg>
+                        </button>
+                        <PageTransitionLink
+                          href={`/instrumentos/${row.id}/calibracoes/nova`}
+                          className="table-action"
+                          aria-label="Registrar calibração"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none">
+                            <path
+                              d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9l-6-6z"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                            <path
+                              d="M14 3v6h6M12 11v6M9 14h6"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        </PageTransitionLink>
+                      </td>
                     </tr>
                   );
                 }) : null}

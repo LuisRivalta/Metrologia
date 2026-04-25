@@ -1675,6 +1675,9 @@ html.page-is-transitioning .page-entry-shell {
   background: transparent;
   color: #0a2856;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .table-action svg {
@@ -2937,7 +2940,7 @@ html.page-is-transitioning .page-entry-shell .inventory-content > :nth-child(5) 
 .dashboard-alert-item {
   position: relative;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
   padding: 14px 14px 14px 16px;
@@ -3040,6 +3043,30 @@ html.page-is-transitioning .page-entry-shell .inventory-content > :nth-child(5) 
 .dashboard-alert-item__badge--warning {
   background: rgba(242, 173, 71, 0.14);
   color: #b8751c;
+}
+
+.dashboard-alert-item__main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  text-decoration: none;
+}
+
+.dashboard-alert-item__calibrate {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(13, 79, 153, 0.08);
+  color: #0d4f99;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-decoration: none;
 }
 
 .dashboard-status-card__visual {
@@ -6551,11 +6578,16 @@ html.page-is-transitioning .page-entry-shell .inventory-content > :nth-child(5) 
   }
 
   .dashboard-alert-item {
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: 1fr;
   }
 
   .dashboard-alert-item__action {
     grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .dashboard-alert-item__calibrate {
+    justify-content: center;
     width: 100%;
   }
 
@@ -7705,6 +7737,11 @@ html[data-theme="dark"] .dashboard-alert-item__badge--danger {
 html[data-theme="dark"] .dashboard-alert-item__badge--warning {
   background: rgba(242, 173, 71, 0.14);
   color: #ffc46f;
+}
+
+html[data-theme="dark"] .dashboard-alert-item__calibrate {
+  background: rgba(74, 108, 170, 0.16);
+  color: #9ec4ff;
 }
 
 html[data-theme="dark"] .dashboard-status-card__visual {

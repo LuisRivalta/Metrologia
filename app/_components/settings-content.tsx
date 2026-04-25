@@ -29,12 +29,23 @@ export function SettingsContent() {
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
   const [pendingDeleteMeasurement, setPendingDeleteMeasurement] = useState<MeasurementItem | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const sortedMeasurements = useMemo(() => {
     return [...measurements].sort((first, second) =>
       first.name.localeCompare(second.name, "pt-BR", { sensitivity: "base" })
     );
   }, [measurements]);
+
+  const filteredMeasurements = useMemo(() => {
+    const trimmed = searchQuery.trim().toLowerCase();
+    if (!trimmed) return sortedMeasurements;
+    return sortedMeasurements.filter(
+      (m) =>
+        m.name.toLowerCase().includes(trimmed) ||
+        m.description.toLowerCase().includes(trimmed)
+    );
+  }, [sortedMeasurements, searchQuery]);
 
   useEffect(() => {
     void loadMeasurements();
@@ -242,6 +253,40 @@ export function SettingsContent() {
         </div>
 
         <div className="inventory-actions settings-measure-actions">
+          <label className="inventory-search" htmlFor="settings-measure-search">
+            <span className="inventory-search__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+                <path d="m16.5 16.5 4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </span>
+            <input
+              id="settings-measure-search"
+              type="search"
+              placeholder="Pesquisar unidade de medida..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              autoComplete="off"
+            />
+            {searchQuery ? (
+              <button
+                type="button"
+                className="inventory-search__clear"
+                aria-label="Limpar pesquisa"
+                onClick={() => setSearchQuery("")}
+              >
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M6 6l12 12M18 6 6 18"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </button>
+            ) : null}
+          </label>
+
           <button type="button" className="primary-toolbar-button" onClick={openCreateModal}>
             <span className="primary-toolbar-button__icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none">
@@ -258,7 +303,11 @@ export function SettingsContent() {
               <h2>Medidas cadastradas</h2>
               <p>A interface mostra simbolos amigaveis, mesmo com o banco usando um formato tecnico.</p>
             </div>
-            <span className="category-card__count">{sortedMeasurements.length} medidas</span>
+            <span className="category-card__count">
+              {searchQuery.trim()
+                ? `${filteredMeasurements.length} de ${sortedMeasurements.length} medidas`
+                : `${sortedMeasurements.length} medidas`}
+            </span>
           </div>
 
           {loadError ? <p className="settings-status-banner settings-status-banner--error">{loadError}</p> : null}
@@ -289,8 +338,16 @@ export function SettingsContent() {
                   </tr>
                 ) : null}
 
+                {!isLoadingMeasurements && sortedMeasurements.length > 0 && filteredMeasurements.length === 0 ? (
+                  <tr>
+                    <td colSpan={3} className="inventory-table__empty">
+                      Nenhuma medida encontrada para &ldquo;{searchQuery.trim()}&rdquo;.
+                    </td>
+                  </tr>
+                ) : null}
+
                 {!isLoadingMeasurements
-                  ? sortedMeasurements.map((measurement, index) => (
+                  ? filteredMeasurements.map((measurement, index) => (
                       <tr key={measurement.id}>
                         <td data-label="Medida">
                           <div className="settings-measure-table__name-cell">
@@ -356,7 +413,11 @@ export function SettingsContent() {
           </div>
 
           <div className="inventory-table-footer">
-            <p>Exibindo {sortedMeasurements.length} medidas</p>
+            <p>
+              {searchQuery.trim()
+                ? `Exibindo ${filteredMeasurements.length} de ${sortedMeasurements.length} medidas`
+                : `Exibindo ${sortedMeasurements.length} medidas`}
+            </p>
           </div>
         </section>
       </section>

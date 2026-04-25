@@ -16,7 +16,31 @@
       "Bash(npm list *)",
       "Bash(git -C /c/Metrologia add lib/api/extract-sse.ts)",
       "Bash(git -C /c/Metrologia commit -m \"feat: add SSE stream reader helper for extraction endpoint\")",
-      "Bash(C:/Users/luisgfr/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.7/scripts/start-server.sh *)"
+      "Bash(C:/Users/luisgfr/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.7/scripts/start-server.sh *)",
+      "Bash(git mv *)",
+      "Bash(git rm *)",
+      "Bash(git restore *)",
+      "Bash(git reset *)",
+      "Bash(grep -v \"^commit\\\\|^Author\\\\|^Date\\\\|^$\\\\|^    \")",
+      "Bash(grep -v \"\\\\.md$\")",
+      "Bash(npm test *)",
+      "Bash(node_modules\\\\.bin\\\\vitest run *)",
+      "Bash(./node_modules/.bin/vitest run *)",
+      "Bash(git push *)",
+      "WebFetch(domain:supabase.com)",
+      "Bash(git checkout *)",
+      "Bash(npx eslint *)",
+      "Bash(claude mcp *)",
+      "Bash(git merge *)",
+      "Bash(git branch *)",
+      "Bash(ls -d .worktrees)",
+      "Bash(ls -d worktrees)",
+      "Bash(grep -i \"worktree.*director\" CLAUDE.md)",
+      "Bash(git pull *)"
     ]
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "supabase"
+  ]
 }

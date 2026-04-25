@@ -165,6 +165,11 @@ export function CategoriesContent() {
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [pendingDeleteCategory, setPendingDeleteCategory] = useState<CategoryItem | null>(null);
   const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
+  const [isCopyGroupModalOpen, setIsCopyGroupModalOpen] = useState(false);
+  const [copyGroupSourceLabel, setCopyGroupSourceLabel] = useState("");
+  const [copyGroupNewName, setCopyGroupNewName] = useState("");
+  const [copyGroupSourceFields, setCopyGroupSourceFields] = useState<CategoryFieldFormItem[]>([]);
+  const [copyGroupError, setCopyGroupError] = useState("");
 
   const sortedCategories = useMemo(() => {
     return [...categories].sort((first, second) =>
@@ -220,6 +225,11 @@ export function CategoriesContent() {
         return;
       }
 
+      if (isCopyGroupModalOpen) {
+        closeCopyGroupModal();
+        return;
+      }
+
       if (isFieldModalOpen) {
         closeFieldModal();
         return;
@@ -234,7 +244,7 @@ export function CategoriesContent() {
     return () => {
       document.removeEventListener("keydown", handleEscape);
     };
-  }, [isFieldModalOpen, isModalOpen, isSubmitting]);
+  }, [isCopyGroupModalOpen, isFieldModalOpen, isModalOpen, isSubmitting]);
 
   useEffect(() => {
     if (!isDeleteConfirmOpen) return;
@@ -345,6 +355,58 @@ export function CategoriesContent() {
     setFieldDraftGroupName("");
     setFieldModalError("");
     setIsFieldModalOpen(true);
+  }
+
+  function openCopyGroupModal(group: (typeof groupedFieldRows)[number]) {
+    const groupFieldClientIds = new Set(
+      group.subgroups.flatMap((sg) => sg.fields.map((f) => f.clientId))
+    );
+    const groupFields = fieldRows.filter((f) => groupFieldClientIds.has(f.clientId));
+    setCopyGroupSourceLabel(group.label ?? "");
+    setCopyGroupNewName("");
+    setCopyGroupSourceFields(groupFields);
+    setCopyGroupError("");
+    setIsCopyGroupModalOpen(true);
+  }
+
+  function closeCopyGroupModal() {
+    setIsCopyGroupModalOpen(false);
+    setCopyGroupSourceLabel("");
+    setCopyGroupNewName("");
+    setCopyGroupSourceFields([]);
+    setCopyGroupError("");
+  }
+
+  function saveCopyGroup() {
+    const trimmedNewName = copyGroupNewName.trim();
+
+    if (!trimmedNewName) {
+      setCopyGroupError("Informe um nome para o novo grupo.");
+      return;
+    }
+
+    if (normalizeSearchValue(trimmedNewName) === normalizeSearchValue(copyGroupSourceLabel)) {
+      setCopyGroupError("O novo grupo deve ter um nome diferente do original.");
+      return;
+    }
+
+    const existingGroupKeys = new Set(fieldRows.map((f) => normalizeSearchValue(f.groupName)));
+
+    if (existingGroupKeys.has(normalizeSearchValue(trimmedNewName))) {
+      setCopyGroupError("Já existe um grupo com esse nome.");
+      return;
+    }
+
+    const copiedFields = copyGroupSourceFields.map((field) => ({
+      ...field,
+      clientId: createClientId(),
+      dbId: undefined,
+      groupName: trimmedNewName
+    }));
+
+    setFieldRows((current) => [...current, ...copiedFields]);
+    setValidationError("");
+    closeCopyGroupModal();
   }
 
   function openEditFieldModal(field: CategoryFieldFormItem) {
@@ -958,7 +1020,7 @@ export function CategoriesContent() {
                         return (
                           <section key={group.key} className="template-preview__group">
                             <header className="template-preview__group-header">
-                              <h4>{group.label || "Campos gerais"}</h4>
+                              {group.label && <h4>{group.label}</h4>}
                               <span>
                                 {group.subgroups.reduce(
                                   (total, subgroup) => total + subgroup.fields.length,
@@ -971,9 +1033,11 @@ export function CategoriesContent() {
                             <div className={getSubgroupGridClassName(group.subgroups.length)}>
                               {group.subgroups.map((subgroup) => (
                                 <article key={subgroup.key} className="template-preview__subgroup">
-                                  <div className="template-preview__subgroup-header">
-                                    <strong>{subgroup.label || "Campos gerais"}</strong>
-                                  </div>
+                                  {subgroup.label && (
+                                    <div className="template-preview__subgroup-header">
+                                      <strong>{subgroup.label}</strong>
+                                    </div>
+                                  )}
 
                                   <div className={getFieldGridClassName(subgroup.fields.length)}>
                                     {subgroup.fields.map((field) => {
@@ -1023,6 +1087,13 @@ export function CategoriesContent() {
                                   onClick={() => openEditFieldModal(firstField)}
                                 >
                                   Editar bloco
+                                </button>
+                                <button
+                                  type="button"
+                                  className="instrument-fields-builder__edit"
+                                  onClick={() => openCopyGroupModal(group)}
+                                >
+                                  Copiar grupo
                                 </button>
                               </div>
                             ) : null}
@@ -1263,6 +1334,67 @@ export function CategoriesContent() {
                     onClick={saveFieldFromModal}
                   >
                     {fieldModalMode === "edit" ? "Salvar bloco" : "Adicionar bloco"}
+                  </button>
+                </div>
+              </section>
+            </div>,
+            document.body
+          )
+        : null}
+
+      {isCopyGroupModalOpen && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              className="field-editor-modal-backdrop"
+              role="presentation"
+              onClick={closeCopyGroupModal}
+            >
+              <section
+                className="instrument-delete-confirm field-editor-modal"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="copy-group-modal-title"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <h3 id="copy-group-modal-title">
+                  Copiar grupo{copyGroupSourceLabel ? `: ${copyGroupSourceLabel}` : ""}
+                </h3>
+
+                <div className="field-editor-modal__form">
+                  <div className="field-editor-modal__grid field-editor-modal__grid--single">
+                    <label className="instrument-modal__field">
+                      <span>Nome do novo grupo</span>
+                      <input
+                        type="text"
+                        value={copyGroupNewName}
+                        placeholder="Nome diferente do original"
+                        autoFocus
+                        onChange={(event) => {
+                          setCopyGroupNewName(event.target.value);
+                          if (copyGroupError) setCopyGroupError("");
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") saveCopyGroup();
+                        }}
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                {copyGroupError ? (
+                  <p className="instrument-modal__field-error">{copyGroupError}</p>
+                ) : null}
+
+                <div className="instrument-delete-confirm__actions">
+                  <button type="button" onClick={closeCopyGroupModal}>
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    className="is-danger field-editor-modal__save"
+                    onClick={saveCopyGroup}
+                  >
+                    Copiar grupo
                   </button>
                 </div>
               </section>

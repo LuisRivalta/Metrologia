@@ -1184,6 +1184,32 @@ html.page-is-transitioning .page-entry-shell {
   display: none;
 }
 
+.inventory-search__clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(16, 35, 78, 0.07);
+  color: #5a6e8e;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.inventory-search__clear:hover {
+  background: rgba(16, 35, 78, 0.13);
+  color: #10234e;
+}
+
+.inventory-search__clear svg {
+  width: 16px;
+  height: 16px;
+}
+
 .toolbar-button,
 .primary-toolbar-button {
   min-height: clamp(50px, 4vw, 60px);
@@ -2095,13 +2121,50 @@ html.page-is-transitioning .page-entry-shell {
 }
 
 .settings-measure-table-wrap {
-  height: auto;
-  max-height: none;
-  overflow: visible;
+  --settings-measure-visible-rows: 5;
+  --settings-measure-header-height: 64px;
+  --settings-measure-row-height: 86px;
+  
+  max-height: calc(
+    var(--settings-measure-header-height) +
+    (var(--settings-measure-visible-rows) * var(--settings-measure-row-height))
+  );
+  overflow-y: auto;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.settings-measure-table-wrap::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.settings-measure-table-wrap::-webkit-scrollbar-track {
+  background: rgba(217, 226, 245, 0.72);
+}
+
+.settings-measure-table-wrap::-webkit-scrollbar-thumb {
+  border: 2px solid rgba(217, 226, 245, 0.72);
+  border-radius: 999px;
+  background: rgba(54, 81, 124, 0.42);
+}
+
+.settings-measure-table-wrap::-webkit-scrollbar-thumb:hover {
+  background: rgba(54, 81, 124, 0.6);
 }
 
 .settings-measure-table {
   min-width: 0;
+}
+
+.settings-measure-table thead th {
+  height: var(--settings-measure-header-height, 64px);
+}
+
+.settings-measure-table tbody tr {
+  height: var(--settings-measure-row-height, 86px);
 }
 
 .settings-measure-table th:last-child,
@@ -6940,8 +7003,9 @@ html.page-is-transitioning .page-entry-shell .inventory-content > :nth-child(5) 
   }
 
   .settings-measure-table-wrap {
-    height: auto;
-    overflow: visible;
+    max-height: none;
+    overflow-y: auto;
+    overflow-x: auto;
   }
 
   .inventory-table-wrap {
@@ -7475,6 +7539,16 @@ html[data-theme="dark"] .inventory-search input::placeholder {
   color: #7687a7;
 }
 
+html[data-theme="dark"] .inventory-search__clear {
+  background: rgba(129, 151, 191, 0.14);
+  color: #94a8cc;
+}
+
+html[data-theme="dark"] .inventory-search__clear:hover {
+  background: rgba(129, 151, 191, 0.22);
+  color: #dce7fb;
+}
+
 html[data-theme="dark"] .toolbar-button {
   color: #d5e1f8;
 }
@@ -7553,6 +7627,19 @@ html[data-theme="dark"] .inventory-table-wrap::-webkit-scrollbar-thumb {
 }
 
 html[data-theme="dark"] .inventory-table-wrap::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 168, 204, 0.5);
+}
+
+html[data-theme="dark"] .settings-measure-table-wrap::-webkit-scrollbar-track {
+  background: rgba(14, 24, 40, 0.9);
+}
+
+html[data-theme="dark"] .settings-measure-table-wrap::-webkit-scrollbar-thumb {
+  border-color: rgba(14, 24, 40, 0.9);
+  background: rgba(126, 145, 182, 0.36);
+}
+
+html[data-theme="dark"] .settings-measure-table-wrap::-webkit-scrollbar-thumb:hover {
   background: rgba(148, 168, 204, 0.5);
 }
 

@@ -1,0 +1,71 @@
+<h2>Filtros: duas decisões de design</h2>
+<p class="subtitle">As duas features andam juntas. Preciso entender o nível de cada uma antes de propor o design completo.</p>
+
+<div class="section">
+  <h3>1 · Chips de filtros ativos — onde ficam?</h3>
+  <p class="subtitle">Clique na opção que parece mais natural.</p>
+
+  <div class="cards">
+    <div class="card" data-choice="chips-inline" onclick="toggleSelect(this)">
+      <div class="card-image" style="background:#0f172a;padding:12px;border-radius:6px;font-size:11px;color:#94a3b8">
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
+          <div style="flex:1;background:#1e293b;border-radius:4px;height:28px"></div>
+          <div style="background:#1e293b;border-radius:4px;height:28px;width:70px"></div>
+          <div style="background:#3b82f6;border-radius:4px;height:28px;width:90px"></div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+          <span style="background:#1e3a5f;border:1px solid #1d4ed8;color:#93c5fd;padding:3px 8px;border-radius:12px;font-size:10px">Vencido ×</span>
+          <span style="background:#1e3a5f;border:1px solid #1d4ed8;color:#93c5fd;padding:3px 8px;border-radius:12px;font-size:10px">Paquímetro ×</span>
+          <span style="background:transparent;border:1px solid #334155;color:#64748b;padding:3px 8px;border-radius:12px;font-size:10px">Limpar tudo</span>
+        </div>
+        <div style="background:#1e293b;border-radius:4px;height:80px"></div>
+      </div>
+      <div class="card-body">
+        <h3>A — Chips abaixo da toolbar</h3>
+        <p>Aparecem entre a barra de busca/ações e a tabela. Sempre visíveis quando há filtros ativos, independente do painel de filtros estar aberto.</p>
+      </div>
+    </div>
+
+    <div class="card" data-choice="chips-panel" onclick="toggleSelect(this)">
+      <div class="card-image" style="background:#0f172a;padding:12px;border-radius:6px;font-size:11px;color:#94a3b8">
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
+          <div style="flex:1;background:#1e293b;border-radius:4px;height:28px"></div>
+          <div style="background:#3b82f6;border:1.5px solid #60a5fa;border-radius:4px;height:28px;width:80px;display:flex;align-items:center;justify-content:center;color:#93c5fd;font-size:10px">Filtros ●2</div>
+          <div style="background:#3b82f6;border-radius:4px;height:28px;width:90px"></div>
+        </div>
+        <div style="background:#1e293b;border:1px solid #334155;border-radius:6px;padding:8px;margin-bottom:8px">
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <span style="background:#1e3a5f;border:1px solid #1d4ed8;color:#93c5fd;padding:3px 8px;border-radius:12px;font-size:10px">Vencido ×</span>
+            <span style="background:#1e3a5f;border:1px solid #1d4ed8;color:#93c5fd;padding:3px 8px;border-radius:12px;font-size:10px">Paquímetro ×</span>
+          </div>
+        </div>
+        <div style="background:#1e293b;border-radius:4px;height:60px"></div>
+      </div>
+      <div class="card-body">
+        <h3>B — Badge no botão + chips dentro do painel</h3>
+        <p>O botão "Filtros" ganha um badge com a contagem (●2). Os chips aparecem dentro do painel de filtros quando está aberto.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>2 · URL persistence — qual escopo?</h3>
+
+  <div class="options">
+    <div class="option" data-choice="url-all" onclick="toggleSelect(this)">
+      <div class="letter">A</div>
+      <div class="content">
+        <h3>Todos os 4 filtros na URL</h3>
+        <p><code>/instrumentos?status=danger&amp;category=Paquímetro&amp;setor=3</code> — navegar para detalhe e voltar restaura tudo. URL é compartilhável.</p>
+      </div>
+    </div>
+    <div class="option" data-choice="url-status" onclick="toggleSelect(this)">
+      <div class="letter">B</div>
+      <div class="content">
+        <h3>Só status na URL (já existe parcialmente)</h3>
+        <p>Mantém o comportamento atual do status + adiciona apenas os chips sem URL sync nos demais filtros.</p>
+      </div>
+    </div>
+  </div>
+</div>

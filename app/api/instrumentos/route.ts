@@ -18,7 +18,7 @@ import {
   type InstrumentCategoryRow,
   type InstrumentDbRow
 } from "@/lib/instruments";
-import { type MeasurementRow } from "@/lib/measurements";
+import { deduplicateMeasurementRows, type MeasurementRow } from "@/lib/measurements";
 import { mapSetorRow, type SetorItem, type SetorRow } from "@/lib/setores";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
@@ -593,7 +593,7 @@ export async function GET(request: Request) {
       (categoryRowsResponse.data ?? []) as InstrumentCategoryRow[]
     );
     const measurementsById = mapMeasurementsById(
-      (measurementRowsResponse.data ?? []) as MeasurementRow[]
+      deduplicateMeasurementRows((measurementRowsResponse.data ?? []) as MeasurementRow[])
     );
     const instrumentFieldsByInstrumentId = mapInstrumentFieldsByInstrumentId(
       instrumentFieldRowsResponse.data,

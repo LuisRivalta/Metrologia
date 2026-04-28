@@ -3,7 +3,7 @@ import {
   mapCategoryMeasurementFieldRow,
   type CategoryMeasurementFieldRow
 } from "@/lib/measurement-fields";
-import { mapMeasurementRow, type MeasurementRow } from "@/lib/measurements";
+import { deduplicateMeasurementRows, mapMeasurementRow, type MeasurementRow } from "@/lib/measurements";
 import { mapSetorRow, type SetorRow } from "@/lib/setores";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
@@ -113,7 +113,7 @@ export async function GET() {
     return buildGenericError();
   }
 
-  const measurementRows = (measurementRowsResponse.data ?? []) as MeasurementRow[];
+  const measurementRows = deduplicateMeasurementRows((measurementRowsResponse.data ?? []) as MeasurementRow[]);
   const measurements = measurementRows.map(mapMeasurementRow);
   const measurementsById = mapMeasurementsById(measurementRows);
   const categoryFieldsByCategoryId = mapCategoryFieldsByCategoryId(

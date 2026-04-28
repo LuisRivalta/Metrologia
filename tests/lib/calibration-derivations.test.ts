@@ -87,6 +87,37 @@ describe("calibration-derivations", () => {
     expect(rows[2].value).toBe("0,025");
   });
 
+  it("retorna array vazio sem erro quando nao ha linhas para categoria Paquimetro", () => {
+    expect(applyCalibrationDerivedValues("Paquimetro", [])).toEqual([]);
+  });
+
+  it("soma valores inteiros sem casas decimais", () => {
+    const rows = applyCalibrationDerivedValues("Paquimetro", [
+      { fieldSlug: serializeMeasurementFieldSlug("Maior erro externo"), value: "5" },
+      { fieldSlug: serializeMeasurementFieldSlug("Incerteza de medicao externo"), value: "3" },
+      { fieldSlug: serializeMeasurementFieldSlug("Incerteza + maior Erro externo"), value: "" }
+    ]);
+    expect(rows[2].value).toBe("8");
+  });
+
+  it("interpreta ponto como decimal e virgula como separador de milhar", () => {
+    const rows = applyCalibrationDerivedValues("Paquimetro", [
+      { fieldSlug: serializeMeasurementFieldSlug("Maior erro externo"), value: "1,234.56" },
+      { fieldSlug: serializeMeasurementFieldSlug("Incerteza de medicao externo"), value: "0.01" },
+      { fieldSlug: serializeMeasurementFieldSlug("Incerteza + maior Erro externo"), value: "" }
+    ]);
+    expect(rows[2].value).toBe("1234,57");
+  });
+
+  it("limpa campo derivado quando fonte tem valor imparsavel como ponto isolado", () => {
+    const rows = applyCalibrationDerivedValues("Paquimetro", [
+      { fieldSlug: serializeMeasurementFieldSlug("Maior erro externo"), value: "." },
+      { fieldSlug: serializeMeasurementFieldSlug("Incerteza de medicao externo"), value: "0,005" },
+      { fieldSlug: serializeMeasurementFieldSlug("Incerteza + maior Erro externo"), value: "0,01" }
+    ]);
+    expect(rows[2].value).toBe("");
+  });
+
   it("identifies derived paquimetro fields", () => {
     expect(
       isAutoCalculatedCalibrationField(

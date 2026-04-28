@@ -168,4 +168,10 @@ describe("instruments", () => {
       "Vence em 14 dias - calibração 15/04/2026"
     );
   });
+
+  it("formata nota de alerta para data de calibracao invalida", () => {
+    expect(formatInstrumentAlertNote("2026-02-31", -9999)).toBe(
+      "Prazo de calibracao invalido (2026-02-31)"
+    );
+  });
 });

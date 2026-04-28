@@ -8,6 +8,16 @@ describe("categories", () => {
     expect(serializeCategorySlug(" / Controle de Pressao / ")).toBe("controle-de-pressao");
   });
 
+  it("maps category rows with null nome and slug falling back to empty string", () => {
+    expect(mapCategoryRow({ id: 3, nome: null, slug: null })).toEqual({
+      id: "",
+      dbId: 3,
+      name: "",
+      slug: "",
+      fields: []
+    });
+  });
+
   it("maps category rows trimming visible values", () => {
     expect(
       mapCategoryRow({

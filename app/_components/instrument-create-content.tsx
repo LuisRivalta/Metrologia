@@ -713,7 +713,7 @@ export function InstrumentCreateContent() {
 
                 <label className="instrument-modal__field">
                   <span>Fabricante (opcional)</span>
-                  <input type="text" placeholder="Ex: Mitutoyo" className={validationErrors.manufacturer ? "is-invalid" : undefined} value={formState.manufacturer} onChange={(event) => { setFormState((current) => ({ ...current, manufacturer: event.target.value })); setValidationErrors((current) => ({ ...current, manufacturer: undefined, form: undefined })); }} />
+                  <input type="text" className={validationErrors.manufacturer ? "is-invalid" : undefined} value={formState.manufacturer} onChange={(event) => { setFormState((current) => ({ ...current, manufacturer: event.target.value })); setValidationErrors((current) => ({ ...current, manufacturer: undefined, form: undefined })); }} />
                   {validationErrors.manufacturer ? <small className="instrument-modal__field-error">{validationErrors.manufacturer}</small> : null}
                 </label>
 

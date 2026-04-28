@@ -712,7 +712,6 @@ export function InstrumentsContent() {
                     <span>Fabricante (opcional)</span>
                     <input
                       type="text"
-                      placeholder="Ex: Mitutoyo"
                       className={validationErrors.manufacturer ? "is-invalid" : undefined}
                       value={formState.manufacturer}
                       onChange={(event) => {

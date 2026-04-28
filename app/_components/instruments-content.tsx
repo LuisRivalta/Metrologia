@@ -506,11 +506,11 @@ export function InstrumentsContent() {
         {isFiltersOpen ? (
           <section className="inventory-filters-card" aria-label="Filtros da tabela">
             <div className="inventory-filters-grid">
-              <label className="inventory-filter-field"><span>Categoria</span><select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}><option value="">Todas as categorias</option>{categoryOptions.map((option) => <option key={option.slug} value={option.name}>{option.name}</option>)}</select></label>
-              <label className="inventory-filter-field"><span>Fabricante</span><select value={manufacturerFilter} onChange={(event) => setManufacturerFilter(event.target.value)}><option value="">Todos os fabricantes</option>{manufacturerOptions.map((option) => <option key={option} value={option}>{option}</option>)}</select></label>
+              <label className="inventory-filter-field"><span>Categoria</span><select value={categoryFilter} onChange={(event) => { const next = event.target.value; setCategoryFilter(next); syncFiltersToURL({ calibrationFilter, categoryFilter: next, manufacturerFilter, setorFilter }); }}><option value="">Todas as categorias</option>{categoryOptions.map((option) => <option key={option.slug} value={option.name}>{option.name}</option>)}</select></label>
+              <label className="inventory-filter-field"><span>Fabricante</span><select value={manufacturerFilter} onChange={(event) => { const next = event.target.value; setManufacturerFilter(next); syncFiltersToURL({ calibrationFilter, categoryFilter, manufacturerFilter: next, setorFilter }); }}><option value="">Todos os fabricantes</option>{manufacturerOptions.map((option) => <option key={option} value={option}>{option}</option>)}</select></label>
               <label className="inventory-filter-field">
                 <span>Setor</span>
-                <select value={setorFilter} onChange={(event) => setSetorFilter(event.target.value)}>
+                <select value={setorFilter} onChange={(event) => { const next = event.target.value; setSetorFilter(next); syncFiltersToURL({ calibrationFilter, categoryFilter, manufacturerFilter, setorFilter: next }); }}>
                   <option value="">Todos os setores</option>
                   <option value="none">Sem setor</option>
                   {setores.map((setor) => (
@@ -518,9 +518,9 @@ export function InstrumentsContent() {
                   ))}
                 </select>
               </label>
-              <label className="inventory-filter-field"><span>Prazo de validade</span><select value={calibrationFilter} onChange={(event) => setCalibrationFilter(event.target.value as CalibrationFilter)}><option value="all">Todos</option><option value="neutral">Em dia</option><option value="warning">Vencendo</option><option value="danger">Vencido</option></select></label>
+              <label className="inventory-filter-field"><span>Prazo de validade</span><select value={calibrationFilter} onChange={(event) => { const next = event.target.value as CalibrationFilter; setCalibrationFilter(next); syncFiltersToURL({ calibrationFilter: next, categoryFilter, manufacturerFilter, setorFilter }); }}><option value="all">Todos</option><option value="neutral">Em dia</option><option value="warning">Vencendo</option><option value="danger">Vencido</option></select></label>
             </div>
-            <div className="inventory-filters-actions"><button type="button" className="inventory-filters-clear" onClick={() => { setCategoryFilter(""); setManufacturerFilter(""); setSetorFilter(""); setCalibrationFilter("all"); }}>Limpar filtros</button></div>
+            <div className="inventory-filters-actions"><button type="button" className="inventory-filters-clear" onClick={() => { setCategoryFilter(""); setManufacturerFilter(""); setSetorFilter(""); setCalibrationFilter("all"); syncFiltersToURL({ calibrationFilter: "all", categoryFilter: "", manufacturerFilter: "", setorFilter: "" }); }}>Limpar filtros</button></div>
           </section>
         ) : null}
 

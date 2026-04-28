@@ -1,7 +1,11 @@
+---
+tags: [produto, prd]
+---
+
 # PRD: Metrologia PRO
 
-**Versao:** 1.2  
-**Data de referencia:** 17 de abril de 2026  
+**Versao:** 1.3  
+**Data de referencia:** 28 de abril de 2026  
 **Responsavel:** Time interno de Metrologia com apoio de Engenharia de Software
 
 ## 1. Visao geral
@@ -54,6 +58,7 @@ Uma plataforma web para o time de metrologia funcionar como fonte unica da verda
 - CRUD de instrumentos
 - Vinculo obrigatorio com categoria
 - Campo `fabricante` opcional
+- Campo `setor` opcional (FK para `setores`)
 - Detalhe individual com ultimo valor por campo
 
 ### 3.6 Cadastro de novo instrumento
@@ -171,6 +176,7 @@ O sistema deve preservar rastreabilidade de certificado e historico de calibraca
 - extracao assistida por IA
 - parser local complementar para certificados conhecidos
 - calculos automaticos para `Paquimetro`
+- setores de uso dos instrumentos (CRUD em `/configuracoes/setores`, filtro e campo nos formularios)
 - testes unitarios da camada de regra
 
 ### Em evolucao

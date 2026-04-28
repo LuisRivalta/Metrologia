@@ -35,18 +35,29 @@ Ponto de entrada para qualquer IA navegar a documentação antes de tocar no có
 - [[modulos/measurement-fields]] → `lib/measurement-fields.ts`
 - [[modulos/dashboard-metrics]] → `lib/dashboard-metrics.ts`
 - [[modulos/categories]] → `lib/categories.ts`
+- [[modulos/setores]] → `lib/setores.ts`
+- [[modulos/date-utils]] → `lib/date-utils.ts`
+- [[modulos/api-client]] → `lib/api/client.ts` + `lib/api/extract-sse.ts`
+- [[modulos/server-instrument-details]] → `lib/server/instrument-details.ts`
 
 ## Componentes complexos
 - [[componentes/instrument-create-flow]] → `app/_components/instrument-create-content.tsx`
 - [[componentes/calibration-create-flow]] → `app/_components/instrument-calibration-create-content.tsx`
+- [[componentes/calibration-field-review-table]] → `app/_components/calibration-field-review-table.tsx`
 - [[componentes/dashboard-content]] → `app/_components/dashboard-content.tsx`
 - [[componentes/instruments-content]] → `app/_components/instruments-content.tsx`
+- [[componentes/instrument-detail-content]] → `app/_components/instrument-detail-content.tsx`
+- [[componentes/instrument-calibrations-content]] → `app/_components/instrument-calibrations-content.tsx`
+- [[componentes/categories-content]] → `app/_components/categories-content.tsx`
+- [[componentes/setores-content]] → `app/_components/setores-content.tsx`
 
 ## API Routes
 - [[api/calibracoes-extrair]] → `POST /api/calibracoes/extrair`
 - [[api/calibracoes]] → `GET|POST /api/calibracoes`
 - [[api/instrumentos]] → `GET|POST|PATCH|DELETE /api/instrumentos`
 - [[api/categorias]] → `GET|POST|PATCH|DELETE /api/categorias`
+- [[api/setores]] → `GET|POST|PATCH|DELETE /api/setores`
+- [[api/medidas]] → `GET|POST|PATCH|DELETE /api/medidas`
 
 ## Testes
 - [[testes/TDD]] — estratégia, comandos, convenções
@@ -55,3 +66,11 @@ Ponto de entrada para qualquer IA navegar a documentação antes de tocar no có
 - [[estado/LOGS]] — log de sessões
 - `docs/historico/specs/` — design specs por feature
 - `docs/historico/planos/` — planos de implementação
+- `docs/superpowers/specs/` — specs geradas pelo workflow superpowers
+  - [[superpowers/specs/2026-04-25-filtros-persistentes-url-design]] — filtros persistentes na URL (pendente)
+  - [[superpowers/specs/2026-04-25-b4-calibration-shortcuts-design]] — atalhos de calibração (concluído)
+  - [[superpowers/specs/2026-04-25-ux-clickable-table-rows-design]] — linhas clicáveis na lista (concluído)
+- `docs/superpowers/plans/` — planos gerados pelo workflow superpowers
+  - [[superpowers/plans/2026-04-23-setor-instrumentos]] — feature setor de uso (concluída)
+  - [[superpowers/plans/2026-04-25-b4-calibration-shortcuts]] — atalhos de calibração (concluído)
+  - [[superpowers/plans/2026-04-25-ux-clickable-table-rows]] — linhas clicáveis na lista (concluído)

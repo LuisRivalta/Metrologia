@@ -24,7 +24,7 @@ Com `id`: retorna `InstrumentDetailItem` (com campos e última calibração).
 
 ## GET /api/instrumentos/metadata
 
-Retorna `{ categories: CategoryItem[], measurements: MeasurementItem[] }` para alimentar o formulário de criação.
+Retorna `{ categories: CategoryItem[], measurements: MeasurementItem[], setores: SetorItem[] }` para alimentar o formulário de criação/edição de instrumento. Carrega os três recursos em paralelo. Erro em `setores` não bloqueia — retorna `[]` silenciosamente.
 
 ## POST /api/instrumentos
 

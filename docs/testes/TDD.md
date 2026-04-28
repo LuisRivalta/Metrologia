@@ -35,10 +35,12 @@ Arquivos gerados:
 - `tests/lib/calibration-extraction.test.ts`
 - `tests/lib/calibration-records.test.ts`
 - `tests/lib/categories.test.ts`
+- `tests/lib/dashboard-metrics.test.ts`
 - `tests/lib/date-utils.test.ts`
 - `tests/lib/instruments.test.ts`
 - `tests/lib/measurement-fields.test.ts`
 - `tests/lib/measurements.test.ts`
+- `tests/lib/setores.test.ts`
 
 ## O que deve ser testado primeiro neste projeto
 - Regras de prazo e comparacao de datas
@@ -86,6 +88,10 @@ Arquivos gerados:
 - A implementacao minima deixou o teste verde
 - `npm run test` passou
 - `npm run build` passou quando a alteracao afetou fluxo real
+
+## Relacionado
+
+- [[historico/specs/2026-04-18-technical-health-design]] — spec da campanha de cobertura P0/P1/P2
 
 ## Limite atual da estrategia
 - O projeto nao tem hoje uma suite estruturada de testes de componente ou E2E

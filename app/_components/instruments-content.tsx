@@ -207,6 +207,59 @@ export function InstrumentsContent() {
     });
   }, [filteredRows, sortDirection, sortKey]);
 
+  const activeChips = useMemo(() => {
+    const chips: { key: string; label: string; onRemove: () => void }[] = [];
+
+    if (calibrationFilter !== "all") {
+      const labels: Record<string, string> = { neutral: "Em dia", warning: "Vencendo", danger: "Vencido" };
+      chips.push({
+        key: "calibration",
+        label: labels[calibrationFilter] ?? calibrationFilter,
+        onRemove: () => {
+          setCalibrationFilter("all");
+          syncFiltersToURL({ calibrationFilter: "all", categoryFilter, manufacturerFilter, setorFilter });
+        }
+      });
+    }
+
+    if (categoryFilter) {
+      chips.push({
+        key: "category",
+        label: categoryFilter,
+        onRemove: () => {
+          setCategoryFilter("");
+          syncFiltersToURL({ calibrationFilter, categoryFilter: "", manufacturerFilter, setorFilter });
+        }
+      });
+    }
+
+    if (manufacturerFilter) {
+      chips.push({
+        key: "manufacturer",
+        label: manufacturerFilter,
+        onRemove: () => {
+          setManufacturerFilter("");
+          syncFiltersToURL({ calibrationFilter, categoryFilter, manufacturerFilter: "", setorFilter });
+        }
+      });
+    }
+
+    if (setorFilter) {
+      const setorItem = setores.find((s) => String(s.id) === setorFilter);
+      const label = setorFilter === "none" ? "Sem setor" : (setorItem ? formatSetorLabel(setorItem) : setorFilter);
+      chips.push({
+        key: "setor",
+        label,
+        onRemove: () => {
+          setSetorFilter("");
+          syncFiltersToURL({ calibrationFilter, categoryFilter, manufacturerFilter, setorFilter: "" });
+        }
+      });
+    }
+
+    return chips;
+  }, [calibrationFilter, categoryFilter, manufacturerFilter, setorFilter, setores]);
+
   function syncFiltersToURL(filters: {
     calibrationFilter: CalibrationFilter;
     categoryFilter: string;
@@ -522,6 +575,36 @@ export function InstrumentsContent() {
             </div>
             <div className="inventory-filters-actions"><button type="button" className="inventory-filters-clear" onClick={() => { setCategoryFilter(""); setManufacturerFilter(""); setSetorFilter(""); setCalibrationFilter("all"); syncFiltersToURL({ calibrationFilter: "all", categoryFilter: "", manufacturerFilter: "", setorFilter: "" }); }}>Limpar filtros</button></div>
           </section>
+        ) : null}
+
+        {activeChips.length > 0 ? (
+          <div className="filter-chips">
+            {activeChips.map((chip) => (
+              <span key={chip.key} className="filter-chip">
+                {chip.label}
+                <button
+                  type="button"
+                  onClick={chip.onRemove}
+                  aria-label={`Remover filtro ${chip.label}`}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+            <button
+              type="button"
+              className="filter-chips__clear"
+              onClick={() => {
+                setCategoryFilter("");
+                setManufacturerFilter("");
+                setSetorFilter("");
+                setCalibrationFilter("all");
+                syncFiltersToURL({ calibrationFilter: "all", categoryFilter: "", manufacturerFilter: "", setorFilter: "" });
+              }}
+            >
+              Limpar tudo
+            </button>
+          </div>
         ) : null}
 
         {loadError ? <section className="inventory-filters-card"><p className="inventory-table__empty">{loadError}</p></section> : null}

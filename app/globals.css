@@ -1316,6 +1316,71 @@ html.page-is-transitioning .page-entry-shell {
   cursor: pointer;
 }
 
+/* ── Filter chips ────────────────────────────── */
+.filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-bottom: 12px;
+  align-items: center;
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px 3px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  background: rgba(13, 79, 153, 0.08);
+  border: 1px solid #93c5fd;
+  color: #1d4ed8;
+}
+
+.filter-chip button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 2px;
+  opacity: 0.7;
+  color: inherit;
+  line-height: 1;
+  font-size: 1rem;
+}
+
+.filter-chip button:hover {
+  opacity: 1;
+}
+
+.filter-chips__clear {
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 3px 10px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.filter-chips__clear:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+html[data-theme="dark"] .filter-chip {
+  background: rgba(30, 58, 95, 0.9);
+  border-color: #1d4ed8;
+  color: #93c5fd;
+}
+
+html[data-theme="dark"] .filter-chips__clear {
+  border-color: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+html[data-theme="dark"] .filter-chips__clear:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
 .inventory-table-card {
   margin-top: 26px;
   background: #ffffff;

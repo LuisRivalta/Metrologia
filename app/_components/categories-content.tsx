@@ -1233,15 +1233,21 @@ export function CategoriesContent() {
             <div
               className="field-editor-modal-backdrop"
               role="presentation"
-              onClick={closeFieldModal}
             >
               <section
                 className="instrument-delete-confirm field-editor-modal"
                 role="dialog"
                 aria-modal="true"
                 aria-label={fieldModalMode === "edit" ? "Editar bloco de campos" : "Novo bloco de campos"}
-                onClick={(event) => event.stopPropagation()}
               >
+                <button
+                  type="button"
+                  className="field-editor-modal__close"
+                  onClick={closeFieldModal}
+                  aria-label="Fechar"
+                >
+                  ×
+                </button>
                 <div className="field-editor-modal__form">
                   <div className="field-editor-modal__grid field-editor-modal__grid--single">
                     <label className="instrument-modal__field">
@@ -1291,7 +1297,7 @@ export function CategoriesContent() {
                           </label>
 
                           <label className="instrument-modal__field">
-                            <span>Unidade padrão (opcional)</span>
+                            <span>Unidade padrão</span>
                             <select
                               value={subgroup.defaultMeasurementId}
                               onChange={(event) =>
@@ -1309,106 +1315,90 @@ export function CategoriesContent() {
                             </select>
                           </label>
 
-                        </div>
-
-                        <div className="field-editor-modal__section">
-                          <div className="field-editor-modal__section-head">
-                            <strong>Campos deste subgrupo</strong>
-                            <div className="field-editor-modal__section-actions">
-                              <button
-                                type="button"
-                                className="field-editor-modal__add-row"
-                                onClick={() => addFieldDraftRow(subgroup.clientId)}
-                              >
-                                Adicionar campo
-                              </button>
-                              <button
-                                type="button"
-                                className="field-editor-modal__add-row"
-                                onClick={() => copyFieldDraftSubgroup(subgroup.clientId)}
-                              >
-                                Copiar subgrupo
-                              </button>
-                              <button
-                                type="button"
-                                className="field-editor-modal__remove-subgroup"
-                                onClick={() => removeFieldDraftSubgroup(subgroup.clientId)}
-                                disabled={fieldDraftSubgroups.length <= 1}
-                              >
-                                Remover subgrupo
-                              </button>
-                            </div>
-                          </div>
+                          <button
+                            type="button"
+                            className="field-editor-modal__add-row"
+                            onClick={() => addFieldDraftRow(subgroup.clientId)}
+                          >
+                            Adicionar campo
+                          </button>
+                          <button
+                            type="button"
+                            className="field-editor-modal__add-row"
+                            onClick={() => copyFieldDraftSubgroup(subgroup.clientId)}
+                          >
+                            Copiar subgrupo
+                          </button>
+                          <button
+                            type="button"
+                            className="field-editor-modal__remove-subgroup"
+                            onClick={() => removeFieldDraftSubgroup(subgroup.clientId)}
+                            disabled={fieldDraftSubgroups.length <= 1}
+                          >
+                            Remover subgrupo
+                          </button>
                         </div>
 
                         <div className="field-editor-modal__rows">
                           {subgroup.rows.map((draftRow, rowIndex) => (
                             <div key={draftRow.clientId} className="field-editor-modal__row">
-                              <span className="field-editor-modal__row-index">
-                                Campo {String(rowIndex + 1).padStart(2, "0")}
-                              </span>
-
-                              <div className="field-editor-modal__row-grid">
-                                <label className="instrument-modal__field">
-                                  <span>Campo</span>
-                                  <input
-                                    type="text"
-                                    value={draftRow.name}
-                                    onChange={(event) =>
-                                      updateFieldDraftRow(subgroup.clientId, draftRow.clientId, {
-                                        name: event.target.value
-                                      })
-                                    }
-                                    autoFocus={subgroupIndex === 0 && rowIndex === 0}
-                                  />
-                                </label>
-
-                                <label className="instrument-modal__field">
-                                  <span>Tipo de medida</span>
-                                  <select
-                                    value={draftRow.measurementId}
-                                    onChange={(event) =>
-                                      updateFieldDraftRow(subgroup.clientId, draftRow.clientId, {
-                                        measurementId: event.target.value
-                                      })
-                                    }
-                                  >
-                                    <option value="" disabled>Selecione a medida</option>
-                                    {measurements.map((measurement) => (
-                                      <option key={measurement.id} value={measurement.id}>
-                                        {measurement.name}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </label>
-
-                                <label className="instrument-modal__field instrument-modal__field--full">
-                                  <span>Dica de extração (opcional)</span>
-                                  <input
-                                    type="text"
-                                    value={draftRow.hint}
-                                    placeholder='Ex: "Cap.:" ou "Capacidade máxima" no cabeçalho'
-                                    onChange={(event) =>
-                                      updateFieldDraftRow(subgroup.clientId, draftRow.clientId, {
-                                        hint: event.target.value
-                                      })
-                                    }
-                                  />
-                                </label>
-                              </div>
-
-                              <div className="field-editor-modal__row-actions">
-                                <button
-                                  type="button"
-                                  className="field-editor-modal__remove-row"
-                                  onClick={() =>
-                                    removeFieldDraftRow(subgroup.clientId, draftRow.clientId)
+                              <label className="instrument-modal__field">
+                                <span>Campo</span>
+                                <input
+                                  type="text"
+                                  value={draftRow.name}
+                                  onChange={(event) =>
+                                    updateFieldDraftRow(subgroup.clientId, draftRow.clientId, {
+                                      name: event.target.value
+                                    })
                                   }
-                                  disabled={subgroup.rows.length <= 1}
+                                  autoFocus={subgroupIndex === 0 && rowIndex === 0}
+                                />
+                              </label>
+
+                              <label className="instrument-modal__field">
+                                <span>Tipo de medida</span>
+                                <select
+                                  value={draftRow.measurementId}
+                                  onChange={(event) =>
+                                    updateFieldDraftRow(subgroup.clientId, draftRow.clientId, {
+                                      measurementId: event.target.value
+                                    })
+                                  }
                                 >
-                                  Remover campo
-                                </button>
-                              </div>
+                                  <option value="" disabled>Selecione a medida</option>
+                                  {measurements.map((measurement) => (
+                                    <option key={measurement.id} value={measurement.id}>
+                                      {measurement.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+
+                              <label className="instrument-modal__field">
+                                <span>Dica de extração</span>
+                                <input
+                                  type="text"
+                                  value={draftRow.hint}
+                                  placeholder='Ex: "Cap.:" ou "Capacidade máxima"'
+                                  onChange={(event) =>
+                                    updateFieldDraftRow(subgroup.clientId, draftRow.clientId, {
+                                      hint: event.target.value
+                                    })
+                                  }
+                                />
+                              </label>
+
+                              <button
+                                type="button"
+                                className="field-editor-modal__remove-row"
+                                onClick={() =>
+                                  removeFieldDraftRow(subgroup.clientId, draftRow.clientId)
+                                }
+                                disabled={subgroup.rows.length <= 1}
+                              >
+                                Remover
+                              </button>
                             </div>
                           ))}
                         </div>

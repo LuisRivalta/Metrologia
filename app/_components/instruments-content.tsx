@@ -720,7 +720,7 @@ export function InstrumentsContent() {
                         setValidationErrors((current) => ({ ...current, manufacturer: undefined, form: undefined }));
                       }}
                     />
-                    {validationErrors.manufacturer ? <small className="instrument-modal__field-error">{validationErrors.manufacturer}</small> : <small className="instrument-modal__field-help">Se nao informar, o instrumento sera salvo como nao informado.</small>}
+                    {validationErrors.manufacturer ? <small className="instrument-modal__field-error">{validationErrors.manufacturer}</small> : null}
                   </label>
 
                   <label className="instrument-modal__field instrument-modal__field--full">

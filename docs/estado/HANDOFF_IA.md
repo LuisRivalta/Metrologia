@@ -6,9 +6,15 @@ Este arquivo dá contexto operacional rápido. Para detalhes completos, comece p
 
 ## Estado atual (2026-04-28)
 
-Suite de testes: **85 testes passando**, cobertura de statements em **87%+**.
+Suite de testes: **101 testes passando**, cobertura de statements em **89.55%**, branches em **75.9%**.
 
-### Última sessão — Filtros Persistentes via URL + Chips Visuais (COMPLETA, mergeada)
+### Última sessão — Expansão de cobertura de testes (COMPLETA)
+
+Adicionados 16 novos testes nos módulos de lib. Cobertos: empty-string branches em `measurements.ts`, invalid date em `instruments.ts`, edge cases em `calibration-records.ts`, `calibration-derivations.ts` e `categories.ts`. Total: 85 → 101 testes, branches: 71.77% → 75.9%.
+
+---
+
+### Sessão anterior — Filtros Persistentes via URL + Chips Visuais (COMPLETA, mergeada)
 
 Feature implementada em 3 tasks via Subagent-Driven Development. Push feito para `main`.
 

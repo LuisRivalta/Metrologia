@@ -1,5 +1,17 @@
 # Logs do Projeto
 
+## 2026-04-28 — Testes: Expansão de cobertura de branches
+
+Adicionados 16 testes novos cobrindo branches anteriormente não alcançados.
+
+**Arquivos modificados:** `tests/lib/measurements.test.ts`, `tests/lib/instruments.test.ts`, `tests/lib/calibration-records.test.ts`, `tests/lib/calibration-derivations.test.ts`, `tests/lib/categories.test.ts`
+
+**Resultado:** 85 → 101 testes passando; branches 71.77% → 75.9%; statements 89.55%.
+
+**Commit:** `09e6912` — `tests: expand branch coverage across lib modules`
+
+---
+
 ## 2026-04-28 — Feature: Filtros Persistentes via URL + Chips Visuais
 
 Todos os 4 filtros da lista de instrumentos (`/instrumentos`) agora persistem na URL e chips visuais indicam filtros ativos.

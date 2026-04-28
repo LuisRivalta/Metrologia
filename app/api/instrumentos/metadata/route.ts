@@ -102,11 +102,11 @@ export async function GET() {
       .order("codigo", { ascending: true })
   ]);
 
-  const combinedError =
-    categoryRowsResponse.error ?? measurementRowsResponse.error ?? categoryFieldRowsResponse.error ?? setorRowsResponse.error;
+  const coreError =
+    categoryRowsResponse.error ?? measurementRowsResponse.error ?? categoryFieldRowsResponse.error;
 
-  if (combinedError) {
-    if (isPermissionDenied(combinedError.message)) {
+  if (coreError) {
+    if (isPermissionDenied(coreError.message)) {
       return buildSchemaPermissionError();
     }
 
@@ -129,6 +129,9 @@ export async function GET() {
     })
   );
 
-  const setores = ((setorRowsResponse.data ?? []) as SetorRow[]).map(mapSetorRow);
+  const setores = setorRowsResponse.error
+    ? []
+    : ((setorRowsResponse.data ?? []) as SetorRow[]).map(mapSetorRow);
+
   return NextResponse.json({ categories, measurements, setores });
 }

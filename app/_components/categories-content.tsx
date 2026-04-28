@@ -35,6 +35,7 @@ type CategoryFieldDraftRow = {
 type CategoryFieldDraftSubgroup = {
   clientId: string;
   name: string;
+  defaultMeasurementId: string;
   rows: CategoryFieldDraftRow[];
 };
 
@@ -87,6 +88,7 @@ function createFieldDraftSubgroup(name = ""): CategoryFieldDraftSubgroup {
   return {
     clientId: createClientId(),
     name,
+    defaultMeasurementId: "",
     rows: [createFieldDraftRow()]
   };
 }
@@ -114,6 +116,7 @@ function mapFieldsToDraftSubgroups(fields: CategoryFieldFormItem[]) {
     const currentSubgroup = subgroups.get(subgroupKey) ?? {
       clientId: createClientId(),
       name: subgroupName,
+      defaultMeasurementId: "",
       rows: []
     };
 
@@ -170,6 +173,8 @@ export function CategoriesContent() {
   const [copyGroupNewName, setCopyGroupNewName] = useState("");
   const [copyGroupSourceFields, setCopyGroupSourceFields] = useState<CategoryFieldFormItem[]>([]);
   const [copyGroupError, setCopyGroupError] = useState("");
+  const [pendingRemoveFieldIds, setPendingRemoveFieldIds] = useState<string[] | null>(null);
+  const [pendingRemoveLabel, setPendingRemoveLabel] = useState("");
 
   const sortedCategories = useMemo(() => {
     return [...categories].sort((first, second) =>
@@ -301,6 +306,8 @@ export function CategoriesContent() {
     setFieldRows([]);
     setValidationError("");
     setIsSubmitting(false);
+    setPendingRemoveFieldIds(null);
+    setPendingRemoveLabel("");
     closeFieldModal();
   }
 
@@ -432,6 +439,36 @@ export function CategoriesContent() {
     setIsFieldModalOpen(true);
   }
 
+  function openRemoveGroupConfirm(group: (typeof groupedFieldRows)[number]) {
+    const ids = group.subgroups.flatMap((sg) => sg.fields.map((f) => f.clientId));
+    setPendingRemoveFieldIds(ids);
+    setPendingRemoveLabel(`o grupo "${group.label ?? "sem nome"}"`);
+  }
+
+  function openRemoveSubgroupConfirm(
+    subgroup: (typeof groupedFieldRows)[number]["subgroups"][number],
+    groupLabel: string | null
+  ) {
+    const ids = subgroup.fields.map((f) => f.clientId);
+    const label = [groupLabel, subgroup.label].filter(Boolean).join(" / ") || "sem nome";
+    setPendingRemoveFieldIds(ids);
+    setPendingRemoveLabel(`o subgrupo "${label}"`);
+  }
+
+  function confirmRemoveFields() {
+    if (!pendingRemoveFieldIds) return;
+    const ids = new Set(pendingRemoveFieldIds);
+    setFieldRows((current) => current.filter((f) => !ids.has(f.clientId)));
+    setPendingRemoveFieldIds(null);
+    setPendingRemoveLabel("");
+    setValidationError("");
+  }
+
+  function cancelRemoveFields() {
+    setPendingRemoveFieldIds(null);
+    setPendingRemoveLabel("");
+  }
+
   function removeFieldRow(clientId: string) {
     setFieldRows((current) => current.filter((row) => row.clientId !== clientId));
     setValidationError("");
@@ -444,18 +481,42 @@ export function CategoriesContent() {
 
   function updateFieldDraftSubgroup(
     subgroupClientId: string,
-    nextValue: Partial<Pick<CategoryFieldDraftSubgroup, "name">>
+    nextValue: Partial<Pick<CategoryFieldDraftSubgroup, "name" | "defaultMeasurementId">>
   ) {
     setFieldDraftSubgroups((current) =>
-      current.map((subgroup) =>
-        subgroup.clientId === subgroupClientId
-          ? {
-              ...subgroup,
-              ...nextValue
-            }
-          : subgroup
-      )
+      current.map((subgroup) => {
+        if (subgroup.clientId !== subgroupClientId) return subgroup;
+
+        const updated = { ...subgroup, ...nextValue };
+
+        if (nextValue.defaultMeasurementId !== undefined && nextValue.defaultMeasurementId !== "") {
+          updated.rows = subgroup.rows.map((row) => ({
+            ...row,
+            measurementId: nextValue.defaultMeasurementId as string
+          }));
+        }
+
+        return updated;
+      })
     );
+    setFieldModalError("");
+  }
+
+  function copyFieldDraftSubgroup(subgroupClientId: string) {
+    setFieldDraftSubgroups((current) => {
+      const index = current.findIndex((sg) => sg.clientId === subgroupClientId);
+      if (index === -1) return current;
+      const source = current[index];
+      const copy: CategoryFieldDraftSubgroup = {
+        clientId: createClientId(),
+        name: source.name,
+        defaultMeasurementId: source.defaultMeasurementId,
+        rows: source.rows.map((row) => ({ ...row, clientId: createClientId(), dbId: undefined }))
+      };
+      const next = [...current];
+      next.splice(index + 1, 0, copy);
+      return next;
+    });
     setFieldModalError("");
   }
 
@@ -476,7 +537,10 @@ export function CategoriesContent() {
         subgroup.clientId === subgroupClientId
           ? {
               ...subgroup,
-              rows: [...subgroup.rows, createFieldDraftRow()]
+              rows: [
+                ...subgroup.rows,
+                { ...createFieldDraftRow(), measurementId: subgroup.defaultMeasurementId }
+              ]
             }
           : subgroup
       )
@@ -659,9 +723,6 @@ export function CategoriesContent() {
       return "Nome da categoria obrigatorio.";
     }
 
-    if (fieldRows.length === 0) {
-      return "Adicione pelo menos um item ao template de calibracao da categoria.";
-    }
 
     const seenSlugs = new Set<string>();
 
@@ -1033,11 +1094,16 @@ export function CategoriesContent() {
                             <div className={getSubgroupGridClassName(group.subgroups.length)}>
                               {group.subgroups.map((subgroup) => (
                                 <article key={subgroup.key} className="template-preview__subgroup">
-                                  {subgroup.label && (
-                                    <div className="template-preview__subgroup-header">
-                                      <strong>{subgroup.label}</strong>
-                                    </div>
-                                  )}
+                                  <div className="template-preview__subgroup-header">
+                                    {subgroup.label ? <strong>{subgroup.label}</strong> : <span />}
+                                    <button
+                                      type="button"
+                                      className="instrument-fields-builder__remove"
+                                      onClick={() => openRemoveSubgroupConfirm(subgroup, group.label)}
+                                    >
+                                      Remover subgrupo
+                                    </button>
+                                  </div>
 
                                   <div className={getFieldGridClassName(subgroup.fields.length)}>
                                     {subgroup.fields.map((field) => {
@@ -1094,6 +1160,13 @@ export function CategoriesContent() {
                                   onClick={() => openCopyGroupModal(group)}
                                 >
                                   Copiar grupo
+                                </button>
+                                <button
+                                  type="button"
+                                  className="instrument-fields-builder__remove"
+                                  onClick={() => openRemoveGroupConfirm(group)}
+                                >
+                                  Remover grupo
                                 </button>
                               </div>
                             ) : null}
@@ -1166,13 +1239,9 @@ export function CategoriesContent() {
                 className="instrument-delete-confirm field-editor-modal"
                 role="dialog"
                 aria-modal="true"
-                aria-labelledby="field-editor-modal-title"
+                aria-label={fieldModalMode === "edit" ? "Editar bloco de campos" : "Novo bloco de campos"}
                 onClick={(event) => event.stopPropagation()}
               >
-                <h3 id="field-editor-modal-title">
-                  {fieldModalMode === "edit" ? "Editar bloco de campos" : "Novo bloco de campos"}
-                </h3>
-
                 <div className="field-editor-modal__form">
                   <div className="field-editor-modal__grid field-editor-modal__grid--single">
                     <label className="instrument-modal__field">
@@ -1221,26 +1290,54 @@ export function CategoriesContent() {
                             />
                           </label>
 
-                          <button
-                            type="button"
-                            className="field-editor-modal__remove-subgroup"
-                            onClick={() => removeFieldDraftSubgroup(subgroup.clientId)}
-                            disabled={fieldDraftSubgroups.length <= 1}
-                          >
-                            Remover subgrupo
-                          </button>
+                          <label className="instrument-modal__field">
+                            <span>Unidade padrão (opcional)</span>
+                            <select
+                              value={subgroup.defaultMeasurementId}
+                              onChange={(event) =>
+                                updateFieldDraftSubgroup(subgroup.clientId, {
+                                  defaultMeasurementId: event.target.value
+                                })
+                              }
+                            >
+                              <option value="">Nenhuma</option>
+                              {measurements.map((measurement) => (
+                                <option key={measurement.id} value={measurement.id}>
+                                  {measurement.name}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+
                         </div>
 
                         <div className="field-editor-modal__section">
                           <div className="field-editor-modal__section-head">
                             <strong>Campos deste subgrupo</strong>
-                            <button
-                              type="button"
-                              className="field-editor-modal__add-row"
-                              onClick={() => addFieldDraftRow(subgroup.clientId)}
-                            >
-                              Adicionar campo
-                            </button>
+                            <div className="field-editor-modal__section-actions">
+                              <button
+                                type="button"
+                                className="field-editor-modal__add-row"
+                                onClick={() => addFieldDraftRow(subgroup.clientId)}
+                              >
+                                Adicionar campo
+                              </button>
+                              <button
+                                type="button"
+                                className="field-editor-modal__add-row"
+                                onClick={() => copyFieldDraftSubgroup(subgroup.clientId)}
+                              >
+                                Copiar subgrupo
+                              </button>
+                              <button
+                                type="button"
+                                className="field-editor-modal__remove-subgroup"
+                                onClick={() => removeFieldDraftSubgroup(subgroup.clientId)}
+                                disabled={fieldDraftSubgroups.length <= 1}
+                              >
+                                Remover subgrupo
+                              </button>
+                            </div>
                           </div>
                         </div>
 
@@ -1395,6 +1492,38 @@ export function CategoriesContent() {
                     onClick={saveCopyGroup}
                   >
                     Copiar grupo
+                  </button>
+                </div>
+              </section>
+            </div>,
+            document.body
+          )
+        : null}
+
+      {pendingRemoveFieldIds && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              className="field-editor-modal-backdrop"
+              role="presentation"
+              onClick={cancelRemoveFields}
+            >
+              <section
+                className="instrument-delete-confirm"
+                role="dialog"
+                aria-modal="true"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <h3>Confirmar remoção</h3>
+                <p>
+                  Tem certeza que deseja remover {pendingRemoveLabel}? Todos os campos dentro dele
+                  serão removidos.
+                </p>
+                <div className="instrument-delete-confirm__actions">
+                  <button type="button" onClick={cancelRemoveFields}>
+                    Cancelar
+                  </button>
+                  <button type="button" className="is-danger" onClick={confirmRemoveFields}>
+                    Remover
                   </button>
                 </div>
               </section>

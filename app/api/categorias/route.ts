@@ -126,10 +126,6 @@ function mapCategoryFieldsByCategoryId(
 function sanitizeMeasurementFields(rawFields: MeasurementFieldDraft[] | undefined) {
   const fields = rawFields ?? [];
 
-  if (fields.length === 0) {
-    return { error: "Adicione pelo menos um item ao template de calibracao da categoria." };
-  }
-
   const seenSlugs = new Set<string>();
   const sanitizedFields: SanitizedMeasurementFieldInput[] = [];
 

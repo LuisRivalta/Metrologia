@@ -133,6 +133,9 @@ export function InstrumentsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const initialStatus = searchParams.get("status");
+  const initialCategory = searchParams.get("category") ?? "";
+  const initialManufacturer = searchParams.get("manufacturer") ?? "";
+  const initialSetor = searchParams.get("setor") ?? "";
 
   const [rows, setRows] = useState<InstrumentItem[]>([]);
   const [setores, setSetores] = useState<SetorItem[]>([]);
@@ -143,9 +146,9 @@ export function InstrumentsContent() {
   const [loadError, setLoadError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
-  const [categoryFilter, setCategoryFilter] = useState("");
-  const [manufacturerFilter, setManufacturerFilter] = useState("");
-  const [setorFilter, setSetorFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState(initialCategory);
+  const [manufacturerFilter, setManufacturerFilter] = useState(initialManufacturer);
+  const [setorFilter, setSetorFilter] = useState(initialSetor);
   const [calibrationFilter, setCalibrationFilter] = useState<CalibrationFilter>(
     VALID_CALIBRATION_FILTER_STATUSES.includes(initialStatus as CalibrationFilter)
       ? (initialStatus as CalibrationFilter)
@@ -203,6 +206,20 @@ export function InstrumentsContent() {
       return normalizeSearchValue(first[sortKey]).localeCompare(normalizeSearchValue(second[sortKey]), "pt-BR", { sensitivity: "base" }) * directionFactor;
     });
   }, [filteredRows, sortDirection, sortKey]);
+
+  function syncFiltersToURL(filters: {
+    calibrationFilter: CalibrationFilter;
+    categoryFilter: string;
+    manufacturerFilter: string;
+    setorFilter: string;
+  }) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (filters.calibrationFilter === "all") { params.delete("status"); } else { params.set("status", filters.calibrationFilter); }
+    if (filters.categoryFilter === "") { params.delete("category"); } else { params.set("category", filters.categoryFilter); }
+    if (filters.manufacturerFilter === "") { params.delete("manufacturer"); } else { params.set("manufacturer", filters.manufacturerFilter); }
+    if (filters.setorFilter === "") { params.delete("setor"); } else { params.set("setor", filters.setorFilter); }
+    router.replace(`?${params.toString()}`, { scroll: false });
+  }
 
   useEffect(() => {
     window.localStorage.removeItem(LEGACY_INSTRUMENTS_STORAGE_KEY);

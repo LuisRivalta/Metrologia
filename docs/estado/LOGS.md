@@ -1,5 +1,28 @@
 # Logs do Projeto
 
+## 2026-04-28 — Feature: Filtros Persistentes via URL + Chips Visuais
+
+Todos os 4 filtros da lista de instrumentos (`/instrumentos`) agora persistem na URL e chips visuais indicam filtros ativos.
+
+**Commits entregues:**
+- `44cbe56` — `feat: init category/manufacturer/setor filters from URL`
+- `ba8324d` — `feat: sync all 4 instrument filters to URL on change`
+- `9227aee` — `feat: add active filter chips with URL sync to instruments list`
+- `4236012` — `refactor: move syncFiltersToURL before activeChips useMemo`
+
+**Mudanças em `app/_components/instruments-content.tsx`:**
+1. `initialCategory`, `initialManufacturer`, `initialSetor` lidos do `searchParams` no mount (replicando o padrão já existente de `initialStatus`)
+2. `syncFiltersToURL(filters)` — helper dentro do componente que constrói `URLSearchParams` e chama `router.replace` com `scroll: false`; deleta params vazios, seta os preenchidos
+3. Os 4 selects de filtro e o botão "Limpar filtros" chamam `syncFiltersToURL` após cada mudança de estado
+4. `activeChips` useMemo: gera array de `{ key, label, onRemove }` para cada filtro ativo; label do setor resolvido via `formatSetorLabel`; chips renderizados em `.filter-chips` entre o painel de filtros e a tabela; botão "Limpar tudo" reseta os 4 filtros e a URL
+
+**Mudanças em `app/globals.css`:**
+- `.filter-chips`, `.filter-chip`, `.filter-chip button`, `.filter-chips__clear` — light mode (azul sutil) + dark theme via `html[data-theme="dark"]`
+
+**Resultado:** 85 testes passando, build limpo, push feito para `main`.
+
+---
+
 ## 2026-04-27 — Melhorias no Editor de Categorias
 
 Aprimoramentos no editor de templates de calibração das categorias.

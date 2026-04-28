@@ -4,32 +4,30 @@
 
 Este arquivo dá contexto operacional rápido. Para detalhes completos, comece por `docs/00-INDEX.md`.
 
-## Estado atual (2026-04-27)
+## Estado atual (2026-04-28)
 
 Suite de testes: **85 testes passando**, cobertura de statements em **87%+**.
 
-### Última sessão — Melhorias no Editor de Categorias (em progresso, não commitado)
+### Última sessão — Filtros Persistentes via URL + Chips Visuais (COMPLETA, mergeada)
 
-**Mudanças não commitadas presentes no `main`:**
+Feature implementada em 3 tasks via Subagent-Driven Development. Push feito para `main`.
 
-**`app/_components/categories-content.tsx`:**
-- `CategoryFieldDraftSubgroup` ganhou `defaultMeasurementId` — ao definir, propaga a medida para todas as linhas do subgrupo e para novas linhas adicionadas
-- `copyFieldDraftSubgroup` — novo botão "Copiar subgrupo" duplica o subgrupo e suas linhas com novos `clientId`
-- `openRemoveGroupConfirm` / `openRemoveSubgroupConfirm` — confirmação antes de remover grupo ou subgrupo inteiro (estado `pendingRemoveFieldIds` + `pendingRemoveLabel`)
-- Validação "mínimo 1 campo" removida — categoria pode ser salva com template vazio
+**O que foi feito:**
+- `initialCategory`, `initialManufacturer`, `initialSetor` lidos do `searchParams` no mount
+- `syncFiltersToURL(filters)` helper dentro de `InstrumentsContent` — constrói URLSearchParams e chama `router.replace` com `scroll: false`
+- Os 4 selects de filtro e o botão "Limpar filtros" chamam `syncFiltersToURL` após cada mudança
+- `activeChips` useMemo gera chips `{ key, label, onRemove }` para cada filtro ativo; renderizados em `.filter-chips` entre o painel de filtros e a tabela; label do setor via `formatSetorLabel`; botão "Limpar tudo"
+- CSS: `.filter-chips`, `.filter-chip`, `.filter-chip button`, `.filter-chips__clear` com dark theme
 
-**`app/api/categorias/route.ts`:**
-- Validação "mínimo 1 campo" removida de `sanitizeMeasurementFields` (alinhado com UI)
+---
 
-**`app/api/instrumentos/metadata/route.ts`:**
-- `setorRowsResponse` tratado de forma independente — erro de permissão na tabela `setores` não bloqueia carregamento do resto dos metadados; retorna `[]` no caso de erro
+### Sessão anterior — Melhorias no Editor de Categorias (COMPLETA, mergeada)
 
-**`app/globals.css`:**
-- `.template-preview__subgroup-header` com `flex + justify-content: space-between` para acomodar o botão de remoção
-- `.field-editor-modal__section-actions` para alinhar ações de seção (copiar + remover) lado a lado
-- `.field-editor-modal__subgroups` com `grid-template-columns: repeat(2, ...)` (2 colunas no editor)
-- `.instrument-delete-confirm.field-editor-modal` alargado para `min(100%, 1100px)`
-- Responsivo: `.field-editor-modal__subgroups` colapsa para 1 coluna em ≤ 820px
+- `defaultMeasurementId` por subgrupo propaga medida para linhas novas e existentes
+- `copyFieldDraftSubgroup` duplica subgrupo inteiro com novos `clientId`
+- Confirmação modal antes de remover grupo ou subgrupo inteiro
+- Validação "mínimo 1 campo" removida — template pode ficar vazio
+- Layout do editor em 2 colunas; modal alargado para 1100px; responsivo ≤ 820px
 
 ---
 
@@ -58,9 +56,9 @@ Atalhos rápidos:
 
 ## Próximos passos sugeridos
 
-- Commitar as melhorias de categorias (validar + commitar mudanças não commitadas)
-- Implementar filtros persistentes via URL + chips visuais (spec pronta: `docs/superpowers/specs/2026-04-25-filtros-persistentes-url-design.md`)
 - Expandir cobertura de testes (branches ainda em 70%)
+- Ampliar regras derivadas para outras categorias além do Paquímetro
+- Melhorar qualidade/velocidade da extração por IA
 
 ## Armadilhas ativas
 

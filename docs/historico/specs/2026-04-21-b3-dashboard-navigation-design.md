@@ -1,3 +1,8 @@
+---
+tags: [historico, spec, dashboard]
+feature: B3 — Dashboard Navegável
+data: 2026-04-21
+---
 # B3 — Dashboard: Navegação por Links
 
 **Data:** 2026-04-21  
@@ -92,3 +97,7 @@ Nenhuma outra mudança nesse arquivo.
 1. Adicionar `id` a `DashboardAlert` + teste unitário
 2. Atualizar `dashboard-content.tsx` com `<Link>` nos três pontos
 3. Atualizar `instruments-content.tsx` com `useSearchParams`
+## Relacionado
+- [[componentes/dashboard-content]] — implementado
+- [[componentes/instruments-content]] — filtro por URL param
+- [[modulos/dashboard-metrics]] — DashboardAlert ganhou id

@@ -4,50 +4,44 @@
 
 Este arquivo dá contexto operacional rápido. Para detalhes completos, comece por `docs/00-INDEX.md`.
 
-## Estado atual (2026-04-25)
+## Estado atual (2026-04-27)
 
 Suite de testes: **85 testes passando**, cobertura de statements em **87%+**.
 
-### Última sessão — UX: Linhas Clicáveis na Lista de Instrumentos (COMPLETA, aguardando validação manual)
+### Última sessão — Melhorias no Editor de Categorias (em progresso, não commitado)
 
-**CONCLUÍDO:** Linhas da tabela de instrumentos clicáveis em sua totalidade.
+**Mudanças não commitadas presentes no `main`:**
 
-Branch: `feat/ux-clickable-rows` — aguardando validação manual antes do merge.
+**`app/_components/categories-content.tsx`:**
+- `CategoryFieldDraftSubgroup` ganhou `defaultMeasurementId` — ao definir, propaga a medida para todas as linhas do subgrupo e para novas linhas adicionadas
+- `copyFieldDraftSubgroup` — novo botão "Copiar subgrupo" duplica o subgrupo e suas linhas com novos `clientId`
+- `openRemoveGroupConfirm` / `openRemoveSubgroupConfirm` — confirmação antes de remover grupo ou subgrupo inteiro (estado `pendingRemoveFieldIds` + `pendingRemoveLabel`)
+- Validação "mínimo 1 campo" removida — categoria pode ser salva com template vazio
 
-**O que foi entregue:**
-- `app/globals.css` — `.inventory-table__row--clickable` com cursor pointer + hover sutil light e dark
-- `app/_components/instruments-content.tsx` — `useRouter`, `onClick` no `<tr>`, `stopPropagation` na tag pill e no wrapper das ações
+**`app/api/categorias/route.ts`:**
+- Validação "mínimo 1 campo" removida de `sanitizeMeasurementFields` (alinhado com UI)
 
-**Checklist de validação manual:**
-- [ ] Clicar em qualquer célula (Categoria, Fabricante, Setor, Prazo) navega para `/instrumentos/:id`
-- [ ] Clicar na tag pill navega (sem dupla navegação)
-- [ ] Clicar no lápis abre o modal (não navega)
-- [ ] Clicar no ícone de prancheta abre calibração (não detalhe)
-- [ ] Hover exibe fundo sutil em light e dark theme
+**`app/api/instrumentos/metadata/route.ts`:**
+- `setorRowsResponse` tratado de forma independente — erro de permissão na tabela `setores` não bloqueia carregamento do resto dos metadados; retorna `[]` no caso de erro
+
+**`app/globals.css`:**
+- `.template-preview__subgroup-header` com `flex + justify-content: space-between` para acomodar o botão de remoção
+- `.field-editor-modal__section-actions` para alinhar ações de seção (copiar + remover) lado a lado
+- `.field-editor-modal__subgroups` com `grid-template-columns: repeat(2, ...)` (2 colunas no editor)
+- `.instrument-delete-confirm.field-editor-modal` alargado para `min(100%, 1100px)`
+- Responsivo: `.field-editor-modal__subgroups` colapsa para 1 coluna em ≤ 820px
 
 ---
 
-### Sessão anterior — Feature B4: Atalhos de Calibração (COMPLETA, aguardando validação manual)
+### Sessão anterior — UX: Linhas Clicáveis (COMPLETA, mergeada)
 
-**CONCLUÍDO:** Todas as 4 tasks da feature "B4: Atalhos de Registro de Calibração" implementadas e aprovadas em revisão.
+Linhas da tabela de instrumentos clicáveis via `onClick` no `<tr>` + `router.push`. `stopPropagation` no link da tag e no wrapper das ações preserva o comportamento existente. CSS: `cursor: pointer` + hover sutil light/dark.
 
-Branch: `feat/b4-calibration-shortcuts` — aguardando validação manual antes do merge.
+---
 
-**O que foi entregue:**
-- `app/globals.css` — grid do `.dashboard-alert-item` reestruturado; novas classes `__main` e `__calibrate`; dark theme e responsivo atualizados; `.table-action` com `inline-flex`
-- `app/_components/dashboard-content.tsx` — cards de alerta com dois links: área principal → detalhe, botão "Registrar calibração" → `/instrumentos/:id/calibracoes/nova`
-- `app/_components/instruments-content.tsx` — ícone de documento+plus na coluna "Ações" de todas as linhas
+### Sessão anterior — Feature B4: Atalhos de Calibração (COMPLETA, mergeada)
 
-**Próximo:** Validação manual no browser + merge `feat/b4-calibration-shortcuts` → `main`.
-
-**Checklist de validação manual:**
-- [ ] Dashboard: clicar na área principal do card navega para `/instrumentos/:id`
-- [ ] Dashboard: clicar em "Registrar calibração" navega para `/instrumentos/:id/calibracoes/nova`
-- [ ] Dashboard: visual correto em light e dark theme
-- [ ] Dashboard: em tela estreita, botão ocupa largura total
-- [ ] Lista: ícone de prancheta navega para `/instrumentos/:id/calibracoes/nova`
-- [ ] Lista: lápis ainda abre o modal de edição
-- [ ] Lista: dois ícones alinhados lado a lado na coluna "Ações"
+Cards de alerta do dashboard reestruturados com dois alvos: área principal → detalhe do instrumento, botão "Registrar calibração" → `/instrumentos/:id/calibracoes/nova`. Mesma ação adicionada como ícone na coluna "Ações" da lista de instrumentos.
 
 ## Para navegar o código
 
@@ -60,10 +54,12 @@ Atalhos rápidos:
 - Pipeline de IA → [[arquitetura/ia-pipeline]] e [[modulos/calibration-extraction]]
 - Instrumentos e prazos → [[modulos/instruments]]
 - Slugs de campos → [[dominio/campo-slugs]]
+- Setores → [[modulos/setores]] e [[api/setores]]
 
 ## Próximos passos sugeridos
 
-- B4: ações rápidas no dashboard (registrar calibração sem sair da página) ou melhorias de UX na lista de instrumentos
+- Commitar as melhorias de categorias (validar + commitar mudanças não commitadas)
+- Implementar filtros persistentes via URL + chips visuais (spec pronta: `docs/superpowers/specs/2026-04-25-filtros-persistentes-url-design.md`)
 - Expandir cobertura de testes (branches ainda em 70%)
 
 ## Armadilhas ativas
@@ -72,6 +68,7 @@ Atalhos rápidos:
 - O backend de calibração ainda aceita `laboratory` e `certificate`, mas a UI atual não expõe esses campos
 - `lib/api/client.ts` é o fetch helper (não `fetch-api.ts`)
 - Criar instrumento via `POST /api/instrumentos` **não** cria calibração — isso é responsabilidade da UI em `/instrumentos/novo`
+- `setorRowsResponse` em `metadata/route.ts` falha silenciosamente (retorna `[]`) para não bloquear o carregamento de metadados
 
 ## Como validar alterações
 

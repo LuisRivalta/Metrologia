@@ -51,7 +51,10 @@ tests/lib/        ← testes unitários da camada lib/
 | `/instrumentos/[id]` | Detalhe do instrumento |
 | `/instrumentos/[id]/calibracoes` | Histórico de calibrações |
 | `/instrumentos/[id]/calibracoes/nova` | Nova calibração |
+| `/configuracoes` | Hub de configurações |
 | `/configuracoes/medidas` | CRUD de unidades de medida |
+| `/configuracoes/setores` | CRUD de setores de uso |
+| `/inventario` | Redireciona para `/instrumentos` (alias legado) |
 
 ## Relacionado
 - [[arquitetura/data-layer]] — banco e schemas

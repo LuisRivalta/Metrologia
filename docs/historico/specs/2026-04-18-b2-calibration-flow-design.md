@@ -1,3 +1,8 @@
+---
+tags: [historico, spec, calibracao]
+feature: B2 — Calibration Flow UX
+data: 2026-04-18
+---
 # B2 — Calibration Flow UX: Inline Validation
 
 **Data:** 2026-04-18
@@ -83,3 +88,6 @@ const [validityDateError, setValidityDateError] = useState<string | null>(null);
 ## Arquivo principal
 
 `app/_components/instrument-calibration-create-content.tsx`
+## Relacionado
+- [[componentes/calibration-create-flow]] — componente implementado
+- [[testes/TDD]] — estratégia de testes aplicada

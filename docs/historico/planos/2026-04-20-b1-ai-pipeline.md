@@ -1,3 +1,8 @@
+---
+tags: [historico, plano, ia]
+feature: B1 — AI Pipeline Confiabilidade
+data: 2026-04-20
+---
 # B1 — AI Pipeline: Confiabilidade e Visibilidade
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -620,3 +625,7 @@ git commit -m "feat: show confidence indicators in calibration field table after
 - [ ] Log aparece no console após extração com os campos corretos
 - [ ] Com `OPENROUTER_FALLBACK_MODEL` definido e timeout no primário: `attempt: 2` aparece no log
 - [ ] Badges aparecem corretamente após extração, não aparecem antes
+## Relacionado
+- [[historico/specs/2026-04-20-b1-ai-pipeline-design]] — spec desta feature
+- [[arquitetura/ia-pipeline]] — pipeline atualizado
+- [[api/calibracoes-extrair]] — endpoint SSE

@@ -1,3 +1,8 @@
+---
+tags: [historico, plano, dashboard]
+feature: B3 — Dashboard Navegável
+data: 2026-04-21
+---
 # B3 — Dashboard Navigation Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -371,3 +376,7 @@ Expected: build completes with no errors.
 git add app/_components/instruments-content.tsx
 git commit -m "feat: initialize calibration filter from URL status param"
 ```
+## Relacionado
+- [[historico/specs/2026-04-21-b3-dashboard-navigation-design]] — spec desta feature
+- [[componentes/dashboard-content]] — implementado
+- [[componentes/instruments-content]] — filtro por URL

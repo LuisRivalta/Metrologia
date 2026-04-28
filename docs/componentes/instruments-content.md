@@ -7,21 +7,27 @@ arquivo: app/_components/instruments-content.tsx
 
 **Arquivo:** `app/_components/instruments-content.tsx`
 **Tipo:** Client Component
-**Responsabilidade:** lista de instrumentos com filtros de status e busca
+**Responsabilidade:** lista de instrumentos com filtros, busca, linhas clicáveis e atalhos de ação
 
 ## O que faz
 
 Renderiza a lista de instrumentos com:
 - Filtro por status de calibração (`all`, `neutral`, `warning`, `danger`)
+- Filtro por categoria, fabricante e setor
 - Busca por texto
+- Linhas da tabela clicáveis — clique em qualquer célula navega para `/instrumentos/:id`
+- Coluna "Ações" com dois ícones: editar (abre modal) e calibrar (navega para `/instrumentos/:id/calibracoes/nova`)
 - Modal de edição/criação rápida (legado — sem calibração inicial)
-- Inicialização do filtro via `?status=` URL param
+- Inicialização do filtro de status via `?status=` URL param
 
 ## Estado relevante
 
 | Estado | O que controla |
 |--------|---------------|
 | `calibrationFilter` | Filtro ativo (`all` \| `neutral` \| `warning` \| `danger`) |
+| `categoryFilter` | Filtro por nome de categoria (string) |
+| `manufacturerFilter` | Filtro por fabricante (string) |
+| `setorFilter` | Filtro por setor — string com id, `"none"` = sem setor |
 | `searchQuery` | Texto de busca |
 
 ## Inicialização via URL
@@ -35,6 +41,11 @@ const initialStatus = searchParams.get("status");
 
 A constante `VALID_CALIBRATION_FILTER_STATUSES` está em escopo de módulo.
 
+## Linhas clicáveis
+
+`onClick` no `<tr>` chama `router.push("/instrumentos/:id")`.  
+`stopPropagation` aplicado na tag pill e no wrapper de ações para evitar dupla navegação.
+
 ## Pontos de atenção
 
 - `useSearchParams` exige `<Suspense>` no page pai (`app/instrumentos/page.tsx`) — obrigatório para build estático do Next.js
@@ -44,6 +55,8 @@ A constante `VALID_CALIBRATION_FILTER_STATUSES` está em escopo de módulo.
 ## Relacionado
 
 - [[componentes/dashboard-content]] — origem dos links `?status=`
+- [[api/instrumentos]] — fonte dos dados
+- [[modulos/setores]] — `SetorItem` usado no filtro de setor
 - [[historico/specs/2026-04-21-b3-dashboard-navigation-design]] — spec que adicionou inicialização por URL
 
 ## Código-fonte

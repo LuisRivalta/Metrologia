@@ -1,3 +1,9 @@
+---
+tags: [superpowers, spec, instrumentos, ux]
+feature: Filtros Persistentes via URL + Chips Visuais
+data: 2026-04-25
+status: pendente
+---
 # Design: Filtros Persistentes via URL + Chips Visuais
 
 **Feature:** Filtros da lista de instrumentos persistem na URL e chips visuais mostram filtros ativos.
@@ -102,3 +108,6 @@ Dark theme: chips já usam paleta dark-first. Light mode recebe variante mais cl
 - `searchTerm` (busca textual) — não persiste na URL (ephemeral)
 - Parâmetros de ordenação — não persiste na URL
 - Paginação — não existe no componente atual
+
+## Relacionado
+- [[componentes/instruments-content]] — componente a ser modificado

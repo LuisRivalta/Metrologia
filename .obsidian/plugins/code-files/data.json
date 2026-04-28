@@ -1,0 +1,5 @@
+{
+  "extensions": ["ts", "tsx", "js", "jsx", "css", "py"],
+  "theme": "default",
+  "minimap": false
+}

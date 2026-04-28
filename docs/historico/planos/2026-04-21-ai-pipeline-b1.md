@@ -1,3 +1,8 @@
+---
+tags: [historico, plano, ia]
+feature: B1 — Pipeline IA SSE Streaming
+data: 2026-04-21
+---
 # B1 — Pipeline de IA: SSE + Table Markdown Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -1163,3 +1168,7 @@ Esperado: build limpo.
 git add app/_components/instrument-create-content.tsx
 git commit -m "feat: add SSE progress steps to instrument create form"
 ```
+## Relacionado
+- [[historico/specs/2026-04-21-ai-pipeline-design]] — spec desta feature
+- [[arquitetura/ia-pipeline]] — SSE documentado
+- [[modulos/calibration-extraction]] — formatação de tabelas

@@ -1,3 +1,8 @@
+---
+tags: [superpowers, plano, instrumentos, setores]
+feature: Setor de Uso em Instrumentos
+data: 2026-04-23
+---
 # Setor de Uso nos Instrumentos — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -1616,3 +1621,9 @@ Após implementar todas as tasks:
   - [ ] Editar instrumento e mudar o setor na lista de instrumentos
   - [ ] Filtrar instrumentos por setor
   - [ ] Verificar que instrumento sem setor exibe "Sem setor" corretamente
+
+## Relacionado
+- [[modulos/setores]] — lib implementada
+- [[api/setores]] — CRUD implementado
+- [[componentes/setores-content]] — UI implementada
+- [[componentes/instruments-content]] — filtro e coluna setor

@@ -2,6 +2,9 @@
   "userIgnoreFilters": [
     "node_modules/",
     "coverage/",
-    "tmp/"
+    "tmp/",
+    ".next/",
+    ".git/",
+    "public/"
   ]
 }

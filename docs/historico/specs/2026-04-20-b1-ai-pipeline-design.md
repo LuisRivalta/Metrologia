@@ -1,3 +1,8 @@
+---
+tags: [historico, spec, ia]
+feature: B1 — AI Pipeline Confiabilidade
+data: 2026-04-20
+---
 # B1 — AI Pipeline: Confiabilidade e Visibilidade
 
 **Data:** 2026-04-20
@@ -140,3 +145,7 @@ Adicionar ao `.env.example` ou documentação interna. Não bloqueia o sistema s
 |---|---|
 | `app/api/calibracoes/extrair/route.ts` | Log estruturado + fallback de modelo |
 | `app/_components/instrument-calibration-create-content.tsx` | Indicadores de confiança pós-extração |
+## Relacionado
+- [[arquitetura/ia-pipeline]] — pipeline atualizado
+- [[modulos/calibration-extraction]] — extração e logging
+- [[api/calibracoes-extrair]] — endpoint atualizado

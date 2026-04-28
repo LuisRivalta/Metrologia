@@ -24,10 +24,15 @@ Toda query de negócio usa `.schema("calibracao")` — sem exceção.
 | `instrumento_campos_medicao` | Campos herdados do template da categoria |
 | `calibracoes` | Cabeçalho + PDF + payload estruturado |
 | `calibracao_resultados` | Conformidade por campo (quando revisado) |
+| `setores` | Setores de uso dos instrumentos (`id`, `codigo`, `nome`) |
+
+## Rota de Metadados
+
+`GET /api/instrumentos/metadata` — carrega em paralelo `categorias`, `medidas` e `setores`. Usado pelos formulários de criação/edição de instrumento. Erro em `setores` não bloqueia o carregamento (retorna `[]`).
 
 ## Schema `datasul`
 
-- `centro_custo` — usado apenas em `GET /api/centro-custo`
+- `centro_custo` — usado apenas em `GET /api/centro-custo` (lookup por código)
 
 ## Formato dual de `observacoes`
 

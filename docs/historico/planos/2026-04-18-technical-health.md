@@ -1,3 +1,8 @@
+---
+tags: [historico, plano, testes]
+feature: Technical Health — Cobertura de Testes
+data: 2026-04-18
+---
 # Technical Health — Cobertura de Testes e Melhorias de Arquitetura
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -750,3 +755,6 @@ npm run build
 ```
 
 Esperado: build concluído sem erros.
+## Relacionado
+- [[historico/specs/2026-04-18-technical-health-design]] — spec desta feature
+- [[testes/TDD]] — estratégia de testes

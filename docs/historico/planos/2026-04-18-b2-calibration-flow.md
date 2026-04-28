@@ -1,3 +1,8 @@
+---
+tags: [historico, plano, calibracao]
+feature: B2 — Calibration Flow UX
+data: 2026-04-18
+---
 # B2 — Calibration Flow UX: Inline Validation
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -363,3 +368,6 @@ git commit -m "feat: show inline field errors only, keep generic error for serve
 - [ ] Fluxo completo: PDF inválido → erro imediato; PDF válido → extração funciona; submit sem campos → scroll correto; submit completo → salva e redireciona
 - [ ] `npm run test` — 73 testes passando
 - [ ] `npm run build` — build limpo
+## Relacionado
+- [[historico/specs/2026-04-18-b2-calibration-flow-design]] — spec desta feature
+- [[componentes/calibration-create-flow]] — componente implementado

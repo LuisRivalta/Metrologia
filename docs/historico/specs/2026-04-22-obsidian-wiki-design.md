@@ -1,3 +1,8 @@
+---
+tags: [historico, spec, docs]
+feature: Obsidian Wiki Reorganização
+data: 2026-04-22
+---
 # Obsidian Wiki — Reorganização e Mapa de Código para IA
 
 **Data:** 2026-04-22  

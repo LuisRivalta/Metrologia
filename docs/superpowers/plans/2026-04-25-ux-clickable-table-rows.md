@@ -1,3 +1,8 @@
+---
+tags: [superpowers, plano, instrumentos, ux]
+feature: UX — Linhas Clicáveis
+data: 2026-04-25
+---
 # UX: Linhas Clicáveis na Lista de Instrumentos — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -255,3 +260,7 @@ Em `docs/estado/HANDOFF_IA.md`, atualizar "Última sessão" para refletir esta f
 ```bash
 cd C:/Metrologia && git add docs/estado/HANDOFF_IA.md docs/estado/LOGS.md && git commit -m "docs: update HANDOFF and LOGS after clickable table rows"
 ```
+
+## Relacionado
+- [[superpowers/specs/2026-04-25-ux-clickable-table-rows-design]] — spec desta feature
+- [[componentes/instruments-content]] — implementado

@@ -46,6 +46,7 @@ Renderiza o formulário de nova calibração: upload de PDF no topo, campos de d
 - [[modulos/calibration-derivations]] — `applyCalibrationDerivedValues`
 - [[modulos/calibration-records]] — `serializeCalibrationRecord`
 - [[modulos/calibration-certificates]] — `isPdfCertificateFile`, `MAX_CALIBRATION_CERTIFICATE_FILE_SIZE`
+- [[historico/specs/2026-04-18-b2-calibration-flow-design]] — spec de UX (validação inline e PDF no topo)
 
 ## Código-fonte
 [[app/_components/instrument-calibration-create-content.tsx]]

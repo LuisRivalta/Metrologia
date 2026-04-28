@@ -1,3 +1,8 @@
+---
+tags: [historico, spec, ia]
+feature: B1 — Pipeline IA SSE Streaming
+data: 2026-04-21
+---
 # B1 — Pipeline de IA: Streaming SSE + Formatação de Tabelas
 
 **Data:** 2026-04-21  
@@ -130,3 +135,7 @@ extractionStep: "reading_pdf" | "calling_ai" | "processing" | null
 4. Helper de leitura SSE no frontend
 5. Atualizar `instrument-calibration-create-content.tsx`
 6. Atualizar `instrument-create-content.tsx`
+## Relacionado
+- [[arquitetura/ia-pipeline]] — SSE documentado
+- [[modulos/calibration-extraction]] — formatação de tabelas
+- [[api/calibracoes-extrair]] — endpoint SSE

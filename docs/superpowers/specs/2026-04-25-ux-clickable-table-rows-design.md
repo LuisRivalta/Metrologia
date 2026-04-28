@@ -1,3 +1,8 @@
+---
+tags: [superpowers, spec, instrumentos, ux]
+feature: UX — Linhas Clicáveis na Lista de Instrumentos
+data: 2026-04-25
+---
 # UX: Linhas Clicáveis na Lista de Instrumentos
 
 **Data:** 2026-04-25
@@ -83,3 +88,7 @@ Sem lógica de negócio nova. Validação manual:
 |---|---|
 | `app/_components/instruments-content.tsx` | `useRouter`, `onClick` no `<tr>`, `stopPropagation` wrapper nas ações |
 | `app/globals.css` | 3 novas regras CSS (`__row--clickable`, hover light, hover dark) |
+
+## Relacionado
+- [[superpowers/plans/2026-04-25-ux-clickable-table-rows]] — plano de implementação
+- [[componentes/instruments-content]] — implementado

@@ -50,6 +50,8 @@ Constrói o prompt enviado ao modelo, o schema JSON que o modelo deve respeitar,
 - [[api/calibracoes-extrair]] — usa todas as funções deste módulo
 - [[modulos/calibration-certificate-parsers]] — overrides aplicados após normalização
 - [[modulos/measurement-fields]] — `MeasurementFieldItem` usado no schema e no prompt
+- [[historico/specs/2026-04-20-b1-ai-pipeline-design]] — spec de confiabilidade e logging
+- [[historico/specs/2026-04-21-ai-pipeline-design]] — spec de SSE streaming e tabelas Markdown
 
 ## Código-fonte
 [[lib/calibration-extraction.ts]]

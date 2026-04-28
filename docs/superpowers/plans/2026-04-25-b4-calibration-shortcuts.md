@@ -1,3 +1,8 @@
+---
+tags: [superpowers, plano, dashboard, calibracao]
+feature: B4 — Atalhos de Registro de Calibração
+data: 2026-04-25
+---
 # B4: Atalhos de Registro de Calibração — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -369,3 +374,8 @@ Cheklist de validação (abrir http://localhost:3000):
 git add docs/estado/HANDOFF_IA.md docs/estado/LOGS.md
 git commit -m "docs: update HANDOFF and LOGS after B4 calibration shortcuts"
 ```
+
+## Relacionado
+- [[superpowers/specs/2026-04-25-b4-calibration-shortcuts-design]] — spec desta feature
+- [[componentes/dashboard-content]] — implementado
+- [[componentes/instruments-content]] — ícone de calibração adicionado

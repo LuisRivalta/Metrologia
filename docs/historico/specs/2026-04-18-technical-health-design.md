@@ -1,3 +1,8 @@
+---
+tags: [historico, spec, testes]
+feature: Technical Health — Cobertura de Testes
+data: 2026-04-18
+---
 # Technical Health — Cobertura de Testes e Melhorias de Arquitetura
 
 **Data:** 2026-04-18
@@ -92,3 +97,7 @@ Se um arquivo estiver difícil de testar, é sinal de problema de design. Ajusta
 - `dashboard-metrics.ts` com lógica de agregação extraída e testável
 - Suite completa passando (`npm run test`)
 - Nenhuma regressão no build (`npm run build`)
+## Relacionado
+- [[testes/TDD]] — estratégia e suite de testes
+- [[modulos/calibration-records]] — cobertura adicionada
+- [[modulos/instruments]] — cobertura adicionada

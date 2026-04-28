@@ -1,3 +1,8 @@
+---
+tags: [superpowers, spec, dashboard, calibracao]
+feature: B4 — Atalhos de Registro de Calibração
+data: 2026-04-25
+---
 # B4: Atalhos de Registro de Calibração
 
 **Data:** 2026-04-25
@@ -77,3 +82,8 @@ Sem lógica de negócio nova — não são necessários testes unitários. Valid
 - Nenhuma mudança no fluxo de criação de calibração.
 - Nenhuma ação rápida inline (modal dentro do dashboard ou da lista).
 - Nenhuma filtragem do botão por status de vencimento — aparece para todos os instrumentos.
+
+## Relacionado
+- [[superpowers/plans/2026-04-25-b4-calibration-shortcuts]] — plano de implementação
+- [[componentes/dashboard-content]] — implementado
+- [[componentes/instruments-content]] — ícone de calibração adicionado

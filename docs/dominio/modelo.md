@@ -31,11 +31,13 @@ Categoria
 | `tag` | string | sim (ou gerado) |
 | `categoria_id` | number | sim |
 | `fabricante` | string | não |
+| `setor_id` | number | não (FK → `setores`, `ON DELETE SET NULL`) |
 | `data_ultima_calibracao` | date | não |
 | `proxima_calibracao` | date | não |
 
 - Herda campos da categoria via `instrumento_campos_medicao`
 - Tag salva tem prioridade; se parecer UUID, usa `buildInstrumentDisplayTag`
+- `setor` é resolvido em `mapInstrumentRow` via `setoresById: Map<number, SetorItem>`
 
 ## Calibração
 
@@ -55,3 +57,4 @@ Categoria
 - [[dominio/regras-criticas]] — regras que não podem quebrar
 - [[dominio/campo-slugs]] — como slugs funcionam
 - [[modulos/calibration-records]] — serialização de observacoes
+- [[modulos/setores]] — tipos e helpers de setor

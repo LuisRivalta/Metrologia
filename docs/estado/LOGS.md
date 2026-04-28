@@ -1,5 +1,28 @@
 # Logs do Projeto
 
+## 2026-04-27 — Melhorias no Editor de Categorias
+
+Aprimoramentos no editor de templates de calibração das categorias.
+
+**Componentes alterados:**
+- `app/_components/categories-content.tsx` — `defaultMeasurementId` por subgrupo (propaga medida para linhas novas e existentes); `copyFieldDraftSubgroup` (copia subgrupo inteiro com novas IDs); confirmação modal antes de remover grupo ou subgrupo; validação "mínimo 1 campo" removida (template pode ficar vazio)
+- `app/api/categorias/route.ts` — remoção da validação "mínimo 1 campo" em `sanitizeMeasurementFields`
+- `app/api/instrumentos/metadata/route.ts` — erro em `setorRowsResponse` não bloqueia mais o carregamento; retorna `[]` em caso de falha de permissão no schema `setores`
+- `app/globals.css` — layout do editor de subgrupos em 2 colunas; `subgroup-header` com flex; `section-actions` para ações lado a lado; modal alargado para 1100px; responsivo ≤ 820px colapsa para 1 coluna
+
+---
+
+## 2026-04-27 — Otimização da Wiki Obsidian
+
+Sincronização completa da documentação com o estado real do código:
+
+- Criados: `docs/modulos/setores.md`, `docs/api/setores.md`, `docs/componentes/setores-content.md`
+- Atualizados: `docs/00-INDEX.md` (setores + seção superpowers), `docs/arquitetura/visao-geral.md` (página setores), `docs/arquitetura/data-layer.md` (tabela setores), `docs/dominio/modelo.md` (campo setor_id), `docs/componentes/instruments-content.md` (linhas clicáveis, atalho calibração, filtro setor), `docs/componentes/dashboard-content.md` (botão "Registrar calibração"), `docs/produto/PRD.md` (frontmatter + setores), `docs/testes/TDD.md` (setores.test.ts), `docs/estado/HANDOFF_IA.md` (estado atual)
+- Removidos: arquivos vazios/órfãos da raiz (`2026-04-25.md`, `METROLOGIA_CALIBRATION_DATA.md`, `Sem título.canvas`, `Sem título 1.canvas`)
+- Obsidian: ignore list expandida, color groups adicionados ao graph por tags
+
+---
+
 ## 2026-04-25 — UX: Linhas Clicáveis na Lista de Instrumentos
 
 Linhas da tabela de instrumentos tornadas clicáveis em sua totalidade via `onClick` no `<tr>` + `router.push`. `stopPropagation` no link da tag e no wrapper das ações preserva o comportamento existente. CSS: `cursor: pointer` + hover sutil light/dark.

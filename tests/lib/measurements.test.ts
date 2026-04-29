@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { formatMeasurementType, mapMeasurementRow, serializeMeasurementType } from "@/lib/measurements";
+import { deduplicateMeasurementRows, formatMeasurementType, mapMeasurementRow, serializeMeasurementType } from "@/lib/measurements";
+import type { MeasurementRow } from "@/lib/measurements";
 
 describe("measurements", () => {
   it("formats known measurement types for display", () => {
@@ -66,5 +67,35 @@ describe("measurements", () => {
 
   it("retorna string vazia ao serializar tipo vazio", () => {
     expect(serializeMeasurementType("")).toBe("");
+  });
+
+  it("formata grau e graus em contexto composto", () => {
+    expect(formatMeasurementType("n_graus")).toBe("n °");
+    // _min e tratado como /min antes do _ virar espaco
+    expect(formatMeasurementType("grau_min")).toBe("°/min");
+  });
+
+  it("deduplica linhas com mesmo tipo case-insensitive mantendo a primeira ocorrencia", () => {
+    const rows: MeasurementRow[] = [
+      { id: 1, tipo: "mm", tipo_desc: null },
+      { id: 2, tipo: "MM", tipo_desc: null },
+      { id: 3, tipo: " mm ", tipo_desc: null },
+      { id: 4, tipo: "cm", tipo_desc: null }
+    ];
+
+    const result = deduplicateMeasurementRows(rows);
+
+    expect(result).toHaveLength(2);
+    expect(result[0].id).toBe(1);
+    expect(result[1].id).toBe(4);
+  });
+
+  it("preserva lista sem duplicatas inalterada", () => {
+    const rows: MeasurementRow[] = [
+      { id: 1, tipo: "mm", tipo_desc: null },
+      { id: 2, tipo: "cm", tipo_desc: null }
+    ];
+
+    expect(deduplicateMeasurementRows(rows)).toHaveLength(2);
   });
 });

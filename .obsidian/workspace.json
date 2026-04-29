@@ -4,11 +4,11 @@
     "type": "split",
     "children": [
       {
-        "id": "73ae80bcddcb4a18",
+        "id": "a696b8e5117480a1",
         "type": "tabs",
         "children": [
           {
-            "id": "4dd53b32c53c64db",
+            "id": "a8ba375520a0b93a",
             "type": "leaf",
             "state": {
               "type": "graph",
@@ -178,22 +178,30 @@
       "canvas:Criar novo canvas": false
     }
   },
-  "active": "4dd53b32c53c64db",
+  "active": "a8ba375520a0b93a",
   "lastOpenFiles": [
+    "docs/componentes/categories-content.md",
+    "coverage/coverage-summary.json",
+    "coverage/setores.ts.html",
+    "coverage/measurements.ts.html",
+    "coverage/measurement-fields.ts.html",
+    "coverage/instruments.ts.html",
+    "coverage/date-utils.ts.html",
+    "coverage/dashboard-metrics.ts.html",
+    "coverage/categories.ts.html",
+    "coverage/calibrations.ts.html",
+    "coverage/calibration-records.ts.html",
+    "coverage/favicon.png",
+    "docs/superpowers/plans/2026-04-28-filtros-persistentes-url.md",
     "docs/api/medidas.md",
     "docs/produto/PRD.md",
     "METROLOGIA_CALIBRATION_DATA.md",
-    "app/api/calibracoes/route.ts",
-    "app/_components/calibration-field-review-table.tsx",
-    "lib/calibration-records.ts",
     "docs/modulos/calibration-records.md",
     "docs/historico/planos/2026-04-22-obsidian-wiki.md",
     "docs/historico/planos/2026-04-18-b2-calibration-flow.md",
     "docs/api/calibracoes.md",
-    "docs/00-INDEX.md.tmp.12008.1777316629738",
     "docs/componentes/instrument-detail-content.md",
     "docs/componentes/instrument-calibrations-content.md",
-    "docs/componentes/categories-content.md",
     "docs/componentes/calibration-field-review-table.md",
     "docs/modulos/server-instrument-details.md",
     "docs/modulos/api-client.md",
@@ -201,26 +209,17 @@
     "docs/historico/planos/2026-04-21-ai-pipeline-b1.md",
     "CLAUDE.md",
     "docs/00-INDEX.md",
-    "docs/estado/HANDOFF_IA.md.tmp.12008.1777314616008",
     "docs/componentes/setores-content.md",
     "docs/api/setores.md",
     "docs/modulos/setores.md",
     "docs/superpowers/specs/2026-04-25-filtros-persistentes-url-design.md",
-    "app/_components/instruments-content.tsx.tmp.9484.1777132322774",
-    "app/globals.css.tmp.9484.1777132184535",
     "docs/superpowers/plans/2026-04-25-ux-clickable-table-rows.md",
     "docs/superpowers/specs/2026-04-25-ux-clickable-table-rows-design.md",
     "Sem título.canvas",
     "2026-04-25.md",
     "Sem título 1.canvas",
-    "docs/historico/specs/2026-04-20-b1-ai-pipeline-design.md",
-    "docs/dominio/modelo.md",
-    "CLAUDE.md.tmp.21144.1776883873840",
-    "docs/historico/specs",
-    "docs/historico/planos",
     "screenshots/1 (1).jpeg",
     "screenshots/1.jpeg",
-    "coverage/sort-arrow-sprite.png",
-    "coverage/favicon.png"
+    "coverage/sort-arrow-sprite.png"
   ]
 }

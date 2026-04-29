@@ -6,9 +6,12 @@ import { useRouter } from "next/navigation";
 import type { FormEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 import BorderGlow from "@/app/_components/border-glow";
-import ShinyText from "@/app/_components/shiny-text";
 
 const LightPillar = dynamic(() => import("@/app/_components/light-pillar"), { ssr: false });
+const ShinyText = dynamic(() => import("@/app/_components/shiny-text"), {
+  ssr: false,
+  loading: () => <span style={{ color: "#e6f1ff" }}>Metrologia Pro</span>
+});
 import { syncSupabaseSessionCookies } from "@/lib/supabase/auth-session";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 
@@ -22,6 +25,7 @@ export default function LoginPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [validationMessage, setValidationMessage] = useState("");
   const [isLoginDenied, setIsLoginDenied] = useState(false);
+  const [isBooting, setIsBooting] = useState(true);
   const shakeTimeoutRef = useRef<number | null>(null);
   const redirectTimeoutRef = useRef<number | null>(null);
 
@@ -53,17 +57,37 @@ export default function LoginPage() {
     }
 
     async function checkSession() {
-      const {
-        data: { session }
-      } = await supabaseBrowser.auth.getSession();
+      try {
+        const {
+          data: { session }
+        } = await supabaseBrowser.auth.getSession();
 
-      if (session && isMounted) {
-        syncSupabaseSessionCookies(session);
-        router.replace("/dashboard");
+        if (!isMounted) {
+          return;
+        }
+
+        if (session) {
+          syncSupabaseSessionCookies(session);
+          router.replace("/dashboard");
+          return;
+        }
+      } catch {
+        // network or supabase error — fall through and show login form
+      }
+
+      if (isMounted) {
+        setIsBooting(false);
       }
     }
 
     void checkSession();
+
+    // safety net: never keep the user stuck on the loading screen
+    const bootTimeoutId = globalThis.setTimeout(() => {
+      if (isMounted) {
+        setIsBooting(false);
+      }
+    }, 4000);
 
     return () => {
       isMounted = false;
@@ -75,6 +99,8 @@ export default function LoginPage() {
       if (prefetchTimeoutId !== null) {
         globalThis.clearTimeout(prefetchTimeoutId);
       }
+
+      globalThis.clearTimeout(bootTimeoutId);
     };
   }, [router]);
 
@@ -151,6 +177,29 @@ export default function LoginPage() {
 
   return (
     <main className={`login-screen${isRedirecting ? " is-transitioning" : ""}`}>
+      <div
+        className={`login-boot${isBooting ? "" : " is-hidden"}`}
+        aria-hidden={!isBooting}
+        aria-busy={isBooting}
+        role="status"
+      >
+        <div className="login-boot__core">
+          <div className="login-boot__logo" aria-hidden="true">
+            <Image
+              src="/sidebar-categories.svg"
+              alt=""
+              width={40}
+              height={40}
+              priority
+            />
+          </div>
+          <span className="login-boot__brand">Metrologia Pro</span>
+          <div className="login-boot__bar" aria-hidden="true">
+            <span />
+          </div>
+          <span className="login-boot__caption">Carregando</span>
+        </div>
+      </div>
       <div className="login-screen__transition-wave" aria-hidden="true" />
       <section className="login-layout">
         <div className="login-layout__backdrop" aria-hidden="true">

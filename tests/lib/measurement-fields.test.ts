@@ -147,4 +147,30 @@ describe("measurement-fields", () => {
     expect(hasMeasurementFieldGrouping([{ groupName: "Grupo A" }, {}])).toBe(true);
     expect(hasMeasurementFieldGrouping([{}, {}])).toBe(false);
   });
+
+  it("ordena grupos com mesmo firstOrder por label em pt-BR", () => {
+    const groups = groupMeasurementFieldsByLayout([
+      { slug: "z-campo", name: "Campo", groupName: "Zebra", subgroupName: "", order: 0 },
+      { slug: "a-campo", name: "Campo", groupName: "Alpha", subgroupName: "", order: 0 }
+    ]);
+
+    expect(groups.map((g) => g.label)).toEqual(["Alpha", "Zebra"]);
+  });
+
+  it("ordena subgrupos com mesmo firstOrder por label em pt-BR", () => {
+    const groups = groupMeasurementFieldsByLayout([
+      { slug: "g-sb-campo", name: "Campo", groupName: "Grupo", subgroupName: "Bravo", order: 0 },
+      { slug: "g-sa-campo", name: "Campo", groupName: "Grupo", subgroupName: "Alfa", order: 0 }
+    ]);
+
+    expect(groups[0]?.subgroups.map((s) => s.label)).toEqual(["Alfa", "Bravo"]);
+  });
+
+  it("parseMeasurementFieldValueConfig retorna fallback quando tipo_valor e array JSON", () => {
+    const result = parseMeasurementFieldValueConfig("[1,2,3]");
+
+    expect(result.type).toBe("[1,2,3]");
+    expect(result.groupName).toBe("");
+    expect(result.subgroupName).toBe("");
+  });
 });

@@ -62,6 +62,150 @@ input {
   font: inherit;
 }
 
+.login-boot {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #14378d 0%, #12357f 36%, #0d275f 68%, #091942 100%);
+  opacity: 1;
+  transition: opacity 0.42s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.login-boot.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  transition:
+    opacity 0.42s cubic-bezier(0.4, 0, 0.2, 1),
+    visibility 0s linear 0.42s;
+}
+
+.login-boot__core {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding: 24px;
+}
+
+.login-boot__logo {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(122, 170, 255, 0.18);
+  box-shadow:
+    0 0 0 1px rgba(122, 170, 255, 0.06) inset,
+    0 12px 32px rgba(8, 17, 42, 0.4);
+  animation: login-boot-pulse 2.4s ease-in-out infinite;
+}
+
+.login-boot__brand {
+  font-size: 13px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(230, 241, 255, 0.86);
+  font-weight: 500;
+}
+
+.login-boot__bar {
+  position: relative;
+  width: 180px;
+  height: 2px;
+  border-radius: 2px;
+  background: rgba(122, 170, 255, 0.12);
+  overflow: hidden;
+}
+
+.login-boot__bar span {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 40%;
+  border-radius: 2px;
+  background: linear-gradient(
+    90deg,
+    rgba(89, 200, 255, 0) 0%,
+    rgba(89, 200, 255, 0.85) 50%,
+    rgba(89, 200, 255, 0) 100%
+  );
+  animation: login-boot-shimmer 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.login-boot__caption {
+  font-size: 11px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: rgba(143, 202, 255, 0.55);
+  font-weight: 500;
+  position: relative;
+}
+
+.login-boot__caption::after {
+  content: "...";
+  display: inline-block;
+  width: 1em;
+  text-align: left;
+  letter-spacing: 0.08em;
+  animation: login-boot-dots 1.6s steps(4, end) infinite;
+}
+
+@keyframes login-boot-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(122, 170, 255, 0.06) inset,
+      0 12px 32px rgba(8, 17, 42, 0.4),
+      0 0 0 0 rgba(89, 200, 255, 0);
+    transform: translateZ(0) scale(1);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(122, 170, 255, 0.12) inset,
+      0 14px 36px rgba(8, 17, 42, 0.5),
+      0 0 28px 6px rgba(89, 200, 255, 0.16);
+    transform: translateZ(0) scale(1.04);
+  }
+}
+
+@keyframes login-boot-shimmer {
+  0% {
+    transform: translateX(-110%);
+  }
+  100% {
+    transform: translateX(360%);
+  }
+}
+
+@keyframes login-boot-dots {
+  0% {
+    content: "";
+  }
+  25% {
+    content: ".";
+  }
+  50% {
+    content: "..";
+  }
+  75%,
+  100% {
+    content: "...";
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-boot__logo,
+  .login-boot__bar span,
+  .login-boot__caption::after {
+    animation: none;
+  }
+}
+
 .login-screen__transition-wave {
   position: absolute;
   inset: -18%;
@@ -5203,6 +5347,7 @@ html.page-is-transitioning .page-entry-shell .inventory-content > :nth-child(5) 
 
 .instrument-detail-group__fields {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   grid-auto-rows: minmax(0, 1fr);
   gap: 10px;
   min-height: 100%;
@@ -7385,9 +7530,11 @@ html[data-theme="dark"] .inventory-footer__links a {
 }
 
 html[data-theme="dark"] .login-card {
-  background: linear-gradient(180deg, rgba(18, 20, 28, 0.98) 0%, rgba(11, 13, 18, 0.98) 100%);
+  background: linear-gradient(180deg, rgba(16, 17, 21, 0.58) 0%, rgba(10, 11, 16, 0.5) 100%);
   border-color: rgba(255, 255, 255, 0.1);
   box-shadow: 0 32px 70px rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 }
 
 html[data-theme="dark"] .field span {

@@ -1,5 +1,23 @@
 # Logs do Projeto
 
+## 2026-04-29 - UX: Modal de Categorias Mais Compacto
+
+Removido do modal de edicao/criacao de categorias o texto "Template de calibracao da categoria" e a descricao "Esses itens vao aparecer automaticamente quando um instrumento dessa categoria for criado.".
+
+**Arquivos modificados:** `app/_components/categories-content.tsx`, `app/globals.css`
+
+**Resultado:** o cabecalho do builder de template foi removido e o botao "Novo campo" ficou na mesma linha do campo "Nome da categoria". Build de producao executado com sucesso.
+
+**Complemento:** ao salvar uma categoria em edicao, a tela agora preserva o scroll da pagina e o scroll interno da tabela de categorias, evitando voltar para o topo apos o recarregamento da lista.
+
+**Complemento 2:** o modal de edicao/criacao rapida de instrumentos agora explicita o campo "Cod setor" e alimenta as opcoes tambem pelos metadados de instrumentos, alem do carregamento direto de setores.
+
+**Complemento 3:** os modais principais de categorias, instrumentos, setores e medidas nao fecham mais ao clicar fora deles; fechamento continua disponivel pelo X e pelos botoes de acao do proprio modal.
+
+**Complemento 4:** a tabela da tela de instrumentos recebeu layout proprio com distribuicao automatica por conteudo e largura fixa apenas para "Acoes", evitando corte do cabecalho sem deixar colunas artificialmente espacadas.
+
+---
+
 ## 2026-04-28 — Testes: Expansão de cobertura de branches
 
 Adicionados 16 testes novos cobrindo branches anteriormente não alcançados.

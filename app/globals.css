@@ -1581,6 +1581,66 @@ html[data-theme="dark"] .filter-chips__clear:hover {
   border-collapse: collapse;
 }
 
+.instruments-table {
+  width: 100%;
+  min-width: 0;
+  table-layout: auto;
+}
+
+.instruments-table__tag-column {
+  width: auto;
+}
+
+.instruments-table__category-column {
+  width: auto;
+}
+
+.instruments-table__manufacturer-column {
+  width: auto;
+}
+
+.instruments-table__setor-column {
+  width: auto;
+}
+
+.instruments-table__calibration-column {
+  width: auto;
+}
+
+.instruments-table__actions-column {
+  width: 96px;
+}
+
+.inventory-table.instruments-table th,
+.inventory-table.instruments-table td {
+  padding-left: clamp(14px, 1.4vw, 22px);
+  padding-right: clamp(14px, 1.4vw, 22px);
+}
+
+.instruments-table th:last-child,
+.instruments-table td:last-child {
+  width: 96px;
+  padding-left: 12px;
+  padding-right: 18px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.instruments-table__actions {
+  width: max-content;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.instruments-table .table-action {
+  width: 34px;
+  height: 36px;
+  border-radius: 10px;
+}
+
 .inventory-table th,
 .inventory-table td {
   padding: clamp(18px, 2vw, 28px) clamp(16px, 2.2vw, 32px);
@@ -2143,6 +2203,18 @@ html[data-theme="dark"] .filter-chips__clear:hover {
 .category-modal__grid {
   grid-template-columns: minmax(0, 1fr);
   row-gap: 20px;
+}
+
+.category-modal__name-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 14px;
+}
+
+.category-modal__field-add {
+  min-height: 42px;
+  white-space: nowrap;
 }
 
 .settings-home-card {
@@ -7112,6 +7184,14 @@ html.page-is-transitioning .page-entry-shell .inventory-content > :nth-child(5) 
 
   .instrument-modal__grid {
     grid-template-columns: 1fr;
+  }
+
+  .category-modal__name-row {
+    grid-template-columns: 1fr;
+  }
+
+  .category-modal__field-add {
+    justify-self: flex-start;
   }
 
   .instrument-detail-hero__heading {

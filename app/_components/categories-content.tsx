@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { fetchApi } from "@/lib/api/client";
 import type { CategoryItem } from "@/lib/categories";
@@ -45,6 +45,13 @@ type CategoryApiResponse = {
   items?: CategoryItem[];
   measurements?: MeasurementItem[];
   success?: boolean;
+};
+
+type CategoryScrollSnapshot = {
+  windowX: number;
+  windowY: number;
+  tableScrollLeft: number;
+  tableScrollTop: number;
 };
 
 function normalizeSearchValue(value: string) {
@@ -146,6 +153,7 @@ function getFieldGridClassName(count: number) {
 }
 
 export function CategoriesContent() {
+  const categoryTableWrapRef = useRef<HTMLDivElement | null>(null);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [measurements, setMeasurements] = useState<MeasurementItem[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
@@ -309,6 +317,33 @@ export function CategoriesContent() {
     setPendingRemoveFieldIds(null);
     setPendingRemoveLabel("");
     closeFieldModal();
+  }
+
+  function captureCategoryScroll(): CategoryScrollSnapshot {
+    const tableWrap = categoryTableWrapRef.current;
+
+    return {
+      windowX: window.scrollX,
+      windowY: window.scrollY,
+      tableScrollLeft: tableWrap?.scrollLeft ?? 0,
+      tableScrollTop: tableWrap?.scrollTop ?? 0
+    };
+  }
+
+  function restoreCategoryScroll(snapshot: CategoryScrollSnapshot | null) {
+    if (!snapshot) return;
+
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        window.scrollTo(snapshot.windowX, snapshot.windowY);
+
+        const tableWrap = categoryTableWrapRef.current;
+        if (tableWrap) {
+          tableWrap.scrollLeft = snapshot.tableScrollLeft;
+          tableWrap.scrollTop = snapshot.tableScrollTop;
+        }
+      });
+    });
   }
 
   function openCreateModal() {
@@ -770,6 +805,7 @@ export function CategoriesContent() {
     setValidationError("");
 
     try {
+      const scrollSnapshot = modalMode === "edit" ? captureCategoryScroll() : null;
       const response = await fetchApi("/api/categorias", {
         method: modalMode === "edit" ? "PATCH" : "POST",
         headers: {
@@ -800,6 +836,7 @@ export function CategoriesContent() {
       await loadCategories();
       setLoadError("");
       closeModal();
+      restoreCategoryScroll(scrollSnapshot);
     } catch {
       setValidationError("Nao foi possivel salvar a categoria.");
       setIsSubmitting(false);
@@ -894,7 +931,7 @@ export function CategoriesContent() {
 
           {loadError ? <p className="settings-status-banner settings-status-banner--error">{loadError}</p> : null}
 
-          <div className="inventory-table-wrap">
+          <div className="inventory-table-wrap" ref={categoryTableWrapRef}>
             <table className="inventory-table category-table">
               <thead>
                 <tr>
@@ -1006,7 +1043,7 @@ export function CategoriesContent() {
       </section>
 
       {isModalOpen ? (
-        <div className="instrument-modal-backdrop" role="presentation" onClick={() => !isSubmitting && closeModal()}>
+        <div className="instrument-modal-backdrop" role="presentation">
           <section
             className="instrument-modal category-modal"
             role="dialog"
@@ -1040,35 +1077,34 @@ export function CategoriesContent() {
             <form className="instrument-modal__body category-modal__body" onSubmit={handleSubmit}>
               <div className="instrument-modal__content">
                 <div className="instrument-modal__grid category-modal__grid">
-                  <label className="instrument-modal__field instrument-modal__field--full">
-                    <span>Nome da categoria</span>
-                    <input
-                      type="text"
-                      placeholder="Ex: Manometro digital"
-                      value={categoryName}
-                      onChange={(event) => {
-                        setCategoryName(event.target.value);
-                        if (validationError) {
-                          setValidationError("");
-                        }
-                      }}
-                      className={validationError && !categoryName.trim() ? "is-invalid" : undefined}
-                      autoFocus
-                    />
-                  </label>
-                </div>
-
-                <section className="instrument-fields-builder">
-                  <div className="instrument-fields-builder__header">
-                    <div>
-                      <h3>Template de calibracao da categoria</h3>
-                      <p>Esses itens vao aparecer automaticamente quando um instrumento dessa categoria for criado.</p>
-                    </div>
-                    <button type="button" className="instrument-fields-builder__add" onClick={openCreateFieldModal}>
+                  <div className="category-modal__name-row">
+                    <label className="instrument-modal__field instrument-modal__field--full">
+                      <span>Nome da categoria</span>
+                      <input
+                        type="text"
+                        placeholder="Ex: Manometro digital"
+                        value={categoryName}
+                        onChange={(event) => {
+                          setCategoryName(event.target.value);
+                          if (validationError) {
+                            setValidationError("");
+                          }
+                        }}
+                        className={validationError && !categoryName.trim() ? "is-invalid" : undefined}
+                        autoFocus
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      className="instrument-fields-builder__add category-modal__field-add"
+                      onClick={openCreateFieldModal}
+                    >
                       Novo campo
                     </button>
                   </div>
+                </div>
 
+                <section className="instrument-fields-builder">
                   {fieldRows.length === 0 ? (
                     <div className="instrument-fields-builder__empty">
                       Adicione o primeiro item deste template de calibracao.

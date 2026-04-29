@@ -423,7 +423,7 @@ export function SettingsContent() {
       </section>
 
       {isModalOpen ? (
-        <div className="instrument-modal-backdrop" role="presentation" onClick={closeModal}>
+        <div className="instrument-modal-backdrop" role="presentation">
           <section
             className="instrument-modal category-modal settings-measure-modal"
             role="dialog"

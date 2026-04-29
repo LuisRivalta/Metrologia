@@ -70,6 +70,7 @@ type InstrumentMetadataResponse = {
   error?: string;
   categories?: InstrumentMetadataCategory[];
   measurements?: MeasurementItem[];
+  setores?: SetorItem[];
 };
 
 const LEGACY_INSTRUMENTS_STORAGE_KEY = "metrologia:instrumentos";
@@ -335,6 +336,13 @@ export function InstrumentsContent() {
       } else {
         setMetadataCategories(payload.categories ?? []);
         setMeasurements(payload.measurements ?? []);
+        setSetores((current) => {
+          if (!Array.isArray(payload.setores)) {
+            return current;
+          }
+
+          return payload.setores.length > 0 || current.length === 0 ? payload.setores : current;
+        });
       }
     } catch {
       setMetadataCategories([]);
@@ -611,7 +619,15 @@ export function InstrumentsContent() {
 
         <section className="inventory-table-card">
           <div className="inventory-table-wrap">
-            <table className="inventory-table">
+            <table className="inventory-table instruments-table">
+              <colgroup>
+                <col className="instruments-table__tag-column" />
+                <col className="instruments-table__category-column" />
+                <col className="instruments-table__manufacturer-column" />
+                <col className="instruments-table__setor-column" />
+                <col className="instruments-table__calibration-column" />
+                <col className="instruments-table__actions-column" />
+              </colgroup>
               <thead>
                 <tr>
                   <th><button type="button" className={`inventory-sort-button${sortKey === "tag" ? " is-active" : ""}`} onClick={() => handleSort("tag")}><span>Tag</span><span className="inventory-sort-button__icon" aria-hidden="true">{sortKey === "tag" ? (sortDirection === "asc" ? "A-Z" : "Z-A") : "A-Z"}</span></button></th>
@@ -641,7 +657,7 @@ export function InstrumentsContent() {
                       </td>
                       <td data-label="Prazo de calibração"><div className="calibration-cell"><span className={`calibration-cell__date calibration-cell__date--${row.tone}`}>{dateLabel}</span>{statusLabel ? <span className={`calibration-badge calibration-badge--${row.tone}`}>{statusLabel}</span> : null}</div></td>
                       <td data-label="Ações">
-                        <div onClick={e => e.stopPropagation()}>
+                        <div className="instruments-table__actions" onClick={e => e.stopPropagation()}>
                           <button type="button" className="table-action" aria-label="Editar" onClick={() => openEditModal(row)}>
                             <svg viewBox="0 0 24 24" fill="none">
                               <path d="M4 16.8V20h3.2L18 9.2 14.8 6 4 16.8Z" fill="currentColor" />
@@ -683,7 +699,7 @@ export function InstrumentsContent() {
       </section>
 
       {isModalOpen ? (
-        <div className="instrument-modal-backdrop" role="presentation" onClick={closeModal}>
+        <div className="instrument-modal-backdrop" role="presentation">
           <section className="instrument-modal" role="dialog" aria-modal="true" aria-labelledby="instrument-modal-title" onClick={(event) => event.stopPropagation()}>
             <header className="instrument-modal__header">
               <h2 id="instrument-modal-title">{modalMode === "edit" ? "Editar Instrumento" : "Adicionar Novo Instrumento"}</h2>
@@ -723,7 +739,7 @@ export function InstrumentsContent() {
                   </label>
 
                   <label className="instrument-modal__field instrument-modal__field--full">
-                    <span>Setor de uso</span>
+                    <span>Cod setor</span>
                     <select
                       value={formState.setorId ?? ""}
                       onChange={(event) => {
@@ -737,7 +753,7 @@ export function InstrumentsContent() {
                       <option value="">Sem setor definido</option>
                       {setores.map((setor) => (
                         <option key={setor.id} value={setor.id}>
-                          {setor.codigo} – {setor.nome}
+                          {formatSetorLabel(setor)}
                         </option>
                       ))}
                     </select>

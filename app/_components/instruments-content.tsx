@@ -42,7 +42,7 @@ type InstrumentValidationErrors = Partial<
   >
 >;
 type CalibrationFilter = "all" | "neutral" | "warning" | "danger";
-type SortKey = "tag" | "category" | "manufacturer" | "calibration";
+type SortKey = "tag" | "category" | "manufacturer" | "setor" | "calibration";
 type SortDirection = "asc" | "desc";
 
 const VALID_CALIBRATION_FILTER_STATUSES: CalibrationFilter[] = ["neutral", "warning", "danger"];
@@ -204,6 +204,14 @@ export function InstrumentsContent() {
     const directionFactor = sortDirection === "asc" ? 1 : -1;
     return [...filteredRows].sort((first, second) => {
       if (sortKey === "calibration") return (getCalibrationTimestamp(first) - getCalibrationTimestamp(second)) * directionFactor;
+      if (sortKey === "setor") {
+        const firstCode = first.setor?.codigo ?? "";
+        const secondCode = second.setor?.codigo ?? "";
+        if (!firstCode && !secondCode) return 0;
+        if (!firstCode) return 1;
+        if (!secondCode) return -1;
+        return firstCode.localeCompare(secondCode, "pt-BR", { numeric: true, sensitivity: "base" }) * directionFactor;
+      }
       return normalizeSearchValue(first[sortKey]).localeCompare(normalizeSearchValue(second[sortKey]), "pt-BR", { sensitivity: "base" }) * directionFactor;
     });
   }, [filteredRows, sortDirection, sortKey]);
@@ -633,7 +641,7 @@ export function InstrumentsContent() {
                   <th><button type="button" className={`inventory-sort-button${sortKey === "tag" ? " is-active" : ""}`} onClick={() => handleSort("tag")}><span>Tag</span><span className="inventory-sort-button__icon" aria-hidden="true">{sortKey === "tag" ? (sortDirection === "asc" ? "A-Z" : "Z-A") : "A-Z"}</span></button></th>
                   <th><button type="button" className={`inventory-sort-button${sortKey === "category" ? " is-active" : ""}`} onClick={() => handleSort("category")}><span>Categoria</span><span className="inventory-sort-button__icon" aria-hidden="true">{sortKey === "category" ? (sortDirection === "asc" ? "A-Z" : "Z-A") : "A-Z"}</span></button></th>
                   <th><button type="button" className={`inventory-sort-button${sortKey === "manufacturer" ? " is-active" : ""}`} onClick={() => handleSort("manufacturer")}><span>Fabricante</span><span className="inventory-sort-button__icon" aria-hidden="true">{sortKey === "manufacturer" ? (sortDirection === "asc" ? "A-Z" : "Z-A") : "A-Z"}</span></button></th>
-                  <th>Setor</th>
+                  <th><button type="button" className={`inventory-sort-button${sortKey === "setor" ? " is-active" : ""}`} onClick={() => handleSort("setor")}><span>Setor</span><span className="inventory-sort-button__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" width="12" height="12"><path d={sortKey === "setor" && sortDirection === "desc" ? "M12 5v14M6 13l6 6 6-6" : "M12 19V5M6 11l6-6 6 6"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg></span></button></th>
                   <th><button type="button" className={`inventory-sort-button inventory-sort-button--calibration${sortKey === "calibration" ? " is-active" : ""}`} onClick={() => handleSort("calibration")}><span>Prazo de calibração</span><span className="inventory-sort-button__icon inventory-sort-button__icon--calibration" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="9" r="5.25" fill="currentColor" opacity="0.16" /><circle cx="9" cy="9" r="4.25" stroke="currentColor" strokeWidth="1.8" /><path d="M9 6.9v2.5l1.7 1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /><path d={sortKey === "calibration" && sortDirection === "desc" ? "m16.5 16.2 2.5-2.6 2.5 2.6" : "m16.5 13.8 2.5 2.6 2.5-2.6"} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></span></button></th>
                   <th>Ações</th>
                 </tr>

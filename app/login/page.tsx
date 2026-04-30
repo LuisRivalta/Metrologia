@@ -226,7 +226,7 @@ export default function LoginPage() {
           className="login-card-glow"
           edgeSensitivity={30}
           glowColor="208 92 78"
-          backgroundColor="linear-gradient(180deg, rgba(16, 17, 21, 0.58) 0%, rgba(10, 11, 16, 0.5) 100%)"
+          backgroundColor="linear-gradient(180deg, rgba(16, 17, 21, 0.2) 0%, rgba(10, 11, 16, 0.16) 100%)"
           borderRadius={28}
           glowRadius={31}
           glowIntensity={1.9}

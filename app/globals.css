@@ -352,7 +352,8 @@ html.page-is-transitioning .page-entry-shell {
   width: min(100%, 430px);
   margin-left: clamp(36px, 4vw, 72px);
   justify-self: center;
-  backdrop-filter: blur(14px);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .login-card__sheen {
@@ -4311,6 +4312,7 @@ html.page-is-transitioning .page-entry-shell .inventory-content > :nth-child(5) 
 
 .template-preview__fields > .template-preview__field {
   flex: 0 0 calc((100% - 24px) / 3);
+  min-width: 0;
 }
 
 .template-preview__fields--single > .template-preview__field {
@@ -4332,8 +4334,8 @@ html.page-is-transitioning .page-entry-shell .inventory-content > :nth-child(5) 
 }
 
 .template-preview__field--editable {
-  grid-template-columns: 1fr auto;
-  grid-template-rows: auto 1fr;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto auto 1fr;
 }
 
 .template-preview__field-name {
@@ -4793,12 +4795,12 @@ html.page-is-transitioning .page-entry-shell .inventory-content > :nth-child(5) 
     grid-template-columns: 1fr;
   }
 
-  .template-preview__fields {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .template-preview__fields > .template-preview__field {
+    flex: 0 0 calc((100% - 12px) / 2);
   }
 
-  .template-preview__fields--single {
-    grid-template-columns: 1fr;
+  .template-preview__fields--single > .template-preview__field {
+    flex: 0 0 100%;
   }
 
   .field-editor-modal__subgroup-head {

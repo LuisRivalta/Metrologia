@@ -38,7 +38,8 @@
       "Bash(grep -i \"worktree.*director\" CLAUDE.md)",
       "Bash(git pull *)",
       "Bash(git *)",
-      "Bash(sort -k5 -h -r)"
+      "Bash(sort -k5 -h -r)",
+      "Bash(curl -sI http://localhost:3000/login -m 60)"
     ]
   },
   "enableAllProjectMcpServers": true,
